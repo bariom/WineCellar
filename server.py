@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import time
 import uuid
@@ -8,6 +9,8 @@ from argparse import ArgumentParser
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from secrets import token_urlsafe
+from http.cookies import SimpleCookie
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from urllib.parse import unquote, urlparse
@@ -19,6 +22,11 @@ RATES_URL = "https://api.frankfurter.dev/v1/latest?base=EUR&symbols=CHF,USD"
 RATES_CACHE_SECONDS = 60 * 60 * 12
 REFERENCE_CURRENCY = "CHF"
 SUPPORTED_CURRENCIES = {"CHF", "EUR", "USD"}
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+VIEWER_PASSWORD = os.environ.get("VIEWER_PASSWORD", "")
+AUTH_ENABLED = bool(ADMIN_PASSWORD and VIEWER_PASSWORD)
+SESSION_COOKIE = "wine_cellar_session"
+SESSIONS: dict[str, str] = {}
 
 FIELDS = [
     "id",
@@ -1024,12 +1032,21 @@ def replace_all_wines(wines: list[dict]) -> list[dict]:
     return list_wines()
 
 
+def auth_payload(role: str) -> dict:
+    return {"authenticated": role != "anonymous", "role": role, "auth_enabled": AUTH_ENABLED}
+
+
 class CellarHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
 
     def do_GET(self) -> None:
         path = urlparse(self.path).path
+        if path == "/api/session":
+            self.send_json(auth_payload(self.current_role()))
+            return
+        if path.startswith("/api/") and not self.require_authenticated():
+            return
         if path == "/api/wines":
             self.send_json(list_wines())
             return
@@ -1037,6 +1054,8 @@ class CellarHandler(SimpleHTTPRequestHandler):
             self.send_json(list_catalog_wines())
             return
         if path == "/api/export":
+            if not self.require_admin():
+                return
             self.send_json(list_wines())
             return
         if path == "/api/rates":
@@ -1060,6 +1079,14 @@ class CellarHandler(SimpleHTTPRequestHandler):
     def do_POST(self) -> None:
         path = urlparse(self.path).path
         try:
+            if path == "/api/login":
+                self.login()
+                return
+            if path == "/api/logout":
+                self.logout()
+                return
+            if path.startswith("/api/") and not self.require_admin():
+                return
             if path.startswith("/api/wines/") and path.endswith("/drink"):
                 wine_id = unquote(path.removeprefix("/api/wines/").removesuffix("/drink"))
                 try:
@@ -1092,6 +1119,8 @@ class CellarHandler(SimpleHTTPRequestHandler):
         if not path.startswith("/api/wines/"):
             self.send_error(HTTPStatus.NOT_FOUND)
             return
+        if not self.require_admin():
+            return
         wine_id = unquote(path.removeprefix("/api/wines/"))
         try:
             self.send_json(upsert_wine(self.read_json(), wine_id))
@@ -1102,6 +1131,8 @@ class CellarHandler(SimpleHTTPRequestHandler):
         path = urlparse(self.path).path
         if not path.startswith("/api/wines/"):
             self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        if not self.require_admin():
             return
         wine_id = unquote(path.removeprefix("/api/wines/"))
         if delete_wine(wine_id):
@@ -1120,6 +1151,70 @@ class CellarHandler(SimpleHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def current_role(self) -> str:
+        if not AUTH_ENABLED:
+            return "admin"
+        cookie_header = self.headers.get("Cookie", "")
+        if not cookie_header:
+            return "anonymous"
+        cookie = SimpleCookie(cookie_header)
+        morsel = cookie.get(SESSION_COOKIE)
+        if not morsel:
+            return "anonymous"
+        return SESSIONS.get(morsel.value, "anonymous")
+
+    def require_admin(self) -> bool:
+        if self.current_role() == "admin":
+            return True
+        self.send_json({"error": "Admin access required"}, HTTPStatus.FORBIDDEN)
+        return False
+
+    def require_authenticated(self) -> bool:
+        if self.current_role() != "anonymous":
+            return True
+        self.send_json({"error": "Authentication required"}, HTTPStatus.UNAUTHORIZED)
+        return False
+
+    def login(self) -> None:
+        if not AUTH_ENABLED:
+            self.send_json(auth_payload("admin"))
+            return
+        payload = self.read_json()
+        password = str(payload.get("password", ""))
+        role = ""
+        if password == ADMIN_PASSWORD:
+            role = "admin"
+        elif password == VIEWER_PASSWORD:
+            role = "viewer"
+        if not role:
+            self.send_json({"error": "Invalid password"}, HTTPStatus.UNAUTHORIZED)
+            return
+
+        session_id = token_urlsafe(32)
+        SESSIONS[session_id] = role
+        body = json.dumps(auth_payload(role)).encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Set-Cookie", f"{SESSION_COOKIE}={session_id}; Path=/; HttpOnly; SameSite=Lax")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def logout(self) -> None:
+        cookie_header = self.headers.get("Cookie", "")
+        if cookie_header:
+            cookie = SimpleCookie(cookie_header)
+            morsel = cookie.get(SESSION_COOKIE)
+            if morsel:
+                SESSIONS.pop(morsel.value, None)
+        body = json.dumps(auth_payload("anonymous" if AUTH_ENABLED else "admin")).encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Set-Cookie", f"{SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0")
         self.end_headers()
         self.wfile.write(body)
 

@@ -16,17 +16,33 @@
   </head>
   <body>
     <main class="app-shell">
-      <section class="screen active" id="screen-cellar" aria-labelledby="cellar-title">
+      <section class="screen active login-screen" id="screen-login" aria-labelledby="login-title">
+        <form class="login-panel" id="login-form">
+          <div>
+            <h1 id="login-title" data-i18n="cellar">Cellar</h1>
+            <p data-i18n="loginPrompt">Enter your password to continue.</p>
+          </div>
+          <label class="form-field">
+            <span data-i18n="password">Password</span>
+            <input class="form-control" id="login-password" name="password" type="password" autocomplete="current-password" required />
+          </label>
+          <p class="login-error" id="login-error" hidden></p>
+          <button class="btn btn-wine save-button" type="submit" data-i18n="login">Login</button>
+        </form>
+      </section>
+
+      <section class="screen" id="screen-cellar" aria-labelledby="cellar-title">
         <header class="topbar">
           <h1 id="cellar-title" data-i18n="cellar">Cellar</h1>
           <div class="d-flex gap-2 align-items-center">
             <button class="btn btn-soft icon-button" id="language-button" type="button" aria-label="Language">IT</button>
-            <button class="btn btn-soft icon-button" id="export-button" type="button" aria-label="Export data" data-i18n="export">Export</button>
-            <label class="btn btn-soft icon-button mb-0" aria-label="Import data">
+            <button class="btn btn-soft icon-button" id="logout-button" type="button" data-i18n="logout">Logout</button>
+            <button class="btn btn-soft icon-button admin-only" id="export-button" type="button" aria-label="Export data" data-i18n="export">Export</button>
+            <label class="btn btn-soft icon-button mb-0 admin-only" aria-label="Import data">
               <input id="import-input" type="file" accept="application/json" />
               <span data-i18n="import">Import</span>
             </label>
-            <button class="btn btn-wine fw-bold" id="new-wine-button" type="button" data-i18n="addWine">+ Add Wine</button>
+            <button class="btn btn-wine fw-bold admin-only" id="new-wine-button" type="button" data-i18n="addWine">+ Add Wine</button>
           </div>
         </header>
 
@@ -126,7 +142,7 @@
         <header class="detail-header">
           <button class="link-button" id="back-detail-button" type="button" data-i18n="back">Back</button>
           <div class="detail-actions">
-            <button class="btn btn-wine fw-bold" id="edit-detail-button" type="button" data-i18n="edit">Edit</button>
+            <button class="btn btn-wine fw-bold admin-only" id="edit-detail-button" type="button" data-i18n="edit">Edit</button>
           </div>
         </header>
         <article class="detail-panel">
@@ -154,7 +170,7 @@
               <span data-i18n="quantity">Quantity</span>
               <div class="quantity-action">
                 <strong id="detail-quantity"></strong>
-                <button class="btn btn-soft" id="drink-bottle-button" type="button" data-i18n="drankOne">Drank 1</button>
+                <button class="btn btn-soft admin-only" id="drink-bottle-button" type="button" data-i18n="drankOne">Drank 1</button>
               </div>
             </div>
             <div>
@@ -213,7 +229,7 @@
           <section class="sales-panel">
             <div class="section-title-row">
               <h2 data-i18n="sales">Sales</h2>
-              <button class="btn btn-soft" id="show-sale-form-button" type="button" data-i18n="addSale">Add Sale</button>
+              <button class="btn btn-soft admin-only" id="show-sale-form-button" type="button" data-i18n="addSale">Add Sale</button>
             </div>
             <form class="sale-form" id="sale-form" hidden>
               <label class="form-field">
@@ -364,7 +380,7 @@
           </label>
 
           <div class="form-actions span-2">
-            <button class="btn btn-danger" id="delete-button" type="button" data-i18n="delete">Delete</button>
+            <button class="btn btn-danger admin-only" id="delete-button" type="button" data-i18n="delete">Delete</button>
             <button class="btn btn-wine save-button" type="submit" data-i18n="saveOrder">Save Order</button>
           </div>
         </form>

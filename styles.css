@@ -50,6 +50,36 @@ body {
   display: block;
 }
 
+.login-screen {
+  place-content: center;
+}
+
+.login-screen.active {
+  display: grid;
+}
+
+.login-panel {
+  display: grid;
+  gap: 18px;
+  width: min(100%, 360px);
+  margin: 0 auto;
+  padding: 26px 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+
+.login-panel p {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.login-error {
+  margin: 0;
+  color: var(--wine);
+  font-weight: 800;
+}
+
 .topbar,
 .simple-header,
 .form-header {

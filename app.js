@@ -7,6 +7,8 @@ const state = {
   lang: localStorage.getItem("wine-cellar-language") || "it",
   catalog: [],
   search: "",
+  role: "anonymous",
+  authEnabled: false,
 };
 
 const translations = {
@@ -54,7 +56,11 @@ const translations = {
     import: "Import",
     importInvalid: "The selected file does not contain a valid cellar.",
     insights: "Insights",
+    invalidLogin: "Invalid password.",
     latestRates: "latest rates",
+    login: "Login",
+    loginPrompt: "Enter your password to continue.",
+    logout: "Logout",
     merchant: "Merchant",
     merchantRequired: "Merchant / Store *",
     myBottles: "My Bottles",
@@ -72,6 +78,7 @@ const translations = {
     otherOwners: "Other Owners",
     ownerName: "Owner name",
     ownership: "Ownership",
+    password: "Password",
     priceRequired: "Price per Unit *",
     producerRequired: "Producer *",
     quantity: "Quantity",
@@ -167,7 +174,11 @@ const translations = {
     import: "Importa",
     importInvalid: "Il file selezionato non contiene una cantina valida.",
     insights: "Statistiche",
+    invalidLogin: "Password non valida.",
     latestRates: "ultimi cambi",
+    login: "Accedi",
+    loginPrompt: "Inserisci la password per continuare.",
+    logout: "Esci",
     merchant: "Venditore",
     merchantRequired: "Venditore / Negozio *",
     myBottles: "Mie bottiglie",
@@ -185,6 +196,7 @@ const translations = {
     otherOwners: "Altri proprietari",
     ownerName: "Nome proprietario",
     ownership: "Proprietà",
+    password: "Password",
     priceRequired: "Prezzo unitario *",
     producerRequired: "Produttore *",
     quantity: "Quantità",
@@ -239,6 +251,7 @@ const translations = {
 };
 
 const screens = {
+  login: document.querySelector("#screen-login"),
   cellar: document.querySelector("#screen-cellar"),
   timeline: document.querySelector("#screen-timeline"),
   insights: document.querySelector("#screen-insights"),
@@ -247,6 +260,8 @@ const screens = {
 };
 
 const wineList = document.querySelector("#wine-list");
+const loginForm = document.querySelector("#login-form");
+const loginError = document.querySelector("#login-error");
 const cellarSearch = document.querySelector("#cellar-search");
 const filterToggle = document.querySelector("#filter-toggle");
 const filterPanel = document.querySelector("#filter-panel");
@@ -349,6 +364,30 @@ async function api(path, options = {}) {
 
   if (response.status === 204) return null;
   return response.json();
+}
+
+function isAdmin() {
+  return state.role === "admin";
+}
+
+function applyPermissions() {
+  document.body.dataset.role = state.role;
+  document.querySelectorAll(".admin-only").forEach((element) => {
+    element.hidden = !isAdmin();
+  });
+}
+
+async function loadSession() {
+  const session = await api("/api/session");
+  state.role = session.role;
+  state.authEnabled = session.auth_enabled;
+  applyPermissions();
+  if (session.auth_enabled && !session.authenticated) {
+    showScreen("login");
+    return;
+  }
+  await loadWines();
+  showScreen("cellar");
 }
 
 async function loadWines() {
@@ -467,11 +506,12 @@ function updateFilterCount() {
 }
 
 function showScreen(name) {
+  if (name === "form" && !isAdmin()) name = "cellar";
   Object.entries(screens).forEach(([key, screen]) => {
     screen.classList.toggle("active", key === name);
   });
 
-  bottomNav.hidden = name === "form" || name === "detail";
+  bottomNav.hidden = name === "form" || name === "detail" || name === "login";
   document.querySelectorAll(".nav-item").forEach((item) => {
     item.classList.toggle("active", item.dataset.screen === name);
   });
@@ -773,6 +813,7 @@ async function renderInsights() {
 }
 
 function openForm(wine) {
+  if (!isAdmin()) return;
   form.reset();
   ownersFormList.innerHTML = "";
   scoresFormList.innerHTML = "";
@@ -1002,6 +1043,26 @@ function escapeAttribute(value) {
   return escapeHtml(value).replaceAll("`", "&#096;");
 }
 
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  loginError.hidden = true;
+  try {
+    const session = await api("/api/login", {
+      method: "POST",
+      body: JSON.stringify({ password: loginForm.elements.password.value }),
+    });
+    state.role = session.role;
+    state.authEnabled = session.auth_enabled;
+    loginForm.reset();
+    applyPermissions();
+    await loadWines();
+    showScreen("cellar");
+  } catch {
+    loginError.textContent = t("invalidLogin");
+    loginError.hidden = false;
+  }
+});
+
 document.querySelector("#new-wine-button").addEventListener("click", () => openForm());
 wineNameInput.addEventListener("change", () => applyWineTemplate(matchingWineTemplate(wineNameInput.value)));
 wineNameInput.addEventListener("blur", () => applyWineTemplate(matchingWineTemplate(wineNameInput.value)));
@@ -1016,6 +1077,17 @@ languageButton.addEventListener("click", () => {
   state.lang = state.lang === "it" ? "en" : "it";
   localStorage.setItem("wine-cellar-language", state.lang);
   applyTranslations();
+});
+document.querySelector("#logout-button").addEventListener("click", async () => {
+  await api("/api/logout", { method: "POST" });
+  state.role = state.authEnabled ? "anonymous" : "admin";
+  state.wines = [];
+  applyPermissions();
+  if (state.authEnabled) showScreen("login");
+  else {
+    await loadWines();
+    showScreen("cellar");
+  }
 });
 cellarSearch.addEventListener("input", () => {
   state.search = cellarSearch.value;
@@ -1100,6 +1172,6 @@ wineList.addEventListener("click", (event) => {
 
 applyTranslations();
 updateFilterCount();
-loadWines().catch((error) => {
+loadSession().catch((error) => {
   wineList.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`;
 });

@@ -3,3 +3,4 @@ __pycache__/
 cellar.db
 *.log
 *.pid
+.env

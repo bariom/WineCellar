@@ -2,6 +2,13 @@
 set -eu
 
 APP_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+if [ -f "$APP_DIR/.env" ]; then
+  set -a
+  . "$APP_DIR/.env"
+  set +a
+fi
+
 PYTHON=${PYTHON:-python3}
 HOST=${HOST:-0.0.0.0}
 PORT=${PORT:-4173}
