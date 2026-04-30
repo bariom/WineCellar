@@ -1,6 +1,7 @@
 const state = {
   wines: [],
   filter: "All",
+  ownerFilter: "All",
   selectedWineId: null,
   formReturn: "cellar",
   lang: localStorage.getItem("wine-cellar-language") || "it",
@@ -64,6 +65,7 @@ const translations = {
     noScores: "No scores recorded.",
     notSpecified: "Unspecified",
     onlyDelivered: "Only delivered bottles can be marked as drunk",
+    onlyMine: "Only Mine",
     orderDate: "Order Date",
     ordered: "Ordered",
     otherOwners: "Other Owners",
@@ -98,6 +100,7 @@ const translations = {
     timeline: "Timeline",
     topRegions: "Top Regions",
     sharedPositions: "Shared Positions",
+    shared: "Shared",
     totalPositions: "Total Positions",
     totalPositionValue: "Total Position Value",
     totalCurrentPositionValue: "Total Current Position Value",
@@ -174,6 +177,7 @@ const translations = {
     noScores: "Nessun punteggio registrato.",
     notSpecified: "Non specificato",
     onlyDelivered: "Puoi segnare come bevute solo bottiglie gia in cantina",
+    onlyMine: "Solo miei",
     orderDate: "Data ordine",
     ordered: "Ordinato",
     otherOwners: "Altri proprietari",
@@ -208,6 +212,7 @@ const translations = {
     timeline: "Timeline",
     topRegions: "Regioni principali",
     sharedPositions: "Posizioni condivise",
+    shared: "Condivisi",
     totalPositions: "Posizioni totali",
     totalPositionValue: "Valore totale posizioni",
     totalCurrentPositionValue: "Valore attuale posizione totale",
@@ -441,6 +446,11 @@ function personalQuantity(wine) {
   return Number(wine.quantity || 0) * Number(wine.owner_share_pct ?? 100) / 100;
 }
 
+function isSharedWine(wine) {
+  const otherShare = (wine.owners || []).reduce((sum, owner) => sum + Number(owner.share_pct || 0), 0);
+  return Number(wine.owner_share_pct ?? 100) < 100 || otherShare > 0;
+}
+
 function unitCurrentValue(wine) {
   return Number(wine.current_value ?? wine.price ?? 0);
 }
@@ -585,6 +595,11 @@ function renderCellar() {
   const query = state.search.trim().toLowerCase();
   const wines = state.wines
     .filter((wine) => state.filter === "All" || wine.status === state.filter)
+    .filter((wine) => {
+      if (state.ownerFilter === "All") return true;
+      const shared = isSharedWine(wine);
+      return state.ownerFilter === "Shared" ? shared : !shared;
+    })
     .filter((wine) => {
       if (!query) return true;
       return [wine.name, wine.producer, wine.region, wine.appellation, wine.vintage]
@@ -1047,6 +1062,14 @@ document.querySelectorAll("[data-filter]").forEach((button) => {
   button.addEventListener("click", () => {
     state.filter = button.dataset.filter;
     document.querySelectorAll("[data-filter]").forEach((item) => item.classList.toggle("active", item === button));
+    renderCellar();
+  });
+});
+
+document.querySelectorAll("[data-owner-filter]").forEach((button) => {
+  button.addEventListener("click", () => {
+    state.ownerFilter = button.dataset.ownerFilter;
+    document.querySelectorAll("[data-owner-filter]").forEach((item) => item.classList.toggle("active", item === button));
     renderCellar();
   });
 });
