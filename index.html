@@ -32,18 +32,24 @@
 
         <div class="list-tools">
           <input class="form-control search-input" id="cellar-search" type="search" data-i18n-placeholder="searchPlaceholder" placeholder="Search wine, producer, region" />
-          <div class="filter-row" aria-label="Filtra per stato">
-            <span data-i18n="statusLabel">Status:</span>
-            <button class="status-chip active" data-filter="All" type="button" data-i18n="all">All</button>
-            <button class="status-chip" data-filter="Ordered" type="button" data-i18n="ordered">Ordered</button>
-            <button class="status-chip" data-filter="Shipped" type="button" data-i18n="shipped">Shipped</button>
-            <button class="status-chip" data-filter="Delivered" type="button" data-i18n="delivered">Delivered</button>
-          </div>
-          <div class="filter-row" aria-label="Filtra per proprieta">
-            <span data-i18n="ownership">Ownership:</span>
-            <button class="status-chip active" data-owner-filter="All" type="button" data-i18n="all">All</button>
-            <button class="status-chip" data-owner-filter="Mine" type="button" data-i18n="onlyMine">Only Mine</button>
-            <button class="status-chip" data-owner-filter="Shared" type="button" data-i18n="shared">Shared</button>
+          <button class="filter-toggle" id="filter-toggle" type="button" aria-expanded="false" aria-controls="filter-panel">
+            <span data-i18n="filters">Filters</span>
+            <span class="filter-toggle-count" id="filter-count"></span>
+          </button>
+          <div class="filter-panel" id="filter-panel" hidden>
+            <div class="filter-row" aria-label="Filtra per stato">
+              <span data-i18n="statusLabel">Status:</span>
+              <button class="status-chip active" data-filter="All" type="button" data-i18n="all">All</button>
+              <button class="status-chip" data-filter="Ordered" type="button" data-i18n="ordered">Ordered</button>
+              <button class="status-chip" data-filter="Shipped" type="button" data-i18n="shipped">Shipped</button>
+              <button class="status-chip" data-filter="Delivered" type="button" data-i18n="delivered">Delivered</button>
+            </div>
+            <div class="filter-row" aria-label="Filtra per proprieta">
+              <span data-i18n="ownership">Ownership:</span>
+              <button class="status-chip active" data-owner-filter="All" type="button" data-i18n="all">All</button>
+              <button class="status-chip" data-owner-filter="Mine" type="button" data-i18n="onlyMine">Only Mine</button>
+              <button class="status-chip" data-owner-filter="Shared" type="button" data-i18n="shared">Shared</button>
+            </div>
           </div>
         </div>
 

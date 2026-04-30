@@ -46,6 +46,7 @@ const translations = {
     expected: "Expected",
     expectedDelivery: "Expected Delivery",
     export: "Export",
+    filters: "Filters",
     format: "Format",
     formatBottle: "Bottle (750ml)",
     formatHalf: "Half (375ml)",
@@ -158,6 +159,7 @@ const translations = {
     expected: "Previsto",
     expectedDelivery: "Consegna prevista",
     export: "Esporta",
+    filters: "Filtri",
     format: "Formato",
     formatBottle: "Bottiglia (750ml)",
     formatHalf: "Mezza (375ml)",
@@ -246,6 +248,9 @@ const screens = {
 
 const wineList = document.querySelector("#wine-list");
 const cellarSearch = document.querySelector("#cellar-search");
+const filterToggle = document.querySelector("#filter-toggle");
+const filterPanel = document.querySelector("#filter-panel");
+const filterCount = document.querySelector("#filter-count");
 const timelineList = document.querySelector("#timeline-list");
 const regionList = document.querySelector("#region-list");
 const sharedRegionList = document.querySelector("#shared-region-list");
@@ -453,6 +458,12 @@ function isSharedWine(wine) {
 
 function unitCurrentValue(wine) {
   return Number(wine.current_value ?? wine.price ?? 0);
+}
+
+function updateFilterCount() {
+  const activeFilters = [state.filter !== "All", state.ownerFilter !== "All"].filter(Boolean).length;
+  filterCount.textContent = activeFilters ? String(activeFilters) : "";
+  filterCount.hidden = activeFilters === 0;
 }
 
 function showScreen(name) {
@@ -996,6 +1007,11 @@ wineNameInput.addEventListener("change", () => applyWineTemplate(matchingWineTem
 wineNameInput.addEventListener("blur", () => applyWineTemplate(matchingWineTemplate(wineNameInput.value)));
 document.querySelector("#add-owner-button").addEventListener("click", () => addOwnerRow());
 document.querySelector("#add-score-button").addEventListener("click", () => addScoreRow());
+filterToggle.addEventListener("click", () => {
+  const expanded = filterToggle.getAttribute("aria-expanded") === "true";
+  filterToggle.setAttribute("aria-expanded", String(!expanded));
+  filterPanel.hidden = expanded;
+});
 languageButton.addEventListener("click", () => {
   state.lang = state.lang === "it" ? "en" : "it";
   localStorage.setItem("wine-cellar-language", state.lang);
@@ -1062,6 +1078,7 @@ document.querySelectorAll("[data-filter]").forEach((button) => {
   button.addEventListener("click", () => {
     state.filter = button.dataset.filter;
     document.querySelectorAll("[data-filter]").forEach((item) => item.classList.toggle("active", item === button));
+    updateFilterCount();
     renderCellar();
   });
 });
@@ -1070,6 +1087,7 @@ document.querySelectorAll("[data-owner-filter]").forEach((button) => {
   button.addEventListener("click", () => {
     state.ownerFilter = button.dataset.ownerFilter;
     document.querySelectorAll("[data-owner-filter]").forEach((item) => item.classList.toggle("active", item === button));
+    updateFilterCount();
     renderCellar();
   });
 });
@@ -1081,6 +1099,7 @@ wineList.addEventListener("click", (event) => {
 });
 
 applyTranslations();
+updateFilterCount();
 loadWines().catch((error) => {
   wineList.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`;
 });
