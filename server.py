@@ -147,7 +147,7 @@ SEED_WINES = [
     },
 ]
 
-CATALOG_VERSION = 3
+CATALOG_VERSION = 4
 CATALOG_WINES = [
     {"name": "Chateau Lafite Rothschild", "producer": "Chateau Lafite Rothschild", "region": "Bordeaux", "appellation": "Pauillac", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Chateau Latour", "producer": "Chateau Latour", "region": "Bordeaux", "appellation": "Pauillac", "type": "Red", "format": "Bottle (750ml)"},
@@ -160,8 +160,11 @@ CATALOG_WINES = [
     {"name": "Sassicaia", "producer": "Tenuta San Guido", "region": "Tuscany", "appellation": "Bolgheri Sassicaia", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Tignanello", "producer": "Marchesi Antinori", "region": "Tuscany", "appellation": "Toscana IGT", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Solaia", "producer": "Marchesi Antinori", "region": "Tuscany", "appellation": "Toscana IGT", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Guado al Tasso", "producer": "Tenuta Guado al Tasso", "region": "Tuscany", "appellation": "Bolgheri Superiore", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Ornellaia", "producer": "Tenuta dell'Ornellaia", "region": "Tuscany", "appellation": "Bolgheri Superiore", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Masseto", "producer": "Masseto", "region": "Tuscany", "appellation": "Toscana IGT", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Biserno", "producer": "Tenuta di Biserno", "region": "Tuscany", "appellation": "Toscana IGT", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Lodovico", "producer": "Tenuta di Biserno", "region": "Tuscany", "appellation": "Toscana IGT", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Barolo Monfortino", "producer": "Giacomo Conterno", "region": "Piedmont", "appellation": "Barolo", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Sori San Lorenzo", "producer": "Gaja", "region": "Piedmont", "appellation": "Langhe", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Montrachet Grand Cru", "producer": "Domaine Leflaive", "region": "Burgundy", "appellation": "Montrachet", "type": "White", "format": "Bottle (750ml)"},
@@ -222,6 +225,21 @@ CATALOG_WINES = [
     {"name": "Flaccianello della Pieve", "producer": "Fontodi", "region": "Tuscany", "appellation": "Toscana IGT", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Redigaffi", "producer": "Tua Rita", "region": "Tuscany", "appellation": "Toscana IGT", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Messorio", "producer": "Le Macchiole", "region": "Tuscany", "appellation": "Toscana IGT", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Paleo Rosso", "producer": "Le Macchiole", "region": "Tuscany", "appellation": "Toscana IGT", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Scrio", "producer": "Le Macchiole", "region": "Tuscany", "appellation": "Toscana IGT", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Saffredi", "producer": "Fattoria Le Pupille", "region": "Tuscany", "appellation": "Maremma Toscana", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Galatrona", "producer": "Petrolo", "region": "Tuscany", "appellation": "Val d'Arno di Sopra", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Cepparello", "producer": "Isole e Olena", "region": "Tuscany", "appellation": "Toscana IGT", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Fontalloro", "producer": "Felsina", "region": "Tuscany", "appellation": "Toscana IGT", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Camartina", "producer": "Querciabella", "region": "Tuscany", "appellation": "Toscana IGT", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "L'Apparita", "producer": "Castello di Ama", "region": "Tuscany", "appellation": "Toscana IGT", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Chianti Classico Gran Selezione Vigna del Sorbo", "producer": "Fontodi", "region": "Tuscany", "appellation": "Chianti Classico", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Chianti Classico Gran Selezione San Lorenzo", "producer": "Castello di Ama", "region": "Tuscany", "appellation": "Chianti Classico", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Brunello di Montalcino Madonna delle Grazie", "producer": "Il Marroneto", "region": "Tuscany", "appellation": "Brunello di Montalcino", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Brunello di Montalcino Tenuta Nuova", "producer": "Casanova di Neri", "region": "Tuscany", "appellation": "Brunello di Montalcino", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Brunello di Montalcino Riserva Poggio al Vento", "producer": "Col d'Orcia", "region": "Tuscany", "appellation": "Brunello di Montalcino", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Brunello di Montalcino Sugarille", "producer": "Pieve Santa Restituta", "region": "Tuscany", "appellation": "Brunello di Montalcino", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Brunello di Montalcino Vigna Schiena d'Asino", "producer": "Mastrojanni", "region": "Tuscany", "appellation": "Brunello di Montalcino", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Amarone della Valpolicella Monte Lodoletta", "producer": "Dal Forno Romano", "region": "Veneto", "appellation": "Amarone della Valpolicella", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Amarone della Valpolicella", "producer": "Giuseppe Quintarelli", "region": "Veneto", "appellation": "Amarone della Valpolicella", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Montepulciano d'Abruzzo", "producer": "Emidio Pepe", "region": "Abruzzo", "appellation": "Montepulciano d'Abruzzo", "type": "Red", "format": "Bottle (750ml)"},
