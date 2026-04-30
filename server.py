@@ -656,6 +656,7 @@ def convert_to_chf(amount: float, currency: str, rates: dict) -> float:
 def get_summary() -> dict:
     wines = list_wines()
     rates = get_rates()
+    shared_wines = [wine for wine in wines if is_shared_position(wine)]
     total_chf = sum(
         convert_to_chf(personal_position_value(wine), wine["currency"], rates)
         for wine in wines
@@ -672,16 +673,30 @@ def get_summary() -> dict:
         convert_to_chf(unit_current_value(wine) * int(wine["quantity"] or 0), wine["currency"], rates)
         for wine in wines
     )
+    shared_total_chf = sum(
+        convert_to_chf(float(wine["price"] or 0) * int(wine["quantity"] or 0), wine["currency"], rates)
+        for wine in shared_wines
+    )
+    shared_current_chf = sum(
+        convert_to_chf(unit_current_value(wine) * int(wine["quantity"] or 0), wine["currency"], rates)
+        for wine in shared_wines
+    )
     cellar = sum(personal_quantity(wine) for wine in wines if wine["status"] == "Delivered")
     ordered = sum(personal_quantity(wine) for wine in wines if wine["status"] != "Delivered")
     gross_cellar = sum(int(wine["quantity"] or 0) for wine in wines if wine["status"] == "Delivered")
     gross_ordered = sum(int(wine["quantity"] or 0) for wine in wines if wine["status"] != "Delivered")
+    shared_cellar = sum(int(wine["quantity"] or 0) for wine in shared_wines if wine["status"] == "Delivered")
+    shared_ordered = sum(int(wine["quantity"] or 0) for wine in shared_wines if wine["status"] != "Delivered")
     regions: dict[str, float] = {}
+    shared_regions: dict[str, int] = {}
     gross_regions: dict[str, int] = {}
     for wine in wines:
         region = wine["region"] or "Unspecified"
         regions[region] = regions.get(region, 0) + personal_quantity(wine)
         gross_regions[region] = gross_regions.get(region, 0) + int(wine["quantity"] or 0)
+    for wine in shared_wines:
+        region = wine["region"] or "Unspecified"
+        shared_regions[region] = shared_regions.get(region, 0) + int(wine["quantity"] or 0)
 
     return {
         "reference_currency": REFERENCE_CURRENCY,
@@ -695,9 +710,18 @@ def get_summary() -> dict:
         "gross_unrealized_gain_loss": round(gross_current_chf - gross_total_chf, 2),
         "gross_cellar_bottles": gross_cellar,
         "gross_ordered_bottles": gross_ordered,
+        "shared_total_value": round(shared_total_chf, 2),
+        "shared_current_value": round(shared_current_chf, 2),
+        "shared_unrealized_gain_loss": round(shared_current_chf - shared_total_chf, 2),
+        "shared_cellar_bottles": shared_cellar,
+        "shared_ordered_bottles": shared_ordered,
         "regions": [
             {"region": region, "bottles": bottles}
             for region, bottles in sorted(regions.items(), key=lambda item: item[1], reverse=True)[:5]
+        ],
+        "shared_regions": [
+            {"region": region, "bottles": bottles}
+            for region, bottles in sorted(shared_regions.items(), key=lambda item: item[1], reverse=True)[:5]
         ],
         "gross_regions": [
             {"region": region, "bottles": bottles}
@@ -810,6 +834,11 @@ def unit_current_value(wine: dict) -> float:
 
 def personal_current_value(wine: dict) -> float:
     return unit_current_value(wine) * personal_quantity(wine)
+
+
+def is_shared_position(wine: dict) -> bool:
+    other_share = sum(float(owner.get("share_pct", 0) or 0) for owner in wine.get("owners", []))
+    return float(wine.get("owner_share_pct", 100) or 0) < 100 or other_share > 0
 
 
 def get_wine(conn: sqlite3.Connection, wine_id: str) -> dict | None:

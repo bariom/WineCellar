@@ -98,6 +98,7 @@ const translations = {
     timeline: "Timeline",
     topRegions: "Top Regions",
     sharedPositions: "Shared Positions",
+    totalPositions: "Total Positions",
     totalPositionValue: "Total Position Value",
     totalCurrentPositionValue: "Total Current Position Value",
     totalPositionCost: "Total Position Cost",
@@ -105,6 +106,7 @@ const translations = {
     totalBottlesOnOrder: "Total Bottles On Order",
     totalInvested: "Total Invested",
     grossCurrentValue: "Current Total Value",
+    topRegionsShared: "Top Regions - Shared",
     topRegionsAll: "Top Regions - All Owners",
     type: "Type",
     unableBottleCount: "Unable to update bottle count: {error}",
@@ -206,6 +208,7 @@ const translations = {
     timeline: "Timeline",
     topRegions: "Regioni principali",
     sharedPositions: "Posizioni condivise",
+    totalPositions: "Posizioni totali",
     totalPositionValue: "Valore totale posizioni",
     totalCurrentPositionValue: "Valore attuale posizione totale",
     totalPositionCost: "Costo posizione totale",
@@ -213,6 +216,7 @@ const translations = {
     totalBottlesOnOrder: "Bottiglie totali ordinate",
     totalInvested: "Totale investito",
     grossCurrentValue: "Valore attuale totale",
+    topRegionsShared: "Regioni principali - condivise",
     topRegionsAll: "Regioni principali - tutti",
     type: "Tipo",
     unableBottleCount: "Impossibile aggiornare il numero di bottiglie: {error}",
@@ -239,6 +243,7 @@ const wineList = document.querySelector("#wine-list");
 const cellarSearch = document.querySelector("#cellar-search");
 const timelineList = document.querySelector("#timeline-list");
 const regionList = document.querySelector("#region-list");
+const sharedRegionList = document.querySelector("#shared-region-list");
 const grossRegionList = document.querySelector("#gross-region-list");
 const form = document.querySelector("#wine-form");
 const deleteButton = document.querySelector("#delete-button");
@@ -669,6 +674,20 @@ async function renderInsights() {
       summary.unrealized_gain_loss,
       summary.reference_currency,
     );
+    document.querySelector("#shared-total-value").textContent = formatMoney(
+      summary.shared_total_value,
+      summary.reference_currency,
+    );
+    document.querySelector("#shared-current-value").textContent = formatMoney(
+      summary.shared_current_value,
+      summary.reference_currency,
+    );
+    document.querySelector("#shared-unrealized-gain-loss").textContent = formatMoney(
+      summary.shared_unrealized_gain_loss,
+      summary.reference_currency,
+    );
+    document.querySelector("#shared-cellar-bottles").textContent = formatNumber(summary.shared_cellar_bottles);
+    document.querySelector("#shared-ordered-bottles").textContent = formatNumber(summary.shared_ordered_bottles);
     document.querySelector("#gross-total-value").textContent = formatMoney(
       summary.gross_total_value,
       summary.reference_currency,
@@ -685,6 +704,17 @@ async function renderInsights() {
     document.querySelector("#gross-ordered-bottles").textContent = formatNumber(summary.gross_ordered_bottles);
 
     regionList.innerHTML = summary.regions
+      .map(
+        (item) => `
+          <div class="region-row">
+            <span>${escapeHtml(item.region)}</span>
+            <strong>${formatNumber(item.bottles)} btl</strong>
+          </div>
+        `,
+      )
+      .join("");
+
+    sharedRegionList.innerHTML = summary.shared_regions
       .map(
         (item) => `
           <div class="region-row">

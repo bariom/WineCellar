@@ -58,7 +58,8 @@
         <div class="insights">
           <div class="segmented-tabs" role="tablist" aria-label="Insights scope">
             <button class="insight-tab active" data-insight-tab="mine" type="button" data-i18n="myShare">My Share</button>
-            <button class="insight-tab" data-insight-tab="total" type="button" data-i18n="sharedPositions">Shared Positions</button>
+            <button class="insight-tab" data-insight-tab="shared" type="button" data-i18n="sharedPositions">Shared Positions</button>
+            <button class="insight-tab" data-insight-tab="total" type="button" data-i18n="totalPositions">Total Positions</button>
           </div>
           <section class="insight-panel active" id="insight-mine">
             <h2 data-i18n="cellarValue">Cellar Value</h2>
@@ -75,8 +76,23 @@
             <h2 data-i18n="topRegions">Top Regions</h2>
             <div class="region-list" id="region-list"></div>
           </section>
-          <section class="insight-panel" id="insight-total">
+          <section class="insight-panel" id="insight-shared">
             <h2 data-i18n="sharedPositions">Shared Positions</h2>
+            <article class="value-card secondary-value">
+              <span data-i18n="totalPositionValue">Total Position Value</span>
+              <strong id="shared-total-value">CHF 0</strong>
+            </article>
+            <div class="row g-3 mt-1">
+              <div class="col-6"><article class="metric-card"><strong id="shared-current-value">CHF 0</strong><span data-i18n="grossCurrentValue">Current Total Value</span></article></div>
+              <div class="col-6"><article class="metric-card"><strong id="shared-unrealized-gain-loss">CHF 0</strong><span data-i18n="unrealizedGainLoss">Unrealized P/L</span></article></div>
+              <div class="col-6"><article class="metric-card"><strong id="shared-cellar-bottles">0</strong><span data-i18n="totalBottlesInCellar">Total Bottles In Cellar</span></article></div>
+              <div class="col-6"><article class="metric-card"><strong id="shared-ordered-bottles">0</strong><span data-i18n="totalBottlesOnOrder">Total Bottles On Order</span></article></div>
+            </div>
+            <h2 data-i18n="topRegionsShared">Top Regions - Shared</h2>
+            <div class="region-list" id="shared-region-list"></div>
+          </section>
+          <section class="insight-panel" id="insight-total">
+            <h2 data-i18n="totalPositions">Total Positions</h2>
             <article class="value-card secondary-value">
               <span data-i18n="totalPositionValue">Total Position Value</span>
               <strong id="gross-total-value">CHF 0</strong>
