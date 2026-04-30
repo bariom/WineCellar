@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#74171b" />
+    <title>Cellar</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="screen active" id="screen-cellar" aria-labelledby="cellar-title">
+        <header class="topbar">
+          <h1 id="cellar-title" data-i18n="cellar">Cellar</h1>
+          <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-soft icon-button" id="language-button" type="button" aria-label="Language">IT</button>
+            <button class="btn btn-soft icon-button" id="export-button" type="button" aria-label="Export data" data-i18n="export">Export</button>
+            <label class="btn btn-soft icon-button mb-0" aria-label="Import data">
+              <input id="import-input" type="file" accept="application/json" />
+              <span data-i18n="import">Import</span>
+            </label>
+            <button class="btn btn-wine fw-bold" id="new-wine-button" type="button" data-i18n="addWine">+ Add Wine</button>
+          </div>
+        </header>
+
+        <div class="list-tools">
+          <input class="form-control search-input" id="cellar-search" type="search" data-i18n-placeholder="searchPlaceholder" placeholder="Search wine, producer, region" />
+          <div class="filter-row" aria-label="Filtra per stato">
+            <span data-i18n="statusLabel">Status:</span>
+            <button class="status-chip active" data-filter="All" type="button" data-i18n="all">All</button>
+            <button class="status-chip" data-filter="Ordered" type="button" data-i18n="ordered">Ordered</button>
+            <button class="status-chip" data-filter="Shipped" type="button" data-i18n="shipped">Shipped</button>
+            <button class="status-chip" data-filter="Delivered" type="button" data-i18n="delivered">Delivered</button>
+          </div>
+        </div>
+
+        <div class="content-list" id="wine-list"></div>
+      </section>
+
+      <section class="screen" id="screen-timeline" aria-labelledby="timeline-title">
+        <header class="simple-header">
+          <h1 id="timeline-title" data-i18n="timeline">Timeline</h1>
+        </header>
+        <div class="timeline" id="timeline-list"></div>
+      </section>
+
+      <section class="screen" id="screen-insights" aria-labelledby="insights-title">
+        <header class="simple-header">
+          <h1 id="insights-title" data-i18n="insights">Insights</h1>
+        </header>
+        <div class="insights">
+          <div class="segmented-tabs" role="tablist" aria-label="Insights scope">
+            <button class="insight-tab active" data-insight-tab="mine" type="button" data-i18n="myShare">My Share</button>
+            <button class="insight-tab" data-insight-tab="total" type="button" data-i18n="sharedPositions">Shared Positions</button>
+          </div>
+          <section class="insight-panel active" id="insight-mine">
+            <h2 data-i18n="cellarValue">Cellar Value</h2>
+            <article class="value-card">
+              <span data-i18n="totalInvested">Total Invested</span>
+              <strong id="total-invested">CHF 0</strong>
+            </article>
+            <div class="row g-3 mt-1">
+              <div class="col-6"><article class="metric-card"><strong id="current-value">CHF 0</strong><span data-i18n="currentValue">Current Value</span></article></div>
+              <div class="col-6"><article class="metric-card"><strong id="unrealized-gain-loss">CHF 0</strong><span data-i18n="unrealizedGainLoss">Unrealized P/L</span></article></div>
+              <div class="col-6"><article class="metric-card"><strong id="cellar-bottles">0</strong><span data-i18n="bottlesInCellar">Bottles In Cellar</span></article></div>
+              <div class="col-6"><article class="metric-card"><strong id="ordered-bottles">0</strong><span data-i18n="bottlesOnOrder">Bottles On Order</span></article></div>
+            </div>
+            <h2 data-i18n="topRegions">Top Regions</h2>
+            <div class="region-list" id="region-list"></div>
+          </section>
+          <section class="insight-panel" id="insight-total">
+            <h2 data-i18n="sharedPositions">Shared Positions</h2>
+            <article class="value-card secondary-value">
+              <span data-i18n="totalPositionValue">Total Position Value</span>
+              <strong id="gross-total-value">CHF 0</strong>
+            </article>
+            <div class="row g-3 mt-1">
+              <div class="col-6"><article class="metric-card"><strong id="gross-current-value">CHF 0</strong><span data-i18n="grossCurrentValue">Current Total Value</span></article></div>
+              <div class="col-6"><article class="metric-card"><strong id="gross-unrealized-gain-loss">CHF 0</strong><span data-i18n="unrealizedGainLoss">Unrealized P/L</span></article></div>
+              <div class="col-6"><article class="metric-card"><strong id="gross-cellar-bottles">0</strong><span data-i18n="totalBottlesInCellar">Total Bottles In Cellar</span></article></div>
+              <div class="col-6"><article class="metric-card"><strong id="gross-ordered-bottles">0</strong><span data-i18n="totalBottlesOnOrder">Total Bottles On Order</span></article></div>
+            </div>
+            <h2 data-i18n="topRegionsAll">Top Regions - All Owners</h2>
+            <div class="region-list" id="gross-region-list"></div>
+          </section>
+          <p class="rates-note" id="rates-note"></p>
+        </div>
+      </section>
+
+      <section class="screen detail-screen" id="screen-detail" aria-labelledby="detail-title">
+        <header class="detail-header">
+          <button class="link-button" id="back-detail-button" type="button" data-i18n="back">Back</button>
+          <div class="detail-actions">
+            <button class="btn btn-wine fw-bold" id="edit-detail-button" type="button" data-i18n="edit">Edit</button>
+          </div>
+        </header>
+        <article class="detail-panel">
+          <div class="detail-title-row">
+            <div>
+              <h1 id="detail-title">Wine</h1>
+              <p id="detail-producer"></p>
+            </div>
+            <span class="vintage" id="detail-vintage"></span>
+          </div>
+          <div class="detail-status-row">
+            <span class="status-pill" id="detail-status"></span>
+          </div>
+          <section class="values-panel">
+            <h2 data-i18n="values">Values</h2>
+            <div class="values-grid">
+              <article><span data-i18n="myCost">My Cost</span><strong id="detail-position-value"></strong></article>
+              <article><span data-i18n="currentPositionValue">Current Position Value</span><strong id="detail-current-position-value"></strong></article>
+              <article><span data-i18n="totalPositionCost">Total Position Cost</span><strong id="detail-total-position-cost"></strong></article>
+              <article><span data-i18n="totalCurrentPositionValue">Total Current Position Value</span><strong id="detail-total-current-position-value"></strong></article>
+            </div>
+          </section>
+          <div class="detail-grid">
+            <div>
+              <span data-i18n="quantity">Quantity</span>
+              <div class="quantity-action">
+                <strong id="detail-quantity"></strong>
+                <button class="btn btn-soft" id="drink-bottle-button" type="button" data-i18n="drankOne">Drank 1</button>
+              </div>
+            </div>
+            <div>
+              <span data-i18n="unitPrice">Unit Price</span>
+              <strong id="detail-unit-price"></strong>
+            </div>
+            <div>
+              <span data-i18n="currentUnitValue">Current Unit Value</span>
+              <strong id="detail-current-unit-value"></strong>
+            </div>
+            <div>
+              <span data-i18n="myShare">My Share</span>
+              <strong id="detail-owner-share"></strong>
+            </div>
+            <div>
+              <span data-i18n="myBottles">My Bottles</span>
+              <strong id="detail-owned-quantity"></strong>
+            </div>
+            <div>
+              <span data-i18n="format">Format</span>
+              <strong id="detail-format"></strong>
+            </div>
+            <div>
+              <span data-i18n="type">Type</span>
+              <strong id="detail-type"></strong>
+            </div>
+            <div>
+              <span data-i18n="merchant">Merchant</span>
+              <strong id="detail-merchant"></strong>
+            </div>
+            <div>
+              <span data-i18n="region">Region</span>
+              <strong id="detail-region"></strong>
+            </div>
+            <div>
+              <span data-i18n="appellation">Appellation</span>
+              <strong id="detail-appellation"></strong>
+            </div>
+            <div>
+              <span data-i18n="orderDate">Order Date</span>
+              <strong id="detail-order-date"></strong>
+            </div>
+            <div>
+              <span data-i18n="expectedDelivery">Expected Delivery</span>
+              <strong id="detail-expected-delivery"></strong>
+            </div>
+          </div>
+          <section class="owners-panel">
+            <h2 data-i18n="ownership">Ownership</h2>
+            <div class="owner-list" id="detail-owner-list"></div>
+          </section>
+          <section class="scores-panel">
+            <h2 data-i18n="scores">Scores</h2>
+            <div class="score-list" id="detail-score-list"></div>
+          </section>
+          <section class="sales-panel">
+            <div class="section-title-row">
+              <h2 data-i18n="sales">Sales</h2>
+              <button class="btn btn-soft" id="show-sale-form-button" type="button" data-i18n="addSale">Add Sale</button>
+            </div>
+            <form class="sale-form" id="sale-form" hidden>
+              <label class="form-field">
+                <span data-i18n="quantity">Quantity</span>
+                <input class="form-control" id="sale-quantity" name="quantity" type="number" min="1" inputmode="numeric" required />
+              </label>
+              <label class="form-field">
+                <span data-i18n="salePrice">Sale Price</span>
+                <input class="form-control" id="sale-price" name="sale_price" type="number" min="0" step="0.01" inputmode="decimal" required />
+              </label>
+              <label class="form-field">
+                <span data-i18n="currency">Currency</span>
+                <select class="form-select" id="sale-currency" name="currency">
+                  <option>CHF</option>
+                  <option>EUR</option>
+                  <option>USD</option>
+                </select>
+              </label>
+              <label class="form-field sale-buyer">
+                <span data-i18n="buyer">Buyer</span>
+                <input class="form-control" id="sale-buyer" name="buyer" required />
+              </label>
+              <div class="sale-actions">
+                <button class="btn btn-soft" id="cancel-sale-button" type="button" data-i18n="cancel">Cancel</button>
+                <button class="btn btn-wine" type="submit" data-i18n="saveSale">Save Sale</button>
+              </div>
+            </form>
+            <div class="sale-list" id="sale-list"></div>
+          </section>
+        </article>
+      </section>
+
+      <section class="screen form-screen" id="screen-form" aria-labelledby="form-title">
+        <header class="form-header">
+          <button class="link-button" id="cancel-form-button" type="button" data-i18n="cancel">Cancel</button>
+          <h1 id="form-title">New Order</h1>
+        </header>
+        <form id="wine-form" class="wine-form">
+          <input id="wine-id" name="id" type="hidden" />
+
+          <label class="form-field span-2">
+            <span data-i18n="wineNameRequired">Wine Name *</span>
+            <input class="form-control" id="name" name="name" list="wine-name-suggestions" autocomplete="off" required />
+            <datalist id="wine-name-suggestions"></datalist>
+          </label>
+
+          <label class="form-field">
+            <span data-i18n="vintageRequired">Vintage *</span>
+            <input class="form-control" id="vintage" name="vintage" inputmode="numeric" required />
+          </label>
+          <label class="form-field">
+            <span data-i18n="producerRequired">Producer *</span>
+            <input class="form-control" id="producer" name="producer" required />
+          </label>
+
+          <label class="form-field">
+            <span data-i18n="region">Region</span>
+            <input class="form-control" id="region" name="region" />
+          </label>
+          <label class="form-field">
+            <span data-i18n="appellation">Appellation</span>
+            <input class="form-control" id="appellation" name="appellation" />
+          </label>
+
+          <fieldset class="choice-row span-2">
+            <legend data-i18n="format">Format</legend>
+            <input class="btn-check" type="radio" name="format" id="format-half" value="Half (375ml)" />
+            <label class="btn btn-outline-wine" for="format-half" data-i18n="formatHalf">Half (375ml)</label>
+            <input class="btn-check" type="radio" name="format" id="format-bottle" value="Bottle (750ml)" checked />
+            <label class="btn btn-outline-wine" for="format-bottle" data-i18n="formatBottle">Bottle (750ml)</label>
+            <input class="btn-check" type="radio" name="format" id="format-magnum" value="Magnum (1.5L)" />
+            <label class="btn btn-outline-wine" for="format-magnum" data-i18n="formatMagnum">Magnum (1.5L)</label>
+          </fieldset>
+
+          <fieldset class="choice-row span-2 scrollable">
+            <legend data-i18n="color">Color</legend>
+            <input class="btn-check" type="radio" name="type" id="type-red" value="Red" checked />
+            <label class="btn btn-outline-wine" for="type-red" data-i18n="red">Red</label>
+            <input class="btn-check" type="radio" name="type" id="type-white" value="White" />
+            <label class="btn btn-outline-wine" for="type-white" data-i18n="white">White</label>
+            <input class="btn-check" type="radio" name="type" id="type-rose" value="Rose" />
+            <label class="btn btn-outline-wine" for="type-rose" data-i18n="rose">Rose</label>
+            <input class="btn-check" type="radio" name="type" id="type-sparkling" value="Sparkling" />
+            <label class="btn btn-outline-wine" for="type-sparkling" data-i18n="sparkling">Sparkling</label>
+            <input class="btn-check" type="radio" name="type" id="type-dessert" value="Dessert" />
+            <label class="btn btn-outline-wine" for="type-dessert" data-i18n="dessert">Dessert</label>
+          </fieldset>
+
+          <label class="form-field">
+            <span data-i18n="quantityRequired">Quantity *</span>
+            <input class="form-control" id="quantity" name="quantity" inputmode="numeric" min="1" type="number" required />
+          </label>
+          <label class="form-field">
+            <span data-i18n="priceRequired">Price per Unit *</span>
+            <input class="form-control" id="price" name="price" inputmode="decimal" min="0" step="0.01" type="number" required />
+          </label>
+          <label class="form-field">
+            <span data-i18n="currentValuePerUnit">Current Value per Unit</span>
+            <input class="form-control" id="current_value" name="current_value" inputmode="decimal" min="0" step="0.01" type="number" />
+          </label>
+
+          <label class="form-field">
+            <span data-i18n="currency">Currency</span>
+            <select class="form-select" id="currency" name="currency">
+              <option>CHF</option>
+              <option>EUR</option>
+              <option>USD</option>
+            </select>
+          </label>
+          <label class="form-field">
+            <span data-i18n="status">Status</span>
+            <select class="form-select" id="status" name="status">
+              <option value="Ordered" data-i18n="ordered">Ordered</option>
+              <option value="Shipped" data-i18n="shipped">Shipped</option>
+              <option value="Delivered" data-i18n="delivered">Delivered</option>
+            </select>
+          </label>
+
+          <label class="form-field span-2">
+            <span data-i18n="myOwnershipPct">My Ownership %</span>
+            <input class="form-control" id="owner_share_pct" name="owner_share_pct" inputmode="decimal" min="0" max="100" step="0.01" type="number" />
+          </label>
+
+          <fieldset class="owners-editor span-2">
+            <legend data-i18n="otherOwners">Other Owners</legend>
+            <div id="owners-form-list"></div>
+            <button class="btn btn-soft" id="add-owner-button" type="button" data-i18n="addOwner">Add Owner</button>
+          </fieldset>
+
+          <fieldset class="scores-editor span-2">
+            <legend data-i18n="scores">Scores</legend>
+            <div id="scores-form-list"></div>
+            <button class="btn btn-soft" id="add-score-button" type="button" data-i18n="addScore">Add Score</button>
+          </fieldset>
+
+          <label class="form-field span-2">
+            <span data-i18n="merchantRequired">Merchant / Store *</span>
+            <input class="form-control" id="merchant" name="merchant" required />
+          </label>
+
+          <label class="form-field">
+            <span data-i18n="orderDate">Order Date</span>
+            <input class="form-control" id="order_date" name="order_date" type="date" />
+          </label>
+          <label class="form-field">
+            <span data-i18n="expectedDelivery">Expected Delivery</span>
+            <input class="form-control" id="expected_delivery" name="expected_delivery" type="date" />
+          </label>
+
+          <div class="form-actions span-2">
+            <button class="btn btn-danger" id="delete-button" type="button" data-i18n="delete">Delete</button>
+            <button class="btn btn-wine save-button" type="submit" data-i18n="saveOrder">Save Order</button>
+          </div>
+        </form>
+      </section>
+
+      <nav class="bottom-nav" aria-label="Navigazione principale">
+        <button class="nav-item active" data-screen="cellar" type="button">
+          <span aria-hidden="true" data-i18n="cellar">Cellar</span>
+        </button>
+        <button class="nav-item" data-screen="timeline" type="button">
+          <span aria-hidden="true" data-i18n="timeline">Timeline</span>
+        </button>
+        <button class="nav-item" data-screen="insights" type="button">
+          <span aria-hidden="true" data-i18n="insights">Insights</span>
+        </button>
+      </nav>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
