@@ -24,7 +24,8 @@ REFERENCE_CURRENCY = "CHF"
 SUPPORTED_CURRENCIES = {"CHF", "EUR", "USD"}
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 VIEWER_PASSWORD = os.environ.get("VIEWER_PASSWORD", "")
-AUTH_ENABLED = bool(ADMIN_PASSWORD and VIEWER_PASSWORD)
+SHARED_VIEWER_PASSWORD = os.environ.get("SHARED_VIEWER_PASSWORD", "")
+AUTH_ENABLED = bool(ADMIN_PASSWORD and (VIEWER_PASSWORD or SHARED_VIEWER_PASSWORD))
 SESSION_COOKIE = "wine_cellar_session"
 SESSIONS: dict[str, str] = {}
 
@@ -527,8 +528,20 @@ def list_wines() -> list[dict]:
     return wines
 
 
-def list_sales(wine_id: str) -> list[dict]:
+def visible_wines(role: str) -> list[dict]:
+    wines = list_wines()
+    if role == "shared_viewer":
+        return [wine for wine in wines if is_shared_position(wine)]
+    return wines
+
+
+def list_sales(wine_id: str, role: str = "admin") -> list[dict]:
     with connect() as conn:
+        wine = get_wine(conn, wine_id)
+        if not wine:
+            raise LookupError("Wine not found")
+        if role == "shared_viewer" and not is_shared_position(wine):
+            raise LookupError("Wine not found")
         rows = conn.execute(
             """
             SELECT id, wine_id, quantity, sale_price, currency, buyer, sold_at, unit_cost, profit_loss
@@ -661,8 +674,8 @@ def convert_to_chf(amount: float, currency: str, rates: dict) -> float:
     return amount * rate
 
 
-def get_summary() -> dict:
-    wines = list_wines()
+def get_summary(role: str = "admin") -> dict:
+    wines = visible_wines(role)
     rates = get_rates()
     shared_wines = [wine for wine in wines if is_shared_position(wine)]
     total_chf = sum(
@@ -1048,7 +1061,7 @@ class CellarHandler(SimpleHTTPRequestHandler):
         if path.startswith("/api/") and not self.require_authenticated():
             return
         if path == "/api/wines":
-            self.send_json(list_wines())
+            self.send_json(visible_wines(self.current_role()))
             return
         if path == "/api/wine-catalog":
             self.send_json(list_catalog_wines())
@@ -1066,11 +1079,14 @@ class CellarHandler(SimpleHTTPRequestHandler):
             return
         if path.startswith("/api/wines/") and path.endswith("/sales"):
             wine_id = unquote(path.removeprefix("/api/wines/").removesuffix("/sales"))
-            self.send_json(list_sales(wine_id))
+            try:
+                self.send_json(list_sales(wine_id, self.current_role()))
+            except LookupError as exc:
+                self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
             return
         if path == "/api/summary":
             try:
-                self.send_json(get_summary())
+                self.send_json(get_summary(self.current_role()))
             except ValueError as exc:
                 self.send_json({"error": str(exc)}, HTTPStatus.BAD_GATEWAY)
             return
@@ -1187,8 +1203,10 @@ class CellarHandler(SimpleHTTPRequestHandler):
         role = ""
         if password == ADMIN_PASSWORD:
             role = "admin"
-        elif password == VIEWER_PASSWORD:
+        elif VIEWER_PASSWORD and password == VIEWER_PASSWORD:
             role = "viewer"
+        elif SHARED_VIEWER_PASSWORD and password == SHARED_VIEWER_PASSWORD:
+            role = "shared_viewer"
         if not role:
             self.send_json({"error": "Invalid password"}, HTTPStatus.UNAUTHORIZED)
             return

@@ -370,11 +370,31 @@ function isAdmin() {
   return state.role === "admin";
 }
 
+function isSharedViewer() {
+  return state.role === "shared_viewer";
+}
+
 function applyPermissions() {
   document.body.dataset.role = state.role;
   document.querySelectorAll(".admin-only").forEach((element) => {
     element.hidden = !isAdmin();
   });
+  const ownershipFilterRow = document.querySelector("#ownership-filter-row");
+  if (ownershipFilterRow) ownershipFilterRow.hidden = isSharedViewer();
+  document.querySelectorAll("[data-insight-tab]").forEach((button) => {
+    button.hidden = isSharedViewer() && button.dataset.insightTab !== "shared";
+    button.classList.toggle("active", isSharedViewer() ? button.dataset.insightTab === "shared" : button.dataset.insightTab === "mine");
+  });
+  document.querySelectorAll(".insight-panel").forEach((panel) => {
+    panel.classList.toggle("active", isSharedViewer() ? panel.id === "insight-shared" : panel.id === "insight-mine");
+  });
+  if (isSharedViewer()) {
+    state.ownerFilter = "All";
+    document.querySelectorAll("[data-owner-filter]").forEach((item) => {
+      item.classList.toggle("active", item.dataset.ownerFilter === "All");
+    });
+  }
+  updateFilterCount();
 }
 
 async function loadSession() {

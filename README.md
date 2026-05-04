@@ -21,7 +21,7 @@ L'app usa un frontend HTML/CSS/JavaScript e un backend Python basato sulla libre
 - Filtri in cantina per stato e proprieta, con pannello collassabile.
 - Import/export JSON.
 - Interfaccia disponibile in italiano e inglese.
-- Modalita admin/viewer: chi consulta puo vedere i dati senza modificarli.
+- Modalita admin/viewer/shared viewer: chi consulta puo vedere i dati senza modificarli; lo shared viewer vede solo le posizioni condivise.
 
 ## Avvio locale
 
@@ -68,6 +68,7 @@ Modifica `.env`:
 ```sh
 ADMIN_PASSWORD=password-admin-forte
 VIEWER_PASSWORD=password-consultazione
+SHARED_VIEWER_PASSWORD=password-condivisi
 HOST=0.0.0.0
 PORT=4173
 ```
@@ -82,6 +83,7 @@ Ruoli:
 
 - `admin`: puo creare, modificare, importare, esportare, segnare bottiglie bevute e registrare vendite.
 - `viewer`: puo solo consultare cantina, dettaglio, timeline e statistiche.
+- `shared_viewer`: puo solo consultare le posizioni condivise, inclusi dettaglio, timeline, vendite e statistiche relative a quelle posizioni.
 
 Il blocco delle modifiche e applicato anche lato server.
 
