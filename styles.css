@@ -495,7 +495,11 @@ h2 {
   color: #fff;
 }
 
-.secondary-value {
+.shared-value {
+  background: #477259;
+}
+
+.total-value {
   background: #4c5044;
 }
 
