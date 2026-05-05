@@ -157,7 +157,7 @@ SEED_WINES = [
     },
 ]
 
-CATALOG_VERSION = 5
+CATALOG_VERSION = 6
 CATALOG_WINES = [
     {"name": "Chateau Lafite Rothschild", "producer": "Chateau Lafite Rothschild", "region": "Bordeaux", "appellation": "Pauillac", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Chateau Latour", "producer": "Chateau Latour", "region": "Bordeaux", "appellation": "Pauillac", "type": "Red", "format": "Bottle (750ml)"},
@@ -218,6 +218,17 @@ CATALOG_WINES = [
     {"name": "Chateau Cos d'Estournel", "producer": "Chateau Cos d'Estournel", "region": "Bordeaux", "appellation": "Saint-Estephe", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Chateau Montrose", "producer": "Chateau Montrose", "region": "Bordeaux", "appellation": "Saint-Estephe", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Chateau Calon Segur", "producer": "Chateau Calon Segur", "region": "Bordeaux", "appellation": "Saint-Estephe", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Chateau Phelan Segur", "producer": "Chateau Phelan Segur", "region": "Bordeaux", "appellation": "Saint-Estephe", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Chateau Lafon-Rochet", "producer": "Chateau Lafon-Rochet", "region": "Bordeaux", "appellation": "Saint-Estephe", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Chateau Meyney", "producer": "Chateau Meyney", "region": "Bordeaux", "appellation": "Saint-Estephe", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Chateau Tronquoy-Lalande", "producer": "Chateau Tronquoy-Lalande", "region": "Bordeaux", "appellation": "Saint-Estephe", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Chateau de Pez", "producer": "Chateau de Pez", "region": "Bordeaux", "appellation": "Saint-Estephe", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Chateau Ormes de Pez", "producer": "Chateau Ormes de Pez", "region": "Bordeaux", "appellation": "Saint-Estephe", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Chateau Haut-Marbuzet", "producer": "Chateau Haut-Marbuzet", "region": "Bordeaux", "appellation": "Saint-Estephe", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Chateau Cos Labory", "producer": "Chateau Cos Labory", "region": "Bordeaux", "appellation": "Saint-Estephe", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Chateau Capbern", "producer": "Chateau Capbern", "region": "Bordeaux", "appellation": "Saint-Estephe", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Chateau Lilian Ladouys", "producer": "Chateau Lilian Ladouys", "region": "Bordeaux", "appellation": "Saint-Estephe", "type": "Red", "format": "Bottle (750ml)"},
+    {"name": "Chateau Le Crock", "producer": "Chateau Le Crock", "region": "Bordeaux", "appellation": "Saint-Estephe", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Chateau Rauzan-Segla", "producer": "Chateau Rauzan-Segla", "region": "Bordeaux", "appellation": "Margaux", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Chateau Brane-Cantenac", "producer": "Chateau Brane-Cantenac", "region": "Bordeaux", "appellation": "Margaux", "type": "Red", "format": "Bottle (750ml)"},
     {"name": "Chateau Beychevelle", "producer": "Chateau Beychevelle", "region": "Bordeaux", "appellation": "Saint-Julien", "type": "Red", "format": "Bottle (750ml)"},
