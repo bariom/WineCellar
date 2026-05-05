@@ -138,6 +138,97 @@
         </div>
       </section>
 
+      <section class="screen" id="screen-wishlist" aria-labelledby="wishlist-title">
+        <header class="topbar">
+          <h1 id="wishlist-title" data-i18n="wishlist">Wishlist</h1>
+          <button class="btn btn-wine fw-bold" id="new-wishlist-button" type="button" data-i18n="addWishlistItem">+ Add</button>
+        </header>
+        <div class="content-list" id="wishlist-list"></div>
+        <form class="wishlist-form" id="wishlist-form" hidden>
+          <input id="wishlist-id" name="id" type="hidden" />
+          <label class="form-field span-2">
+            <span data-i18n="wineNameRequired">Wine Name *</span>
+            <input class="form-control" id="wishlist-name" name="name" list="wine-name-suggestions" autocomplete="off" required />
+          </label>
+          <label class="form-field">
+            <span data-i18n="vintageRequired">Vintage *</span>
+            <input class="form-control" name="vintage" inputmode="numeric" />
+          </label>
+          <label class="form-field">
+            <span data-i18n="producerRequired">Producer *</span>
+            <input class="form-control" name="producer" />
+          </label>
+          <label class="form-field">
+            <span data-i18n="targetPrice">Target Price</span>
+            <input class="form-control" name="target_price" inputmode="decimal" min="0" step="0.01" type="number" />
+          </label>
+          <label class="form-field">
+            <span data-i18n="currency">Currency</span>
+            <select class="form-select" name="currency">
+              <option>CHF</option>
+              <option>EUR</option>
+              <option>USD</option>
+            </select>
+          </label>
+          <label class="form-field">
+            <span data-i18n="merchant">Merchant</span>
+            <input class="form-control" name="merchant" />
+          </label>
+          <label class="form-field">
+            <span data-i18n="priority">Priority</span>
+            <select class="form-select" name="priority">
+              <option value="High" data-i18n="priorityHigh">High</option>
+              <option value="Medium" data-i18n="priorityMedium">Medium</option>
+              <option value="Low" data-i18n="priorityLow">Low</option>
+            </select>
+          </label>
+          <label class="form-field">
+            <span data-i18n="status">Status</span>
+            <select class="form-select" name="status">
+              <option value="Evaluate" data-i18n="wishlistEvaluate">Evaluate</option>
+              <option value="Monitor" data-i18n="wishlistMonitor">Monitor</option>
+              <option value="Buy" data-i18n="wishlistBuy">Buy</option>
+              <option value="Skipped" data-i18n="wishlistSkipped">Skipped</option>
+            </select>
+          </label>
+          <label class="form-field">
+            <span data-i18n="format">Format</span>
+            <select class="form-select" name="format">
+              <option value="Bottle (750ml)" data-i18n="formatBottle">Bottle (750ml)</option>
+              <option value="Half (375ml)" data-i18n="formatHalf">Half (375ml)</option>
+              <option value="Magnum (1.5L)" data-i18n="formatMagnum">Magnum (1.5L)</option>
+            </select>
+          </label>
+          <label class="form-field">
+            <span data-i18n="type">Type</span>
+            <select class="form-select" name="type">
+              <option value="Red" data-i18n="red">Red</option>
+              <option value="White" data-i18n="white">White</option>
+              <option value="Rose" data-i18n="rose">Rose</option>
+              <option value="Sparkling" data-i18n="sparkling">Sparkling</option>
+              <option value="Dessert" data-i18n="dessert">Dessert</option>
+            </select>
+          </label>
+          <label class="form-field">
+            <span data-i18n="region">Region</span>
+            <input class="form-control" name="region" />
+          </label>
+          <label class="form-field">
+            <span data-i18n="appellation">Appellation</span>
+            <input class="form-control" name="appellation" />
+          </label>
+          <label class="form-field span-2">
+            <span data-i18n="notes">Notes</span>
+            <textarea class="form-control" name="notes" rows="4"></textarea>
+          </label>
+          <div class="form-actions span-2">
+            <button class="btn btn-danger admin-only" id="delete-wishlist-button" type="button" data-i18n="delete">Delete</button>
+            <button class="btn btn-soft" id="cancel-wishlist-button" type="button" data-i18n="cancel">Cancel</button>
+            <button class="btn btn-wine save-button" type="submit" data-i18n="saveWishlistItem">Save</button>
+          </div>
+        </form>
+      </section>
+
       <section class="screen detail-screen" id="screen-detail" aria-labelledby="detail-title">
         <header class="detail-header">
           <button class="link-button" id="back-detail-button" type="button" data-i18n="back">Back</button>
@@ -225,6 +316,10 @@
           <section class="scores-panel">
             <h2 data-i18n="scores">Scores</h2>
             <div class="score-list" id="detail-score-list"></div>
+          </section>
+          <section class="notes-panel">
+            <h2 data-i18n="notes">Notes</h2>
+            <p class="notes-box" id="detail-notes"></p>
           </section>
           <section class="sales-panel">
             <div class="section-title-row">
@@ -366,6 +461,11 @@
           </fieldset>
 
           <label class="form-field span-2">
+            <span data-i18n="notes">Notes</span>
+            <textarea class="form-control" id="notes" name="notes" rows="4"></textarea>
+          </label>
+
+          <label class="form-field span-2">
             <span data-i18n="merchantRequired">Merchant / Store *</span>
             <input class="form-control" id="merchant" name="merchant" required />
           </label>
@@ -395,6 +495,9 @@
         </button>
         <button class="nav-item" data-screen="insights" type="button">
           <span aria-hidden="true" data-i18n="insights">Insights</span>
+        </button>
+        <button class="nav-item" data-screen="wishlist" type="button">
+          <span aria-hidden="true" data-i18n="wishlist">Wishlist</span>
         </button>
       </nav>
     </main>

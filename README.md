@@ -10,6 +10,8 @@ L'app usa un frontend HTML/CSS/JavaScript e un backend Python basato sulla libre
 - Gestione stati: ordinato, spedito, in cantina.
 - Valute CHF, EUR e USD con conversione verso CHF tramite Frankfurter API / tassi BCE.
 - Valore di acquisto e valore attuale unitario aggiornabile manualmente.
+- Note personali su ogni posizione.
+- Wishlist separata per opportunita d'acquisto, con prezzo obiettivo, priorita e stato; tutte le utenze possono usarla, mentre eliminazione e conversione in ordine restano riservate ad admin.
 - Quote di proprieta per acquisti condivisi, con altri proprietari e percentuali.
 - Dettaglio posizione con valori personali e totali.
 - Registrazione di bottiglie bevute.
@@ -19,7 +21,7 @@ L'app usa un frontend HTML/CSS/JavaScript e un backend Python basato sulla libre
 - Timeline delle consegne future.
 - Statistiche separate per mia quota, posizioni condivise e posizioni totali.
 - Filtri in cantina per stato e proprieta, con pannello collassabile.
-- Import/export JSON.
+- Import/export JSON, incluse note e wishlist.
 - Interfaccia disponibile in italiano e inglese.
 - Modalita admin/viewer/shared viewer: chi consulta puo vedere i dati senza modificarli; lo shared viewer vede solo le posizioni condivise.
 

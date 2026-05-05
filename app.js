@@ -3,9 +3,11 @@ const state = {
   filter: "All",
   ownerFilter: "All",
   selectedWineId: null,
+  selectedWishlistId: null,
   formReturn: "cellar",
   lang: localStorage.getItem("wine-cellar-language") || "it",
   catalog: [],
+  wishlist: [],
   search: "",
   role: "anonymous",
   authEnabled: false,
@@ -27,6 +29,7 @@ const translations = {
     cancel: "Cancel",
     cachedRates: "cached rates",
     addSale: "Add Sale",
+    addWishlistItem: "+ Add",
     buyer: "Buyer",
     cellar: "Cellar",
     cellarValue: "Cellar Value",
@@ -80,6 +83,10 @@ const translations = {
     ownership: "Ownership",
     password: "Password",
     priceRequired: "Price per Unit *",
+    priority: "Priority",
+    priorityHigh: "High",
+    priorityLow: "Low",
+    priorityMedium: "Medium",
     producerRequired: "Producer *",
     quantity: "Quantity",
     quantityRequired: "Quantity *",
@@ -88,6 +95,7 @@ const translations = {
     rose: "Rose",
     saveOrder: "Save Order",
     saveSale: "Save Sale",
+    saveWishlistItem: "Save",
     saveUnable: "Unable to save order: {error}",
     salePrice: "Sale Price",
     sales: "Sales",
@@ -95,6 +103,7 @@ const translations = {
     saleProfit: "Profit",
     saleLoss: "Loss",
     noSales: "No sales recorded.",
+    notes: "Notes",
     saleUnable: "Unable to save sale: {error}",
     searchPlaceholder: "Search wine, producer, region",
     score: "Score",
@@ -106,6 +115,7 @@ const translations = {
     status: "Status",
     statusLabel: "Status:",
     timeline: "Timeline",
+    targetPrice: "Target Price",
     topRegions: "Top Regions",
     sharedPositions: "Shared Positions",
     shared: "Shared",
@@ -126,6 +136,11 @@ const translations = {
     values: "Values",
     vintageRequired: "Vintage *",
     white: "White",
+    wishlist: "Wishlist",
+    wishlistBuy: "Buy",
+    wishlistEvaluate: "Evaluate",
+    wishlistMonitor: "Monitor",
+    wishlistSkipped: "Skipped",
     wineNameRequired: "Wine Name *",
     autofilled: "Wine details autofilled from your cellar history.",
     red: "Red",
@@ -145,6 +160,7 @@ const translations = {
     cancel: "Annulla",
     cachedRates: "cambi in cache",
     addSale: "Aggiungi vendita",
+    addWishlistItem: "+ Aggiungi",
     buyer: "Acquirente",
     cellar: "Cantina",
     cellarValue: "Valore cantina",
@@ -198,6 +214,10 @@ const translations = {
     ownership: "Proprietà",
     password: "Password",
     priceRequired: "Prezzo unitario *",
+    priority: "Priorita",
+    priorityHigh: "Alta",
+    priorityLow: "Bassa",
+    priorityMedium: "Media",
     producerRequired: "Produttore *",
     quantity: "Quantità",
     quantityRequired: "Quantità *",
@@ -206,6 +226,7 @@ const translations = {
     rose: "Rosé",
     saveOrder: "Salva ordine",
     saveSale: "Salva vendita",
+    saveWishlistItem: "Salva",
     saveUnable: "Impossibile salvare l'ordine: {error}",
     salePrice: "Prezzo vendita",
     sales: "Vendite",
@@ -213,6 +234,7 @@ const translations = {
     saleProfit: "Utile",
     saleLoss: "Perdita",
     noSales: "Nessuna vendita registrata.",
+    notes: "Note",
     saleUnable: "Impossibile salvare la vendita: {error}",
     searchPlaceholder: "Cerca vino, produttore, regione",
     score: "Punteggio",
@@ -224,6 +246,7 @@ const translations = {
     status: "Stato",
     statusLabel: "Stato:",
     timeline: "Timeline",
+    targetPrice: "Prezzo obiettivo",
     topRegions: "Regioni principali",
     sharedPositions: "Posizioni condivise",
     shared: "Condivisi",
@@ -244,6 +267,11 @@ const translations = {
     values: "Valori",
     vintageRequired: "Annata *",
     white: "Bianco",
+    wishlist: "Wishlist",
+    wishlistBuy: "Comprare",
+    wishlistEvaluate: "Valutare",
+    wishlistMonitor: "Monitorare",
+    wishlistSkipped: "Scartato",
     wineNameRequired: "Nome vino *",
     autofilled: "Dati vino completati dalla tua cronologia.",
     red: "Rosso",
@@ -255,11 +283,16 @@ const screens = {
   cellar: document.querySelector("#screen-cellar"),
   timeline: document.querySelector("#screen-timeline"),
   insights: document.querySelector("#screen-insights"),
+  wishlist: document.querySelector("#screen-wishlist"),
   detail: document.querySelector("#screen-detail"),
   form: document.querySelector("#screen-form"),
 };
 
 const wineList = document.querySelector("#wine-list");
+const wishlistList = document.querySelector("#wishlist-list");
+const wishlistForm = document.querySelector("#wishlist-form");
+const wishlistNameInput = document.querySelector("#wishlist-name");
+const deleteWishlistButton = document.querySelector("#delete-wishlist-button");
 const loginForm = document.querySelector("#login-form");
 const loginError = document.querySelector("#login-error");
 const cellarSearch = document.querySelector("#cellar-search");
@@ -322,6 +355,7 @@ function applyTranslations() {
   const currentScreen = Object.entries(screens).find(([, screen]) => screen.classList.contains("active"))?.[0];
   if (currentScreen === "timeline") renderTimeline();
   if (currentScreen === "insights") renderInsights();
+  if (currentScreen === "wishlist") renderWishlist();
   if (currentScreen === "detail") openDetail(state.wines.find((wine) => wine.id === state.selectedWineId));
   if (currentScreen === "form") {
     document.querySelector("#form-title").textContent = form.elements.id.value ? t("edit") : t("newOrder");
@@ -411,11 +445,13 @@ async function loadSession() {
 }
 
 async function loadWines() {
-  const [wines, catalog] = await Promise.all([api("/api/wines"), api("/api/wine-catalog")]);
+  const [wines, catalog, wishlist] = await Promise.all([api("/api/wines"), api("/api/wine-catalog"), api("/api/wishlist")]);
   state.wines = wines;
   state.catalog = catalog;
+  state.wishlist = wishlist;
   renderWineSuggestions();
   renderCellar();
+  renderWishlist();
 }
 
 function renderWineSuggestions() {
@@ -538,6 +574,7 @@ function showScreen(name) {
 
   if (name === "timeline") renderTimeline();
   if (name === "insights") renderInsights();
+  if (name === "wishlist") renderWishlist();
 }
 
 function openDetail(wine) {
@@ -580,6 +617,7 @@ function openDetail(wine) {
   document.querySelector("#detail-appellation").textContent = wine.appellation || t("notSpecified");
   document.querySelector("#detail-order-date").textContent = formatDate(wine.order_date);
   document.querySelector("#detail-expected-delivery").textContent = formatDate(wine.expected_delivery);
+  document.querySelector("#detail-notes").textContent = wine.notes || t("notSpecified");
   drinkButton.disabled = Number(wine.quantity) <= 0 || wine.status !== "Delivered";
   drinkButton.title = wine.status === "Delivered" ? "" : t("onlyDelivered");
   renderOwnerList(wine);
@@ -701,6 +739,126 @@ function renderCellar() {
         )
         .join("")
     : `<p class="empty-state">${t("emptyFilter")}</p>`;
+}
+
+function wishlistStatusLabel(status) {
+  return t(
+    {
+      Evaluate: "wishlistEvaluate",
+      Monitor: "wishlistMonitor",
+      Buy: "wishlistBuy",
+      Skipped: "wishlistSkipped",
+    }[status] || "wishlistMonitor",
+  );
+}
+
+function priorityLabel(priority) {
+  return t(
+    {
+      High: "priorityHigh",
+      Medium: "priorityMedium",
+      Low: "priorityLow",
+    }[priority] || "priorityMedium",
+  );
+}
+
+function renderWishlist() {
+  if (!wishlistList) return;
+  wishlistList.innerHTML = state.wishlist.length
+    ? state.wishlist
+        .map(
+          (item) => `
+            <article class="wishlist-card" data-id="${item.id}">
+              <div class="wishlist-card-header">
+                <div>
+                  <h2>${escapeHtml(item.name)} ${item.vintage ? `<span class="small-vintage">${escapeHtml(item.vintage)}</span>` : ""}</h2>
+                  <p>${escapeHtml([item.producer, item.region, item.appellation].filter(Boolean).join(" - ") || t("notSpecified"))}</p>
+                </div>
+                <span class="wishlist-chip">${escapeHtml(priorityLabel(item.priority))}</span>
+              </div>
+              <p>${escapeHtml(wishlistStatusLabel(item.status))} - ${item.target_price ? formatMoney(item.target_price, item.currency) : t("notSpecified")} - ${escapeHtml(item.merchant || t("notSpecified"))}</p>
+              ${item.notes ? `<p>${escapeHtml(item.notes)}</p>` : ""}
+              <div class="wishlist-card-actions">
+                <button class="btn btn-soft" data-wishlist-edit="${item.id}" type="button">${escapeHtml(t("edit"))}</button>
+                <button class="btn btn-wine admin-only" data-wishlist-convert="${item.id}" type="button">${escapeHtml(t("newOrder"))}</button>
+              </div>
+            </article>
+          `,
+        )
+        .join("")
+    : `<p class="empty-state">${t("emptyFilter")}</p>`;
+  applyPermissions();
+}
+
+function openWishlistForm(item = null) {
+  wishlistForm.reset();
+  state.selectedWishlistId = item?.id || null;
+  deleteWishlistButton.hidden = !item || !isAdmin();
+  const defaults = {
+    currency: "CHF",
+    priority: "Medium",
+    status: "Monitor",
+    format: "Bottle (750ml)",
+    type: "Red",
+  };
+  const values = { ...defaults, ...item };
+  Object.entries(values).forEach(([key, value]) => {
+    const field = wishlistForm.elements[key];
+    if (field) field.value = value ?? "";
+  });
+  wishlistForm.hidden = false;
+}
+
+function wishlistFormToItem() {
+  const data = new FormData(wishlistForm);
+  return {
+    id: data.get("id") || undefined,
+    name: data.get("name").trim(),
+    producer: data.get("producer").trim(),
+    vintage: data.get("vintage").trim(),
+    region: data.get("region").trim(),
+    appellation: data.get("appellation").trim(),
+    format: data.get("format"),
+    type: data.get("type"),
+    target_price: data.get("target_price") === "" ? null : Number(data.get("target_price")),
+    currency: data.get("currency"),
+    merchant: data.get("merchant").trim(),
+    priority: data.get("priority"),
+    status: data.get("status"),
+    notes: data.get("notes").trim(),
+  };
+}
+
+async function saveWishlistItem(event) {
+  event.preventDefault();
+  const item = wishlistFormToItem();
+  const saved = item.id
+    ? await api(`/api/wishlist/${encodeURIComponent(item.id)}`, { method: "PUT", body: JSON.stringify(item) })
+    : await api("/api/wishlist", { method: "POST", body: JSON.stringify(item) });
+  const index = state.wishlist.findIndex((candidate) => candidate.id === saved.id);
+  if (index >= 0) state.wishlist[index] = saved;
+  else state.wishlist.unshift(saved);
+  wishlistForm.hidden = true;
+  renderWishlist();
+}
+
+async function deleteCurrentWishlistItem() {
+  const id = wishlistForm.elements.id.value;
+  if (!id) return;
+  await api(`/api/wishlist/${encodeURIComponent(id)}`, { method: "DELETE" });
+  state.wishlist = state.wishlist.filter((item) => item.id !== id);
+  wishlistForm.hidden = true;
+  renderWishlist();
+}
+
+async function convertWishlistItem(id) {
+  const saved = await api(`/api/wishlist/${encodeURIComponent(id)}/convert`, { method: "POST", body: JSON.stringify({}) });
+  state.wishlist = state.wishlist.filter((item) => item.id !== id);
+  state.wines.unshift(saved);
+  renderWineSuggestions();
+  renderWishlist();
+  renderCellar();
+  openDetail(saved);
 }
 
 function scoreSummary(wine) {
@@ -853,6 +1011,7 @@ function openForm(wine) {
     owner_share_pct: 100,
     owners: [],
     scores: [],
+    notes: "",
   };
 
   const values = { ...defaults, ...wine };
@@ -941,6 +1100,7 @@ function formToWine() {
     owner_share_pct: Number(data.get("owner_share_pct") || 100),
     owners: collectOwners(),
     scores: collectScores(),
+    notes: data.get("notes").trim(),
   };
 }
 
@@ -1039,9 +1199,12 @@ function importData(file) {
   reader.addEventListener("load", async () => {
     try {
       const parsed = JSON.parse(reader.result);
-      state.wines = await api("/api/import", { method: "POST", body: JSON.stringify(parsed) });
+      const result = await api("/api/import", { method: "POST", body: JSON.stringify(parsed) });
+      state.wines = Array.isArray(result) ? result : result.wines;
+      state.wishlist = Array.isArray(result) ? state.wishlist : result.wishlist || [];
       renderWineSuggestions();
       renderCellar();
+      renderWishlist();
       showScreen("cellar");
     } catch {
       alert(t("importInvalid"));
@@ -1084,8 +1247,16 @@ loginForm.addEventListener("submit", async (event) => {
 });
 
 document.querySelector("#new-wine-button").addEventListener("click", () => openForm());
+document.querySelector("#new-wishlist-button").addEventListener("click", () => openWishlistForm());
 wineNameInput.addEventListener("change", () => applyWineTemplate(matchingWineTemplate(wineNameInput.value)));
 wineNameInput.addEventListener("blur", () => applyWineTemplate(matchingWineTemplate(wineNameInput.value)));
+wishlistNameInput.addEventListener("change", () => {
+  const template = matchingWineTemplate(wishlistNameInput.value);
+  if (!template || wishlistForm.elements.id.value) return;
+  ["producer", "region", "appellation", "format", "type", "currency"].forEach((key) => {
+    if (template[key] && wishlistForm.elements[key]) wishlistForm.elements[key].value = template[key];
+  });
+});
 document.querySelector("#add-owner-button").addEventListener("click", () => addOwnerRow());
 document.querySelector("#add-score-button").addEventListener("click", () => addScoreRow());
 filterToggle.addEventListener("click", () => {
@@ -1102,6 +1273,7 @@ document.querySelector("#logout-button").addEventListener("click", async () => {
   await api("/api/logout", { method: "POST" });
   state.role = state.authEnabled ? "anonymous" : "admin";
   state.wines = [];
+  state.wishlist = [];
   applyPermissions();
   if (state.authEnabled) showScreen("login");
   else {
@@ -1161,6 +1333,26 @@ document.querySelector("#import-input").addEventListener("change", (event) => {
 
 deleteButton.addEventListener("click", deleteCurrentWine);
 form.addEventListener("submit", handleSubmit);
+wishlistForm.addEventListener("submit", (event) => {
+  saveWishlistItem(event).catch((error) => alert(t("saveUnable", { error: error.message })));
+});
+deleteWishlistButton.addEventListener("click", () => {
+  deleteCurrentWishlistItem().catch((error) => alert(error.message));
+});
+document.querySelector("#cancel-wishlist-button").addEventListener("click", () => {
+  wishlistForm.hidden = true;
+});
+wishlistList.addEventListener("click", (event) => {
+  const editButton = event.target.closest("[data-wishlist-edit]");
+  if (editButton) {
+    openWishlistForm(state.wishlist.find((item) => item.id === editButton.dataset.wishlistEdit));
+    return;
+  }
+  const convertButton = event.target.closest("[data-wishlist-convert]");
+  if (convertButton) {
+    convertWishlistItem(convertButton.dataset.wishlistConvert).catch((error) => alert(error.message));
+  }
+});
 
 document.querySelectorAll(".nav-item").forEach((button) => {
   button.addEventListener("click", () => showScreen(button.dataset.screen));

@@ -49,6 +49,7 @@ FIELDS = [
     "owner_share_pct",
     "owners",
     "scores",
+    "notes",
 ]
 
 SEED_WINES = [
@@ -413,6 +414,7 @@ def init_db() -> None:
                 status TEXT NOT NULL,
                 owner_share_pct REAL NOT NULL DEFAULT 100,
                 owners_json TEXT NOT NULL DEFAULT '[]',
+                notes TEXT NOT NULL DEFAULT '',
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
@@ -421,6 +423,7 @@ def init_db() -> None:
         ensure_column(conn, "wines", "owner_share_pct", "REAL NOT NULL DEFAULT 100")
         ensure_column(conn, "wines", "owners_json", "TEXT NOT NULL DEFAULT '[]'")
         ensure_column(conn, "wines", "current_value", "REAL")
+        ensure_column(conn, "wines", "notes", "TEXT NOT NULL DEFAULT ''")
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS exchange_rates (
@@ -473,6 +476,28 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS wishlist (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                producer TEXT,
+                vintage TEXT,
+                format TEXT NOT NULL DEFAULT 'Bottle (750ml)',
+                type TEXT NOT NULL DEFAULT 'Red',
+                region TEXT,
+                appellation TEXT,
+                target_price REAL,
+                currency TEXT NOT NULL DEFAULT 'CHF',
+                merchant TEXT,
+                priority TEXT NOT NULL DEFAULT 'Medium',
+                status TEXT NOT NULL DEFAULT 'Monitor',
+                notes TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
         seed_catalog(conn)
         count = conn.execute("SELECT COUNT(*) FROM wines").fetchone()[0]
         if count == 0:
@@ -518,7 +543,7 @@ def list_wines() -> list[dict]:
             """
             SELECT id, name, producer, vintage, quantity, format, type, region, appellation,
                    price, current_value, currency, merchant, order_date, expected_delivery, status,
-                   owner_share_pct, owners_json
+                   owner_share_pct, owners_json, notes
             FROM wines
             ORDER BY expected_delivery DESC, name ASC
             """
@@ -552,6 +577,133 @@ def list_sales(wine_id: str, role: str = "admin") -> list[dict]:
             (wine_id,),
         ).fetchall()
     return [dict(row) for row in rows]
+
+
+def list_wishlist() -> list[dict]:
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, name, producer, vintage, format, type, region, appellation,
+                   target_price, currency, merchant, priority, status, notes
+            FROM wishlist
+            ORDER BY
+                CASE priority WHEN 'High' THEN 1 WHEN 'Medium' THEN 2 ELSE 3 END,
+                updated_at DESC,
+                name ASC
+            """
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def clean_wishlist_item(payload: dict, item_id: str | None = None) -> dict:
+    if not str(payload.get("name", "")).strip():
+        raise ValueError("Name is required")
+    currency = str(payload.get("currency", "CHF")).strip().upper()
+    if currency not in SUPPORTED_CURRENCIES:
+        raise ValueError(f"Unsupported currency: {currency}")
+    priority = str(payload.get("priority", "Medium")).strip()
+    if priority not in {"High", "Medium", "Low"}:
+        raise ValueError("Unsupported priority")
+    status = str(payload.get("status", "Monitor")).strip()
+    if status not in {"Evaluate", "Monitor", "Buy", "Skipped"}:
+        raise ValueError("Unsupported wishlist status")
+    return {
+        "id": item_id or payload.get("id") or str(uuid.uuid4()),
+        "name": str(payload.get("name", "")).strip(),
+        "producer": str(payload.get("producer", "")).strip(),
+        "vintage": str(payload.get("vintage", "")).strip(),
+        "format": str(payload.get("format", "Bottle (750ml)")).strip(),
+        "type": str(payload.get("type", "Red")).strip(),
+        "region": str(payload.get("region", "")).strip(),
+        "appellation": str(payload.get("appellation", "")).strip(),
+        "target_price": clean_optional_float(payload.get("target_price")),
+        "currency": currency,
+        "merchant": str(payload.get("merchant", "")).strip(),
+        "priority": priority,
+        "status": status,
+        "notes": str(payload.get("notes", "")).strip(),
+    }
+
+
+def upsert_wishlist_item(payload: dict, item_id: str | None = None) -> dict:
+    data = clean_wishlist_item(payload, item_id)
+    with connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO wishlist (
+                id, name, producer, vintage, format, type, region, appellation,
+                target_price, currency, merchant, priority, status, notes
+            )
+            VALUES (
+                :id, :name, :producer, :vintage, :format, :type, :region, :appellation,
+                :target_price, :currency, :merchant, :priority, :status, :notes
+            )
+            ON CONFLICT(id) DO UPDATE SET
+                name = excluded.name,
+                producer = excluded.producer,
+                vintage = excluded.vintage,
+                format = excluded.format,
+                type = excluded.type,
+                region = excluded.region,
+                appellation = excluded.appellation,
+                target_price = excluded.target_price,
+                currency = excluded.currency,
+                merchant = excluded.merchant,
+                priority = excluded.priority,
+                status = excluded.status,
+                notes = excluded.notes,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            data,
+        )
+    return data
+
+
+def delete_wishlist_item(item_id: str) -> bool:
+    with connect() as conn:
+        cursor = conn.execute("DELETE FROM wishlist WHERE id = ?", (item_id,))
+        return cursor.rowcount > 0
+
+
+def convert_wishlist_item(item_id: str, payload: dict) -> dict:
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT id, name, producer, vintage, format, type, region, appellation,
+                   target_price, currency, merchant, priority, status, notes
+            FROM wishlist
+            WHERE id = ?
+            """,
+            (item_id,),
+        ).fetchone()
+        if not row:
+            raise LookupError("Wishlist item not found")
+        item = dict(row)
+        wine_payload = {
+            "name": item["name"],
+            "producer": item["producer"] or "TBD",
+            "vintage": item["vintage"] or "TBD",
+            "region": item["region"],
+            "appellation": item["appellation"],
+            "format": item["format"],
+            "type": item["type"],
+            "quantity": int(payload.get("quantity") or 1),
+            "price": payload.get("price") if payload.get("price") not in (None, "") else item["target_price"] or 0,
+            "current_value": None,
+            "currency": item["currency"],
+            "merchant": payload.get("merchant") or item["merchant"] or "TBD",
+            "order_date": payload.get("order_date") or "",
+            "expected_delivery": payload.get("expected_delivery") or "",
+            "status": "Ordered",
+            "owner_share_pct": 100,
+            "owners": [],
+            "scores": [],
+            "notes": item["notes"],
+        }
+        wine = insert_wine(conn, wine_payload)
+        conn.execute("DELETE FROM wishlist WHERE id = ?", (item_id,))
+        saved = get_wine(conn, wine["id"])
+    return saved
 
 
 def wine_from_row(row: sqlite3.Row) -> dict:
@@ -791,6 +943,7 @@ def clean_wine(payload: dict, wine_id: str | None = None) -> dict:
         "owner_share_pct": owner_share_pct,
         "owners_json": json.dumps(owners),
         "scores": scores,
+        "notes": str(payload.get("notes", "")).strip(),
     }
 
 
@@ -867,7 +1020,7 @@ def get_wine(conn: sqlite3.Connection, wine_id: str) -> dict | None:
         """
         SELECT id, name, producer, vintage, quantity, format, type, region, appellation,
                price, current_value, currency, merchant, order_date, expected_delivery, status,
-               owner_share_pct, owners_json
+               owner_share_pct, owners_json, notes
         FROM wines
         WHERE id = ?
         """,
@@ -899,12 +1052,12 @@ def insert_wine(conn: sqlite3.Connection, wine: dict) -> dict:
         INSERT INTO wines (
             id, name, producer, vintage, quantity, format, type, region, appellation,
             price, current_value, currency, merchant, order_date, expected_delivery, status,
-            owner_share_pct, owners_json
+            owner_share_pct, owners_json, notes
         )
         VALUES (
             :id, :name, :producer, :vintage, :quantity, :format, :type, :region, :appellation,
             :price, :current_value, :currency, :merchant, :order_date, :expected_delivery, :status,
-            :owner_share_pct, :owners_json
+            :owner_share_pct, :owners_json, :notes
         )
         """,
         data,
@@ -923,12 +1076,12 @@ def upsert_wine(payload: dict, wine_id: str | None = None) -> dict:
             INSERT INTO wines (
                 id, name, producer, vintage, quantity, format, type, region, appellation,
                 price, current_value, currency, merchant, order_date, expected_delivery, status,
-                owner_share_pct, owners_json
+                owner_share_pct, owners_json, notes
             )
             VALUES (
                 :id, :name, :producer, :vintage, :quantity, :format, :type, :region, :appellation,
                 :price, :current_value, :currency, :merchant, :order_date, :expected_delivery, :status,
-                :owner_share_pct, :owners_json
+                :owner_share_pct, :owners_json, :notes
             )
             ON CONFLICT(id) DO UPDATE SET
                 name = excluded.name,
@@ -948,6 +1101,7 @@ def upsert_wine(payload: dict, wine_id: str | None = None) -> dict:
                 status = excluded.status,
                 owner_share_pct = excluded.owner_share_pct,
                 owners_json = excluded.owners_json,
+                notes = excluded.notes,
                 updated_at = CURRENT_TIMESTAMP
             """,
             data,
@@ -1045,6 +1199,27 @@ def replace_all_wines(wines: list[dict]) -> list[dict]:
     return list_wines()
 
 
+def replace_all_wishlist(items: list[dict]) -> list[dict]:
+    cleaned = [clean_wishlist_item(item) for item in items]
+    with connect() as conn:
+        conn.execute("DELETE FROM wishlist")
+        for item in cleaned:
+            conn.execute(
+                """
+                INSERT INTO wishlist (
+                    id, name, producer, vintage, format, type, region, appellation,
+                    target_price, currency, merchant, priority, status, notes
+                )
+                VALUES (
+                    :id, :name, :producer, :vintage, :format, :type, :region, :appellation,
+                    :target_price, :currency, :merchant, :priority, :status, :notes
+                )
+                """,
+                item,
+            )
+    return list_wishlist()
+
+
 def auth_payload(role: str) -> dict:
     return {"authenticated": role != "anonymous", "role": role, "auth_enabled": AUTH_ENABLED}
 
@@ -1066,10 +1241,13 @@ class CellarHandler(SimpleHTTPRequestHandler):
         if path == "/api/wine-catalog":
             self.send_json(list_catalog_wines())
             return
+        if path == "/api/wishlist":
+            self.send_json(list_wishlist())
+            return
         if path == "/api/export":
             if not self.require_admin():
                 return
-            self.send_json(list_wines())
+            self.send_json({"wines": list_wines(), "wishlist": list_wishlist()})
             return
         if path == "/api/rates":
             try:
@@ -1101,7 +1279,19 @@ class CellarHandler(SimpleHTTPRequestHandler):
             if path == "/api/logout":
                 self.logout()
                 return
+            if path == "/api/wishlist":
+                if not self.require_authenticated():
+                    return
+                self.send_json(upsert_wishlist_item(self.read_json()), HTTPStatus.CREATED)
+                return
             if path.startswith("/api/") and not self.require_admin():
+                return
+            if path.startswith("/api/wishlist/") and path.endswith("/convert"):
+                item_id = unquote(path.removeprefix("/api/wishlist/").removesuffix("/convert"))
+                try:
+                    self.send_json(convert_wishlist_item(item_id, self.read_json()), HTTPStatus.CREATED)
+                except LookupError as exc:
+                    self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
                 return
             if path.startswith("/api/wines/") and path.endswith("/drink"):
                 wine_id = unquote(path.removeprefix("/api/wines/").removesuffix("/drink"))
@@ -1122,9 +1312,14 @@ class CellarHandler(SimpleHTTPRequestHandler):
                 return
             if path == "/api/import":
                 payload = self.read_json()
-                if not isinstance(payload, list):
-                    raise ValueError("Import payload must be a list")
-                self.send_json(replace_all_wines(payload))
+                if isinstance(payload, list):
+                    self.send_json({"wines": replace_all_wines(payload), "wishlist": list_wishlist()})
+                    return
+                if not isinstance(payload, dict) or not isinstance(payload.get("wines"), list):
+                    raise ValueError("Import payload must include a wines list")
+                wines = replace_all_wines(payload["wines"])
+                wishlist = replace_all_wishlist(payload.get("wishlist", []))
+                self.send_json({"wines": wines, "wishlist": wishlist})
                 return
             self.send_error(HTTPStatus.NOT_FOUND)
         except ValueError as exc:
@@ -1132,6 +1327,15 @@ class CellarHandler(SimpleHTTPRequestHandler):
 
     def do_PUT(self) -> None:
         path = urlparse(self.path).path
+        if path.startswith("/api/wishlist/"):
+            if not self.require_authenticated():
+                return
+            item_id = unquote(path.removeprefix("/api/wishlist/"))
+            try:
+                self.send_json(upsert_wishlist_item(self.read_json(), item_id))
+            except ValueError as exc:
+                self.send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+            return
         if not path.startswith("/api/wines/"):
             self.send_error(HTTPStatus.NOT_FOUND)
             return
@@ -1145,6 +1349,16 @@ class CellarHandler(SimpleHTTPRequestHandler):
 
     def do_DELETE(self) -> None:
         path = urlparse(self.path).path
+        if path.startswith("/api/wishlist/"):
+            if not self.require_admin():
+                return
+            item_id = unquote(path.removeprefix("/api/wishlist/"))
+            if delete_wishlist_item(item_id):
+                self.send_response(HTTPStatus.NO_CONTENT)
+                self.end_headers()
+                return
+            self.send_json({"error": "Wishlist item not found"}, HTTPStatus.NOT_FOUND)
+            return
         if not path.startswith("/api/wines/"):
             self.send_error(HTTPStatus.NOT_FOUND)
             return

@@ -683,6 +683,7 @@ h2 {
 
 .owners-panel,
 .scores-panel,
+.notes-panel,
 .sales-panel {
   display: grid;
   gap: 10px;
@@ -690,9 +691,69 @@ h2 {
 
 .owners-panel h2,
 .scores-panel h2,
+.notes-panel h2,
 .sales-panel h2 {
   margin: 0;
   font-size: 1.15rem;
+}
+
+.notes-box {
+  min-height: 54px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid rgba(223, 210, 192, 0.75);
+  border-radius: 10px;
+  color: #4f5665;
+  background: rgba(255, 250, 243, 0.55);
+  white-space: pre-wrap;
+}
+
+.wishlist-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 12px;
+  margin-top: 16px;
+}
+
+.wishlist-card {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid rgba(223, 210, 192, 0.9);
+  border-radius: 14px;
+  padding: 14px;
+  background: rgba(255, 250, 243, 0.9);
+  text-align: left;
+}
+
+.wishlist-card-header,
+.wishlist-card-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wishlist-card h2 {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.25;
+}
+
+.wishlist-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.wishlist-chip {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 5px 9px;
+  color: #fff;
+  background: var(--wine);
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .section-title-row {
@@ -973,7 +1034,7 @@ h2 {
   left: 0;
   z-index: 5;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   max-width: 540px;
   min-height: calc(70px + env(safe-area-inset-bottom));
   margin: 0 auto;
@@ -1067,6 +1128,18 @@ h2 {
 
   .score-form-row {
     grid-template-columns: 1fr;
+  }
+
+  .wishlist-form {
+    grid-template-columns: 1fr;
+  }
+
+  .wishlist-card-actions {
+    flex-direction: column;
+  }
+
+  .wishlist-card-actions .btn {
+    width: 100%;
   }
 
   .sale-form {
