@@ -48,6 +48,7 @@
 
         <div class="list-tools">
           <input class="form-control search-input" id="cellar-search" type="search" data-i18n-placeholder="searchPlaceholder" placeholder="Search wine, producer, region" />
+          <button class="active-insight-filter" id="active-insight-filter" type="button" hidden></button>
           <button class="filter-toggle" id="filter-toggle" type="button" aria-expanded="false" aria-controls="filter-panel">
             <span data-i18n="filters">Filters</span>
             <span class="filter-toggle-count" id="filter-count"></span>
@@ -103,6 +104,8 @@
             </div>
             <h2 data-i18n="topRegions">Top Regions</h2>
             <div class="region-list" id="region-list"></div>
+            <h2 data-i18n="topColors">Top Colors</h2>
+            <div class="region-list" id="color-list"></div>
           </section>
           <section class="insight-panel" id="insight-shared">
             <h2 data-i18n="sharedPositions">Shared Positions</h2>
@@ -118,6 +121,8 @@
             </div>
             <h2 data-i18n="topRegionsShared">Top Regions - Shared</h2>
             <div class="region-list" id="shared-region-list"></div>
+            <h2 data-i18n="topColors">Top Colors</h2>
+            <div class="region-list" id="shared-color-list"></div>
           </section>
           <section class="insight-panel" id="insight-total">
             <h2 data-i18n="totalPositions">Total Positions</h2>
@@ -133,6 +138,8 @@
             </div>
             <h2 data-i18n="topRegionsAll">Top Regions - All Owners</h2>
             <div class="region-list" id="gross-region-list"></div>
+            <h2 data-i18n="topColors">Top Colors</h2>
+            <div class="region-list" id="gross-color-list"></div>
           </section>
           <p class="rates-note" id="rates-note"></p>
         </div>

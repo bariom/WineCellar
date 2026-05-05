@@ -861,15 +861,23 @@ def get_summary(role: str = "admin") -> dict:
     shared_cellar = sum(int(wine["quantity"] or 0) for wine in shared_wines if wine["status"] == "Delivered")
     shared_ordered = sum(int(wine["quantity"] or 0) for wine in shared_wines if wine["status"] != "Delivered")
     regions: dict[str, float] = {}
+    colors: dict[str, float] = {}
     shared_regions: dict[str, int] = {}
+    shared_colors: dict[str, int] = {}
     gross_regions: dict[str, int] = {}
+    gross_colors: dict[str, int] = {}
     for wine in wines:
         region = wine["region"] or "Unspecified"
+        color = wine["type"] or "Unspecified"
         regions[region] = regions.get(region, 0) + personal_quantity(wine)
+        colors[color] = colors.get(color, 0) + personal_quantity(wine)
         gross_regions[region] = gross_regions.get(region, 0) + int(wine["quantity"] or 0)
+        gross_colors[color] = gross_colors.get(color, 0) + int(wine["quantity"] or 0)
     for wine in shared_wines:
         region = wine["region"] or "Unspecified"
+        color = wine["type"] or "Unspecified"
         shared_regions[region] = shared_regions.get(region, 0) + int(wine["quantity"] or 0)
+        shared_colors[color] = shared_colors.get(color, 0) + int(wine["quantity"] or 0)
 
     return {
         "reference_currency": REFERENCE_CURRENCY,
@@ -892,13 +900,25 @@ def get_summary(role: str = "admin") -> dict:
             {"region": region, "bottles": bottles}
             for region, bottles in sorted(regions.items(), key=lambda item: item[1], reverse=True)[:5]
         ],
+        "colors": [
+            {"type": color, "bottles": bottles}
+            for color, bottles in sorted(colors.items(), key=lambda item: item[1], reverse=True)
+        ],
         "shared_regions": [
             {"region": region, "bottles": bottles}
             for region, bottles in sorted(shared_regions.items(), key=lambda item: item[1], reverse=True)[:5]
         ],
+        "shared_colors": [
+            {"type": color, "bottles": bottles}
+            for color, bottles in sorted(shared_colors.items(), key=lambda item: item[1], reverse=True)
+        ],
         "gross_regions": [
             {"region": region, "bottles": bottles}
             for region, bottles in sorted(gross_regions.items(), key=lambda item: item[1], reverse=True)[:5]
+        ],
+        "gross_colors": [
+            {"type": color, "bottles": bottles}
+            for color, bottles in sorted(gross_colors.items(), key=lambda item: item[1], reverse=True)
         ],
         "rates": rates,
     }

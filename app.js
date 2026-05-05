@@ -2,6 +2,7 @@ const state = {
   wines: [],
   filter: "All",
   ownerFilter: "All",
+  insightFilter: null,
   selectedWineId: null,
   selectedWishlistId: null,
   formReturn: "cellar",
@@ -34,6 +35,7 @@ const translations = {
     cellar: "Cellar",
     cellarValue: "Cellar Value",
     color: "Color",
+    clearFilter: "Clear filter",
     currentPositionValue: "Current Position Value",
     currentUnitValue: "Current Unit Value",
     currentValue: "Current Value",
@@ -117,6 +119,7 @@ const translations = {
     timeline: "Timeline",
     targetPrice: "Target Price",
     topRegions: "Top Regions",
+    topColors: "Top Colors",
     sharedPositions: "Shared Positions",
     shared: "Shared",
     totalPositions: "Total Positions",
@@ -165,6 +168,7 @@ const translations = {
     cellar: "Cantina",
     cellarValue: "Valore cantina",
     color: "Colore",
+    clearFilter: "Rimuovi filtro",
     currentPositionValue: "Valore attuale posizione",
     currentUnitValue: "Valore unitario attuale",
     currentValue: "Valore attuale",
@@ -248,6 +252,7 @@ const translations = {
     timeline: "Timeline",
     targetPrice: "Prezzo obiettivo",
     topRegions: "Regioni principali",
+    topColors: "Colori principali",
     sharedPositions: "Posizioni condivise",
     shared: "Condivisi",
     totalPositions: "Posizioni totali",
@@ -299,10 +304,14 @@ const cellarSearch = document.querySelector("#cellar-search");
 const filterToggle = document.querySelector("#filter-toggle");
 const filterPanel = document.querySelector("#filter-panel");
 const filterCount = document.querySelector("#filter-count");
+const activeInsightFilter = document.querySelector("#active-insight-filter");
 const timelineList = document.querySelector("#timeline-list");
 const regionList = document.querySelector("#region-list");
+const colorList = document.querySelector("#color-list");
 const sharedRegionList = document.querySelector("#shared-region-list");
+const sharedColorList = document.querySelector("#shared-color-list");
 const grossRegionList = document.querySelector("#gross-region-list");
+const grossColorList = document.querySelector("#gross-color-list");
 const form = document.querySelector("#wine-form");
 const deleteButton = document.querySelector("#delete-button");
 const drinkButton = document.querySelector("#drink-bottle-button");
@@ -555,10 +564,28 @@ function unitCurrentValue(wine) {
   return Number(wine.current_value ?? wine.price ?? 0);
 }
 
+function insightFilterLabel(filter = state.insightFilter) {
+  if (!filter) return "";
+  const value = filter.field === "type" ? typeLabel(filter.value) : filter.value === "Unspecified" ? t("notSpecified") : filter.value;
+  return `${value} - ${t(filter.field === "type" ? "color" : "region")}`;
+}
+
+function matchesInsightFilter(wine) {
+  const filter = state.insightFilter;
+  if (!filter) return true;
+  if (filter.scope === "shared" && !isSharedWine(wine)) return false;
+  if (filter.scope === "mine" && personalQuantity(wine) <= 0) return false;
+  if (filter.field === "region") return (wine.region || "Unspecified") === filter.value;
+  if (filter.field === "type") return (wine.type || "Unspecified") === filter.value;
+  return true;
+}
+
 function updateFilterCount() {
-  const activeFilters = [state.filter !== "All", state.ownerFilter !== "All"].filter(Boolean).length;
+  const activeFilters = [state.filter !== "All", state.ownerFilter !== "All", Boolean(state.insightFilter)].filter(Boolean).length;
   filterCount.textContent = activeFilters ? String(activeFilters) : "";
   filterCount.hidden = activeFilters === 0;
+  activeInsightFilter.hidden = !state.insightFilter;
+  activeInsightFilter.textContent = state.insightFilter ? `${insightFilterLabel()} x` : "";
 }
 
 function showScreen(name) {
@@ -715,6 +742,7 @@ function renderCellar() {
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(query));
     })
+    .filter(matchesInsightFilter)
     .sort((a, b) => (b.expected_delivery || "").localeCompare(a.expected_delivery || ""));
 
   wineList.innerHTML = wines.length
@@ -958,38 +986,12 @@ async function renderInsights() {
     document.querySelector("#gross-cellar-bottles").textContent = formatNumber(summary.gross_cellar_bottles);
     document.querySelector("#gross-ordered-bottles").textContent = formatNumber(summary.gross_ordered_bottles);
 
-    regionList.innerHTML = summary.regions
-      .map(
-        (item) => `
-          <div class="region-row">
-            <span>${escapeHtml(item.region)}</span>
-            <strong>${formatNumber(item.bottles)} btl</strong>
-          </div>
-        `,
-      )
-      .join("");
-
-    sharedRegionList.innerHTML = summary.shared_regions
-      .map(
-        (item) => `
-          <div class="region-row">
-            <span>${escapeHtml(item.region)}</span>
-            <strong>${formatNumber(item.bottles)} btl</strong>
-          </div>
-        `,
-      )
-      .join("");
-
-    grossRegionList.innerHTML = summary.gross_regions
-      .map(
-        (item) => `
-          <div class="region-row">
-            <span>${escapeHtml(item.region)}</span>
-            <strong>${formatNumber(item.bottles)} btl</strong>
-          </div>
-        `,
-      )
-      .join("");
+    regionList.innerHTML = renderInsightRows(summary.regions, "region", "mine");
+    colorList.innerHTML = renderInsightRows(summary.colors, "type", "mine");
+    sharedRegionList.innerHTML = renderInsightRows(summary.shared_regions, "region", "shared");
+    sharedColorList.innerHTML = renderInsightRows(summary.shared_colors, "type", "shared");
+    grossRegionList.innerHTML = renderInsightRows(summary.gross_regions, "region", "total");
+    grossColorList.innerHTML = renderInsightRows(summary.gross_colors, "type", "total");
 
     const sourceLabel = summary.rates.cached ? t("cachedRates") : t("latestRates");
     document.querySelector("#rates-note").textContent = t("convertedRates", {
@@ -999,6 +1001,40 @@ async function renderInsights() {
   } catch (error) {
     document.querySelector("#rates-note").textContent = t("exchangeUnavailable", { error: error.message });
   }
+}
+
+function renderInsightRows(items, field, scope) {
+  return items
+    .map((item) => {
+      const value = field === "region" ? item.region : item.type;
+      const label = field === "type" ? typeLabel(value) : value === "Unspecified" ? t("notSpecified") : value;
+      return `
+        <button class="region-row" data-insight-field="${field}" data-insight-scope="${scope}" data-insight-value="${escapeAttribute(value)}" type="button">
+          <span>${escapeHtml(label)}</span>
+          <strong>${formatNumber(item.bottles)} btl</strong>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function applyInsightListFilter(field, value, scope) {
+  state.insightFilter = { field, value, scope };
+  state.filter = "All";
+  state.ownerFilter = "All";
+  cellarSearch.value = "";
+  state.search = "";
+  document.querySelectorAll("[data-filter]").forEach((item) => item.classList.toggle("active", item.dataset.filter === "All"));
+  document.querySelectorAll("[data-owner-filter]").forEach((item) => item.classList.toggle("active", item.dataset.ownerFilter === "All"));
+  updateFilterCount();
+  renderCellar();
+  showScreen("cellar");
+}
+
+function clearInsightListFilter() {
+  state.insightFilter = null;
+  updateFilterCount();
+  renderCellar();
 }
 
 function openForm(wine) {
@@ -1275,6 +1311,7 @@ filterToggle.addEventListener("click", () => {
   filterToggle.setAttribute("aria-expanded", String(!expanded));
   filterPanel.hidden = expanded;
 });
+activeInsightFilter.addEventListener("click", clearInsightListFilter);
 languageButton.addEventListener("click", () => {
   state.lang = state.lang === "it" ? "en" : "it";
   localStorage.setItem("wine-cellar-language", state.lang);
@@ -1304,6 +1341,11 @@ document.querySelectorAll("[data-insight-tab]").forEach((button) => {
       panel.classList.toggle("active", panel.id === `insight-${tab}`);
     });
   });
+});
+document.querySelector(".insights").addEventListener("click", (event) => {
+  const row = event.target.closest("[data-insight-field]");
+  if (!row) return;
+  applyInsightListFilter(row.dataset.insightField, row.dataset.insightValue, row.dataset.insightScope);
 });
 document.querySelector("#cancel-form-button").addEventListener("click", () => {
   if (state.formReturn === "detail") {
