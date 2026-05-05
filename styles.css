@@ -717,16 +717,28 @@ h2 {
 
 .wishlist-card {
   display: grid;
-  gap: 10px;
+  gap: 0;
   width: 100%;
   border: 1px solid rgba(223, 210, 192, 0.9);
   border-radius: 14px;
-  padding: 14px;
+  overflow: hidden;
   background: rgba(255, 250, 243, 0.9);
   text-align: left;
 }
 
-.wishlist-card-header,
+.wishlist-card-header {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 0;
+  padding: 14px;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+}
+
 .wishlist-card-actions {
   display: flex;
   align-items: flex-start;
@@ -746,6 +758,13 @@ h2 {
   font-size: 0.88rem;
 }
 
+.wishlist-card-side {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
 .wishlist-chip {
   flex: 0 0 auto;
   border-radius: 999px;
@@ -754,6 +773,57 @@ h2 {
   background: var(--wine);
   font-size: 0.72rem;
   font-weight: 800;
+}
+
+.wishlist-chevron {
+  color: var(--wine);
+  font-size: 0.82rem;
+  font-weight: 900;
+  transition: transform 0.18s ease;
+}
+
+.wishlist-card-header[aria-expanded="true"] .wishlist-chevron {
+  transform: rotate(180deg);
+}
+
+.wishlist-card-detail {
+  display: grid;
+  gap: 12px;
+  padding: 0 14px 14px;
+}
+
+.wishlist-card-detail dl {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgba(223, 210, 192, 0.75);
+  border-radius: 10px;
+  background: rgba(255, 250, 243, 0.55);
+}
+
+.wishlist-card-detail dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(223, 210, 192, 0.75);
+}
+
+.wishlist-card-detail dl div:last-child {
+  border-bottom: 0;
+}
+
+.wishlist-card-detail dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.wishlist-card-detail dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .section-title-row {

@@ -769,18 +769,29 @@ function renderWishlist() {
         .map(
           (item) => `
             <article class="wishlist-card" data-id="${item.id}">
-              <div class="wishlist-card-header">
+              <button class="wishlist-card-header" data-wishlist-toggle="${item.id}" type="button" aria-expanded="false">
                 <div>
                   <h2>${escapeHtml(item.name)} ${item.vintage ? `<span class="small-vintage">${escapeHtml(item.vintage)}</span>` : ""}</h2>
                   <p>${escapeHtml([item.producer, item.region, item.appellation].filter(Boolean).join(" - ") || t("notSpecified"))}</p>
                 </div>
-                <span class="wishlist-chip">${escapeHtml(priorityLabel(item.priority))}</span>
-              </div>
-              <p>${escapeHtml(wishlistStatusLabel(item.status))} - ${item.target_price ? formatMoney(item.target_price, item.currency) : t("notSpecified")} - ${escapeHtml(item.merchant || t("notSpecified"))}</p>
-              ${item.notes ? `<p>${escapeHtml(item.notes)}</p>` : ""}
-              <div class="wishlist-card-actions">
-                <button class="btn btn-soft" data-wishlist-edit="${item.id}" type="button">${escapeHtml(t("edit"))}</button>
-                <button class="btn btn-wine admin-only" data-wishlist-convert="${item.id}" type="button">${escapeHtml(t("newOrder"))}</button>
+                <span class="wishlist-card-side">
+                  <span class="wishlist-chip">${escapeHtml(priorityLabel(item.priority))}</span>
+                  <span class="wishlist-chevron" aria-hidden="true">v</span>
+                </span>
+              </button>
+              <div class="wishlist-card-detail" hidden>
+                <dl>
+                  <div><dt>${escapeHtml(t("status"))}</dt><dd>${escapeHtml(wishlistStatusLabel(item.status))}</dd></div>
+                  <div><dt>${escapeHtml(t("targetPrice"))}</dt><dd>${item.target_price ? formatMoney(item.target_price, item.currency) : t("notSpecified")}</dd></div>
+                  <div><dt>${escapeHtml(t("merchant"))}</dt><dd>${escapeHtml(item.merchant || t("notSpecified"))}</dd></div>
+                  <div><dt>${escapeHtml(t("format"))}</dt><dd>${escapeHtml(formatLabel(item.format))}</dd></div>
+                  <div><dt>${escapeHtml(t("type"))}</dt><dd>${escapeHtml(typeLabel(item.type))}</dd></div>
+                  <div><dt>${escapeHtml(t("notes"))}</dt><dd>${escapeHtml(item.notes || t("notSpecified"))}</dd></div>
+                </dl>
+                <div class="wishlist-card-actions">
+                  <button class="btn btn-soft" data-wishlist-edit="${item.id}" type="button">${escapeHtml(t("edit"))}</button>
+                  <button class="btn btn-wine admin-only" data-wishlist-convert="${item.id}" type="button">${escapeHtml(t("newOrder"))}</button>
+                </div>
               </div>
             </article>
           `,
@@ -1343,6 +1354,15 @@ document.querySelector("#cancel-wishlist-button").addEventListener("click", () =
   wishlistForm.hidden = true;
 });
 wishlistList.addEventListener("click", (event) => {
+  const toggleButton = event.target.closest("[data-wishlist-toggle]");
+  if (toggleButton) {
+    const card = toggleButton.closest(".wishlist-card");
+    const detail = card.querySelector(".wishlist-card-detail");
+    const expanded = toggleButton.getAttribute("aria-expanded") === "true";
+    toggleButton.setAttribute("aria-expanded", String(!expanded));
+    detail.hidden = expanded;
+    return;
+  }
   const editButton = event.target.closest("[data-wishlist-edit]");
   if (editButton) {
     openWishlistForm(state.wishlist.find((item) => item.id === editButton.dataset.wishlistEdit));
