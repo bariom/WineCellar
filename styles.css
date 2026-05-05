@@ -739,6 +739,11 @@ h2 {
   text-align: left;
 }
 
+.wishlist-card-header > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .wishlist-card-actions {
   display: flex;
   align-items: flex-start;
@@ -750,12 +755,14 @@ h2 {
   margin: 0;
   font-size: 1.02rem;
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .wishlist-card p {
   margin: 0;
   color: var(--muted);
   font-size: 0.88rem;
+  line-height: 1.35;
 }
 
 .wishlist-card-side {
@@ -790,6 +797,10 @@ h2 {
   display: grid;
   gap: 12px;
   padding: 0 14px 14px;
+}
+
+.wishlist-card-detail[hidden] {
+  display: none;
 }
 
 .wishlist-card-detail dl {
@@ -1210,6 +1221,56 @@ h2 {
 
   .wishlist-card-actions .btn {
     width: 100%;
+  }
+
+  .wishlist-card {
+    border-radius: 10px;
+  }
+
+  .wishlist-card-header {
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .wishlist-card h2 {
+    font-size: 1rem;
+    line-height: 1.18;
+  }
+
+  .wishlist-card p {
+    margin-top: 4px;
+    font-size: 0.8rem;
+  }
+
+  .wishlist-card-side {
+    gap: 6px;
+  }
+
+  .wishlist-chip {
+    max-width: 82px;
+    padding: 4px 8px;
+    overflow: hidden;
+    font-size: 0.68rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .wishlist-card-detail {
+    padding: 0 12px 12px;
+  }
+
+  .wishlist-card-detail dl div {
+    padding: 9px 10px;
+  }
+
+  .wishlist-card-detail dl div:last-child {
+    display: grid;
+    gap: 4px;
+  }
+
+  .wishlist-card-detail dl div:last-child dd {
+    text-align: left;
   }
 
   .sale-form {
