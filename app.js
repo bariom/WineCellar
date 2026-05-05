@@ -417,6 +417,10 @@ function isSharedViewer() {
   return state.role === "shared_viewer";
 }
 
+function isAuthenticated() {
+  return !state.authEnabled || state.role !== "anonymous";
+}
+
 function applyPermissions() {
   document.body.dataset.role = state.role;
   document.querySelectorAll(".admin-only").forEach((element) => {
@@ -589,6 +593,7 @@ function updateFilterCount() {
 }
 
 function showScreen(name) {
+  if (name !== "login" && !isAuthenticated()) name = "login";
   if (name === "form" && !isAdmin()) name = "cellar";
   Object.entries(screens).forEach(([key, screen]) => {
     screen.classList.toggle("active", key === name);
