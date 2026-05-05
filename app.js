@@ -48,12 +48,15 @@ const translations = {
     drankOne: "Drank 1",
     edit: "Edit",
     emptyFilter: "No wines found for this filter.",
+    emptyInsightFilter: "No wines found for {filter}.",
     emptyOwnership: "No ownership data.",
+    emptyWishlist: "Your wishlist is empty.",
     exchangeUnavailable: "Exchange rates unavailable: {error}",
     expected: "Expected",
     expectedDelivery: "Expected Delivery",
     export: "Export",
     filters: "Filters",
+    filterActive: "Filter: {filter}",
     format: "Format",
     formatBottle: "Bottle (750ml)",
     formatHalf: "Half (375ml)",
@@ -106,6 +109,7 @@ const translations = {
     saleLoss: "Loss",
     noSales: "No sales recorded.",
     notes: "Notes",
+    resultsCount: "{count} {bottles}",
     saleUnable: "Unable to save sale: {error}",
     searchPlaceholder: "Search wine, producer, region",
     score: "Score",
@@ -181,12 +185,15 @@ const translations = {
     drankOne: "Bevuta 1",
     edit: "Modifica",
     emptyFilter: "Nessun vino trovato per questo filtro.",
+    emptyInsightFilter: "Nessun vino trovato per {filter}.",
     emptyOwnership: "Nessun dato di proprietà.",
+    emptyWishlist: "La wishlist e vuota.",
     exchangeUnavailable: "Cambi non disponibili: {error}",
     expected: "Previsto",
     expectedDelivery: "Consegna prevista",
     export: "Esporta",
     filters: "Filtri",
+    filterActive: "Filtro: {filter}",
     format: "Formato",
     formatBottle: "Bottiglia (750ml)",
     formatHalf: "Mezza (375ml)",
@@ -239,6 +246,7 @@ const translations = {
     saleLoss: "Perdita",
     noSales: "Nessuna vendita registrata.",
     notes: "Note",
+    resultsCount: "{count} {bottles}",
     saleUnable: "Impossibile salvare la vendita: {error}",
     searchPlaceholder: "Cerca vino, produttore, regione",
     score: "Punteggio",
@@ -589,7 +597,15 @@ function updateFilterCount() {
   filterCount.textContent = activeFilters ? String(activeFilters) : "";
   filterCount.hidden = activeFilters === 0;
   activeInsightFilter.hidden = !state.insightFilter;
-  activeInsightFilter.textContent = state.insightFilter ? `${insightFilterLabel()} x` : "";
+  if (state.insightFilter) activeInsightFilter.textContent = `${t("filterActive", { filter: insightFilterLabel() })} x`;
+}
+
+function updateActiveInsightFilterCount(count) {
+  if (!state.insightFilter) return;
+  activeInsightFilter.textContent = `${t("filterActive", { filter: insightFilterLabel() })} - ${t("resultsCount", {
+    count: formatNumber(count),
+    bottles: bottleLabel(count),
+  })} x`;
 }
 
 function showScreen(name) {
@@ -750,6 +766,7 @@ function renderCellar() {
     .filter(matchesInsightFilter)
     .sort((a, b) => (b.expected_delivery || "").localeCompare(a.expected_delivery || ""));
 
+  updateActiveInsightFilterCount(wines.reduce((sum, wine) => sum + Number(wine.quantity || 0), 0));
   wineList.innerHTML = wines.length
     ? wines
         .map(
@@ -771,7 +788,7 @@ function renderCellar() {
           `,
         )
         .join("")
-    : `<p class="empty-state">${t("emptyFilter")}</p>`;
+    : `<p class="empty-state">${state.insightFilter ? t("emptyInsightFilter", { filter: insightFilterLabel() }) : t("emptyFilter")}</p>`;
 }
 
 function wishlistStatusLabel(status) {
@@ -795,6 +812,10 @@ function priorityLabel(priority) {
   );
 }
 
+function priorityClass(priority) {
+  return `priority-${String(priority || "Medium").toLowerCase()}`;
+}
+
 function renderWishlist() {
   if (!wishlistList) return;
   wishlistList.innerHTML = state.wishlist.length
@@ -806,9 +827,10 @@ function renderWishlist() {
                 <div>
                   <h2>${escapeHtml(item.name)} ${item.vintage ? `<span class="small-vintage">${escapeHtml(item.vintage)}</span>` : ""}</h2>
                   <p>${escapeHtml([item.producer, item.region, item.appellation].filter(Boolean).join(" - ") || t("notSpecified"))}</p>
+                  <p class="wishlist-closed-meta">${escapeHtml(wishlistStatusLabel(item.status))} - ${item.target_price ? formatMoney(item.target_price, item.currency) : t("notSpecified")}</p>
                 </div>
                 <span class="wishlist-card-side">
-                  <span class="wishlist-chip">${escapeHtml(priorityLabel(item.priority))}</span>
+                  <span class="wishlist-chip ${priorityClass(item.priority)}">${escapeHtml(priorityLabel(item.priority))}</span>
                   <span class="wishlist-chevron" aria-hidden="true">v</span>
                 </span>
               </button>
@@ -830,7 +852,7 @@ function renderWishlist() {
           `,
         )
         .join("")
-    : `<p class="empty-state">${t("emptyFilter")}</p>`;
+    : `<p class="empty-state">${t("emptyWishlist")}</p>`;
   applyPermissions();
 }
 
@@ -1009,18 +1031,20 @@ async function renderInsights() {
 }
 
 function renderInsightRows(items, field, scope) {
+  const maxBottles = Math.max(...items.map((item) => Number(item.bottles) || 0), 0);
   return items
     .map((item) => {
       const value = field === "region" ? item.region : item.type;
       const label = field === "type" ? typeLabel(value) : value === "Unspecified" ? t("notSpecified") : value;
+      const barWidth = maxBottles ? Math.max(8, Math.round((Number(item.bottles) / maxBottles) * 100)) : 0;
       return `
-        <button class="region-row" data-insight-field="${field}" data-insight-scope="${scope}" data-insight-value="${escapeAttribute(value)}" type="button">
+        <button class="region-row" data-insight-field="${field}" data-insight-scope="${scope}" data-insight-value="${escapeAttribute(value)}" style="--bar-width: ${barWidth}%;" type="button">
           <span>${escapeHtml(label)}</span>
           <strong>${formatNumber(item.bottles)} btl</strong>
         </button>
       `;
     })
-    .join("");
+    .join("") || `<p class="empty-state compact">${t("emptyFilter")}</p>`;
 }
 
 function applyInsightListFilter(field, value, scope) {
