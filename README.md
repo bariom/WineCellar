@@ -105,6 +105,11 @@ Il database SQLite e `cellar.db`. Non e versionato da Git.
 
 Per backup rapido puoi usare l'export JSON dall'app oppure copiare `cellar.db` a server fermo.
 
+## Catalogo vini
+
+Il catalogo usato per l'autocomplete e salvato in `data/wine_catalog.json`.
+Quando il file cambia, l'app aggiorna automaticamente la tabella `wine_catalog` al successivo avvio.
+
 ## Cambi valuta
 
 La valuta di riferimento e CHF. I cambi vengono scaricati da Frankfurter API, basata sui tassi di riferimento BCE, e salvati in cache per 12 ore.
