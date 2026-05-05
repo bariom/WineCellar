@@ -1338,7 +1338,12 @@ class CellarHandler(SimpleHTTPRequestHandler):
                 if not isinstance(payload, dict) or not isinstance(payload.get("wines"), list):
                     raise ValueError("Import payload must include a wines list")
                 wines = replace_all_wines(payload["wines"])
-                wishlist = replace_all_wishlist(payload.get("wishlist", []))
+                if "wishlist" in payload:
+                    if not isinstance(payload["wishlist"], list):
+                        raise ValueError("Import wishlist payload must be a list")
+                    wishlist = replace_all_wishlist(payload["wishlist"])
+                else:
+                    wishlist = list_wishlist()
                 self.send_json({"wines": wines, "wishlist": wishlist})
                 return
             self.send_error(HTTPStatus.NOT_FOUND)
