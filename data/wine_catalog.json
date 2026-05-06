@@ -2014,5 +2014,277 @@
     "appellation": "Ticino DOC",
     "type": "Red",
     "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Montagna Magica",
+    "producer": "Hubervini",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Monti - Il Canto della Terra",
+    "producer": "Cantina Monti",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Rovere",
+    "producer": "Cantina Monti",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Ronco dei Ciliegi",
+    "producer": "Azienda Mondo",
+    "region": "Ticino",
+    "appellation": "Rosso del Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Vigna d'Antan",
+    "producer": "Guido Brivio",
+    "region": "Ticino",
+    "appellation": "Rosso del Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Oro di Gudo",
+    "producer": "Agriturismo Cantina Pian Marnino",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Tre Ori di Gudo",
+    "producer": "Agriturismo Cantina Pian Marnino",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Comano",
+    "producer": "Tamborini",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Castelrotto",
+    "producer": "Tamborini",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Carato Riserva",
+    "producer": "Angelo Delea",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "San Carlo",
+    "producer": "Angelo Delea",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chiar di Luna",
+    "producer": "Angelo Delea",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "White",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Arzo",
+    "producer": "Gialdi Vini",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Estro",
+    "producer": "Gialdi Vini",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Sasso Chierico Bianco di Merlot",
+    "producer": "Tenuta Sasso Chierico",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "White",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Riserva",
+    "producer": "Cantina Il Cavaliere",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Cuvee Prestige",
+    "producer": "Cantina Il Cavaliere",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "La Dama Bianca",
+    "producer": "Tenuta Agricola Luigina",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "White",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "La Trosa Vigne Vecchie",
+    "producer": "Cantina Sociale Mendrisio",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Sole",
+    "producer": "Cantina Sociale Mendrisio",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Marca Oro",
+    "producer": "Cantina Sociale Mendrisio",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Bucaneve",
+    "producer": "CAGI Cantina Giubiasco",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "White",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Cherubino",
+    "producer": "Matasci Vini",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "White",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Agra Collina d'Oro Merlot Riserva",
+    "producer": "Cantina Pelossi",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Piccolo Ronco di Pedrinate",
+    "producer": "Valsangiacomo Vini",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Sass",
+    "producer": "Zundel",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Ronco",
+    "producer": "Azienda Agraria Cantonale di Mezzana",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Bongio",
+    "producer": "Azienda Agraria Cantonale di Mezzana",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Meride",
+    "producer": "FAWINO",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Emozioni",
+    "producer": "Monticello Vini",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Arco Tondo",
+    "producer": "Tenuta San Giorgio",
+    "region": "Ticino",
+    "appellation": "Rosso del Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Rosso dei Fuochi",
+    "producer": "Terreni alla Maggia",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Ampelio",
+    "producer": "Chiodi Ascona",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Punta Rossa",
+    "producer": "Azienda Agricola Cadenazzi",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
   }
 ]
