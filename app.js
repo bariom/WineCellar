@@ -529,7 +529,7 @@ function renderWineSuggestions() {
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((wine) => {
       const source = wine.source === "catalog" ? "catalog" : "cellar";
-      return `<option value="${escapeAttribute(wine.name)}" label="${escapeAttribute([wine.producer, wine.region, source].filter(Boolean).join(" - "))}"></option>`;
+      return `<option value="${escapeAttribute(wine.name)}" label="${escapeAttribute([wine.name, wine.producer, wine.region, source].filter(Boolean).join(" - "))}"></option>`;
     })
     .join("");
 }
