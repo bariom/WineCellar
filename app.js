@@ -695,6 +695,46 @@ function renderDrinkWindow(wine) {
   notes.textContent = wine.drink_window_notes ? `${t("drinkWindowEstimate")}: ${wine.drink_window_notes}` : t("drinkWindowEstimate");
 }
 
+function drinkWindowChartData(wine) {
+  const vintage = Number.parseInt(wine.vintage, 10);
+  const peakFrom = Number(wine.drink_peak_from);
+  const peakTo = Number(wine.drink_peak_to);
+  const drinkTo = Number(wine.drink_to);
+  if (![vintage, peakFrom, peakTo, drinkTo].every((value) => Number.isFinite(value) && value > 0)) return null;
+
+  const startYear = Math.min(vintage, Number(wine.drink_from) || vintage);
+  const endYear = Math.max(drinkTo, peakTo + 1);
+  const totalSpan = Math.max(endYear - startYear, 1);
+  const youngPct = Math.max(((peakFrom - startYear) / totalSpan) * 100, 8);
+  const peakPct = Math.max(((peakTo - peakFrom) / totalSpan) * 100, 8);
+  const declinePct = Math.max(100 - youngPct - peakPct, 8);
+  const currentYear = new Date().getFullYear();
+  const markerPct = Math.min(Math.max(((currentYear - startYear) / totalSpan) * 100, 0), 100);
+
+  return { startYear, peakFrom, peakTo, endYear, youngPct, peakPct, declinePct, markerPct, currentYear };
+}
+
+function renderMiniDrinkWindow(wine) {
+  const data = drinkWindowChartData(wine);
+  if (!data) return "";
+
+  return `
+    <div class="mini-drink-window" aria-label="${escapeAttribute(t("drinkWindow"))}">
+      <div class="mini-drink-window-years">
+        <span>${data.startYear}</span>
+        <span>${data.peakFrom}-${data.peakTo}</span>
+        <span>${data.endYear}</span>
+      </div>
+      <div class="mini-drink-window-bar" title="${escapeAttribute(`${t("drinkWindowYear")}: ${data.currentYear}`)}">
+        <span class="drink-segment drink-young" style="flex-basis: ${data.youngPct}%"></span>
+        <span class="drink-segment drink-peak" style="flex-basis: ${data.peakPct}%"></span>
+        <span class="drink-segment drink-decline" style="flex-basis: ${data.declinePct}%"></span>
+        <span class="drink-current-marker" style="left: ${data.markerPct}%"></span>
+      </div>
+    </div>
+  `;
+}
+
 function openDetail(wine) {
   if (!wine) return;
   state.selectedWineId = wine.id;
@@ -850,6 +890,7 @@ function renderCellar() {
                 <p class="wine-meta">${wine.quantity}x ${escapeHtml(formatLabel(wine.format))}</p>
                 ${scoreSummary(wine) ? `<p class="score-summary">${escapeHtml(scoreSummary(wine))}</p>` : ""}
                 <p class="wine-meta">${state.lang === "it" ? "Arrivo" : "Arrival"}: ${formatMonthYear(wine.expected_delivery)}</p>
+                ${renderMiniDrinkWindow(wine)}
               </div>
               <div class="card-side">
                 <span class="vintage">${escapeHtml(wine.vintage)}</span>

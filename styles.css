@@ -345,6 +345,38 @@ h2 {
   line-height: 1.25;
 }
 
+.mini-drink-window {
+  display: grid;
+  gap: 5px;
+  max-width: 360px;
+  margin-top: 10px;
+}
+
+.mini-drink-window-years {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.mini-drink-window-bar {
+  position: relative;
+  display: flex;
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid rgba(39, 39, 42, 0.1);
+  background: #f8f1e5;
+}
+
+.mini-drink-window-bar .drink-current-marker {
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+}
+
 .vintage {
   color: var(--wine);
   font-family: Georgia, "Times New Roman", serif;
