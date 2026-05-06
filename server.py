@@ -889,9 +889,14 @@ def insert_wine(conn: sqlite3.Connection, wine: dict) -> dict:
 
 
 def upsert_wine(payload: dict, wine_id: str | None = None) -> dict:
+    preserve_ai_notes = wine_id is not None and "ai_notes" not in payload
     data = clean_wine(payload, wine_id)
     scores = data.pop("scores", [])
     with connect() as conn:
+        if preserve_ai_notes:
+            existing = get_wine(conn, data["id"])
+            if existing:
+                data["ai_notes"] = existing.get("ai_notes", "")
         conn.execute(
             """
             INSERT INTO wines (
