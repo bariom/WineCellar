@@ -1050,12 +1050,14 @@ def generate_ai_notes(wine_id: str) -> dict:
             "Sei un assistente esperto di vino. Scrivi note brevi, utili e interessanti "
             "per un collezionista privato. Rispondi in italiano. Non inventare dati specifici "
             "come punteggi, prezzi, date o classificazioni se non sono nel contesto. Se un fatto "
-            "e incerto, dillo in modo prudente."
+            "e incerto, dillo in modo prudente. Usa solo testo semplice: niente Markdown, niente "
+            "asterischi, niente grassetti, niente titoli con simboli e niente markup HTML."
         ),
         "input": (
-            "Genera una scheda 'Note AI' per questo vino. Usa 5-7 punti sintetici e pratici: "
-            "stile, produttore/territorio, annata se utile, abbinamenti, finestra indicativa di consumo "
-            "e una curiosita. Contesto:\n"
+            "Genera una scheda 'Note AI' per questo vino in testo semplice. Usa 5-7 righe brevi, "
+            "ognuna nel formato 'Etichetta: testo', senza elenchi Markdown e senza asterischi. "
+            "Copri stile, produttore/territorio, annata se utile, abbinamenti, finestra indicativa "
+            "di consumo e una curiosita. Contesto:\n"
             f"{json.dumps(wine_context, ensure_ascii=False)}"
         ),
         "max_output_tokens": 650,
