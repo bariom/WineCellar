@@ -794,6 +794,11 @@ h2 {
   white-space: pre-wrap;
 }
 
+.compact-note {
+  min-height: 0;
+  font-size: 0.88rem;
+}
+
 .drink-window-chart {
   display: grid;
   gap: 8px;

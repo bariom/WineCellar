@@ -255,13 +255,17 @@
             <span class="status-pill" id="detail-status"></span>
           </div>
           <section class="values-panel">
-            <h2 data-i18n="values">Values</h2>
+            <div class="section-title-row">
+              <h2 data-i18n="values">Values</h2>
+              <button class="btn btn-soft admin-only" id="generate-ai-value-button" type="button" data-i18n="generateAiValue">Stima valore</button>
+            </div>
             <div class="values-grid">
               <article><span data-i18n="myCost">My Cost</span><strong id="detail-position-value"></strong></article>
               <article><span data-i18n="currentPositionValue">Current Position Value</span><strong id="detail-current-position-value"></strong></article>
               <article><span data-i18n="totalPositionCost">Total Position Cost</span><strong id="detail-total-position-cost"></strong></article>
               <article><span data-i18n="totalCurrentPositionValue">Total Current Position Value</span><strong id="detail-total-current-position-value"></strong></article>
             </div>
+            <p class="notes-box compact-note" id="detail-ai-value-notes"></p>
           </section>
           <div class="detail-grid">
             <div>

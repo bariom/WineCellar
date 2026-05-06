@@ -10,6 +10,7 @@ L'app usa un frontend HTML/CSS/JavaScript e un backend Python basato sulla libre
 - Gestione stati: ordinato, spedito, in cantina.
 - Valute CHF, EUR e USD con conversione verso CHF tramite Frankfurter API / tassi BCE.
 - Valore di acquisto e valore attuale unitario aggiornabile manualmente.
+- Stima AI del valore attuale unitario, generata a richiesta e salvata sulla posizione.
 - Note personali su ogni posizione.
 - Note AI generate a richiesta con OpenAI, salvate sulla posizione.
 - Finestra di degustazione stimata a richiesta con OpenAI, visualizzata come linea temporale.
@@ -95,7 +96,7 @@ Il blocco delle modifiche e applicato anche lato server.
 
 ## Note AI
 
-Per usare i pulsanti "Genera" nelle Note AI e nella finestra di degustazione configura `OPENAI_API_KEY` in `.env` e riavvia l'app.
+Per usare i pulsanti "Genera" nelle Note AI, nella finestra di degustazione e nella stima valore configura `OPENAI_API_KEY` in `.env` e riavvia l'app.
 Le chiamate a OpenAI avvengono solo lato server e solo quando un admin le richiede dal dettaglio di una posizione.
 
 ## Aggiornamento da Git

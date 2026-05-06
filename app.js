@@ -72,6 +72,9 @@ const translations = {
     generateAiNotes: "Generate",
     generateAiNotesConfirm: "Replace the current AI notes?",
     generateAiNotesUnable: "Unable to generate AI notes: {error}",
+    generateAiValue: "Estimate Value",
+    generateAiValueConfirm: "Replace the current unit value with an AI estimate?",
+    generateAiValueUnable: "Unable to estimate current value: {error}",
     generateDrinkWindow: "Generate",
     generateDrinkWindowConfirm: "Replace the current drinking window?",
     generateDrinkWindowUnable: "Unable to generate drinking window: {error}",
@@ -223,6 +226,9 @@ const translations = {
     generateAiNotes: "Genera",
     generateAiNotesConfirm: "Sostituire le Note AI attuali?",
     generateAiNotesUnable: "Impossibile generare le Note AI: {error}",
+    generateAiValue: "Stima valore",
+    generateAiValueConfirm: "Sostituire il valore unitario attuale con una stima AI?",
+    generateAiValueUnable: "Impossibile stimare il valore attuale: {error}",
     generateDrinkWindow: "Genera",
     generateDrinkWindowConfirm: "Sostituire la finestra di degustazione attuale?",
     generateDrinkWindowUnable: "Impossibile generare la finestra di degustazione: {error}",
@@ -353,6 +359,7 @@ const deleteButton = document.querySelector("#delete-button");
 const drinkButton = document.querySelector("#drink-bottle-button");
 const generateAiNotesButton = document.querySelector("#generate-ai-notes-button");
 const generateDrinkWindowButton = document.querySelector("#generate-drink-window-button");
+const generateAiValueButton = document.querySelector("#generate-ai-value-button");
 const ownersFormList = document.querySelector("#owners-form-list");
 const scoresFormList = document.querySelector("#scores-form-list");
 const bottomNav = document.querySelector(".bottom-nav");
@@ -765,6 +772,9 @@ function openDetail(wine) {
     unitCurrentValue(wine) * Number(wine.quantity || 0),
     wine.currency,
   );
+  const aiValueNotes = document.querySelector("#detail-ai-value-notes");
+  aiValueNotes.textContent = wine.ai_value_notes || "";
+  aiValueNotes.hidden = !wine.ai_value_notes;
   document.querySelector("#detail-quantity").textContent = `${wine.quantity} ${bottleLabel(wine.quantity)}`;
   document.querySelector("#detail-owner-share").textContent = `${formatNumber(wine.owner_share_pct ?? 100)}%`;
   document.querySelector("#detail-owned-quantity").textContent = `${formatNumber(personalQuantity(wine))} ${bottleLabel(personalQuantity(wine))}`;
@@ -1297,6 +1307,7 @@ function formToWine() {
     drink_peak_to: existingWine?.drink_peak_to ?? null,
     drink_to: existingWine?.drink_to ?? null,
     drink_window_notes: existingWine?.drink_window_notes || "",
+    ai_value_notes: existingWine?.ai_value_notes || "",
   };
 }
 
@@ -1364,6 +1375,27 @@ async function generateAiNotes() {
   } finally {
     generateAiNotesButton.disabled = false;
     generateAiNotesButton.textContent = previousText;
+  }
+}
+
+async function generateAiValue() {
+  const wine = state.wines.find((item) => item.id === state.selectedWineId);
+  if (!wine) return;
+  if (wine.current_value && !confirm(t("generateAiValueConfirm"))) return;
+
+  generateAiValueButton.disabled = true;
+  const previousText = generateAiValueButton.textContent;
+  generateAiValueButton.textContent = "...";
+  try {
+    const saved = await api(`/api/wines/${encodeURIComponent(wine.id)}/ai-value`, { method: "POST" });
+    const index = state.wines.findIndex((item) => item.id === saved.id);
+    if (index >= 0) state.wines[index] = saved;
+    renderCellar();
+    await renderInsights();
+    openDetail(saved);
+  } finally {
+    generateAiValueButton.disabled = false;
+    generateAiValueButton.textContent = previousText;
   }
 }
 
@@ -1555,6 +1587,12 @@ generateAiNotesButton.addEventListener("click", () => {
   generateAiNotes().catch((error) => {
     generateAiNotesButton.disabled = false;
     alert(t("generateAiNotesUnable", { error: error.message }));
+  });
+});
+generateAiValueButton.addEventListener("click", () => {
+  generateAiValue().catch((error) => {
+    generateAiValueButton.disabled = false;
+    alert(t("generateAiValueUnable", { error: error.message }));
   });
 });
 generateDrinkWindowButton.addEventListener("click", () => {
