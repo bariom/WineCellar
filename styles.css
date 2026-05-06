@@ -734,6 +734,7 @@ h2 {
 .owners-panel,
 .scores-panel,
 .notes-panel,
+.ai-notes-panel,
 .sales-panel {
   display: grid;
   gap: 10px;
@@ -742,6 +743,7 @@ h2 {
 .owners-panel h2,
 .scores-panel h2,
 .notes-panel h2,
+.ai-notes-panel h2,
 .sales-panel h2 {
   margin: 0;
   font-size: 1.15rem;

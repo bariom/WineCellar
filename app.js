@@ -19,6 +19,7 @@ const translations = {
     addOwner: "Add Owner",
     addScore: "Add Score",
     addWine: "+ Add Wine",
+    aiNotes: "AI Notes",
     all: "All",
     appellation: "Appellation",
     assigned: "Assigned",
@@ -61,6 +62,9 @@ const translations = {
     formatBottle: "Bottle (750ml)",
     formatHalf: "Half (375ml)",
     formatMagnum: "Magnum (1.5L)",
+    generateAiNotes: "Generate",
+    generateAiNotesConfirm: "Replace the current AI notes?",
+    generateAiNotesUnable: "Unable to generate AI notes: {error}",
     import: "Import",
     importInvalid: "The selected file does not contain a valid cellar.",
     insights: "Insights",
@@ -156,6 +160,7 @@ const translations = {
     addOwner: "Aggiungi proprietario",
     addScore: "Aggiungi punteggio",
     addWine: "+ Aggiungi vino",
+    aiNotes: "Note AI",
     all: "Tutti",
     appellation: "Denominazione",
     assigned: "Assegnato",
@@ -198,6 +203,9 @@ const translations = {
     formatBottle: "Bottiglia (750ml)",
     formatHalf: "Mezza (375ml)",
     formatMagnum: "Magnum (1.5L)",
+    generateAiNotes: "Genera",
+    generateAiNotesConfirm: "Sostituire le Note AI attuali?",
+    generateAiNotesUnable: "Impossibile generare le Note AI: {error}",
     import: "Importa",
     importInvalid: "Il file selezionato non contiene una cantina valida.",
     insights: "Statistiche",
@@ -323,6 +331,7 @@ const grossColorList = document.querySelector("#gross-color-list");
 const form = document.querySelector("#wine-form");
 const deleteButton = document.querySelector("#delete-button");
 const drinkButton = document.querySelector("#drink-bottle-button");
+const generateAiNotesButton = document.querySelector("#generate-ai-notes-button");
 const ownersFormList = document.querySelector("#owners-form-list");
 const scoresFormList = document.querySelector("#scores-form-list");
 const bottomNav = document.querySelector(".bottom-nav");
@@ -666,6 +675,7 @@ function openDetail(wine) {
   document.querySelector("#detail-order-date").textContent = formatDate(wine.order_date);
   document.querySelector("#detail-expected-delivery").textContent = formatDate(wine.expected_delivery);
   document.querySelector("#detail-notes").textContent = wine.notes || t("notSpecified");
+  document.querySelector("#detail-ai-notes").textContent = wine.ai_notes || t("notSpecified");
   drinkButton.disabled = Number(wine.quantity) <= 0 || wine.status !== "Delivered";
   drinkButton.title = wine.status === "Delivered" ? "" : t("onlyDelivered");
   renderOwnerList(wine);
@@ -1156,6 +1166,7 @@ function collectScores() {
 
 function formToWine() {
   const data = new FormData(form);
+  const existingWine = state.wines.find((wine) => wine.id === data.get("id"));
   return {
     id: data.get("id") || undefined,
     name: data.get("name").trim(),
@@ -1177,6 +1188,7 @@ function formToWine() {
     owners: collectOwners(),
     scores: collectScores(),
     notes: data.get("notes").trim(),
+    ai_notes: existingWine?.ai_notes || "",
   };
 }
 
@@ -1226,6 +1238,25 @@ async function drinkBottle() {
   renderCellar();
   await renderInsights();
   openDetail(saved);
+}
+
+async function generateAiNotes() {
+  const wine = state.wines.find((item) => item.id === state.selectedWineId);
+  if (!wine) return;
+  if (wine.ai_notes && !confirm(t("generateAiNotesConfirm"))) return;
+
+  generateAiNotesButton.disabled = true;
+  const previousText = generateAiNotesButton.textContent;
+  generateAiNotesButton.textContent = "...";
+  try {
+    const saved = await api(`/api/wines/${encodeURIComponent(wine.id)}/ai-notes`, { method: "POST" });
+    const index = state.wines.findIndex((item) => item.id === saved.id);
+    if (index >= 0) state.wines[index] = saved;
+    openDetail(saved);
+  } finally {
+    generateAiNotesButton.disabled = false;
+    generateAiNotesButton.textContent = previousText;
+  }
 }
 
 async function saveSale(event) {
@@ -1391,6 +1422,12 @@ drinkButton.addEventListener("click", () => {
   drinkBottle().catch((error) => {
     drinkButton.disabled = false;
     alert(t("unableBottleCount", { error: error.message }));
+  });
+});
+generateAiNotesButton.addEventListener("click", () => {
+  generateAiNotes().catch((error) => {
+    generateAiNotesButton.disabled = false;
+    alert(t("generateAiNotesUnable", { error: error.message }));
   });
 });
 showSaleFormButton.addEventListener("click", () => {

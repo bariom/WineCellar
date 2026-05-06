@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import json
 import hashlib
+import json
 import os
 import sqlite3
 import time
@@ -27,6 +27,9 @@ ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 VIEWER_PASSWORD = os.environ.get("VIEWER_PASSWORD", "")
 SHARED_VIEWER_PASSWORD = os.environ.get("SHARED_VIEWER_PASSWORD", "")
 AUTH_ENABLED = bool(ADMIN_PASSWORD and (VIEWER_PASSWORD or SHARED_VIEWER_PASSWORD))
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
+OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 SESSION_COOKIE = "wine_cellar_session"
 SESSIONS: dict[str, str] = {}
 
@@ -51,6 +54,7 @@ FIELDS = [
     "owners",
     "scores",
     "notes",
+    "ai_notes",
 ]
 
 SEED_WINES = [
@@ -208,6 +212,7 @@ def init_db() -> None:
                 owner_share_pct REAL NOT NULL DEFAULT 100,
                 owners_json TEXT NOT NULL DEFAULT '[]',
                 notes TEXT NOT NULL DEFAULT '',
+                ai_notes TEXT NOT NULL DEFAULT '',
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
@@ -217,6 +222,7 @@ def init_db() -> None:
         ensure_column(conn, "wines", "owners_json", "TEXT NOT NULL DEFAULT '[]'")
         ensure_column(conn, "wines", "current_value", "REAL")
         ensure_column(conn, "wines", "notes", "TEXT NOT NULL DEFAULT ''")
+        ensure_column(conn, "wines", "ai_notes", "TEXT NOT NULL DEFAULT ''")
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS exchange_rates (
@@ -337,7 +343,7 @@ def list_wines() -> list[dict]:
             """
             SELECT id, name, producer, vintage, quantity, format, type, region, appellation,
                    price, current_value, currency, merchant, order_date, expected_delivery, status,
-                   owner_share_pct, owners_json, notes
+                   owner_share_pct, owners_json, notes, ai_notes
             FROM wines
             ORDER BY expected_delivery DESC, name ASC
             """
@@ -758,6 +764,7 @@ def clean_wine(payload: dict, wine_id: str | None = None) -> dict:
         "owners_json": json.dumps(owners),
         "scores": scores,
         "notes": str(payload.get("notes", "")).strip(),
+        "ai_notes": str(payload.get("ai_notes", "")).strip(),
     }
 
 
@@ -834,7 +841,7 @@ def get_wine(conn: sqlite3.Connection, wine_id: str) -> dict | None:
         """
         SELECT id, name, producer, vintage, quantity, format, type, region, appellation,
                price, current_value, currency, merchant, order_date, expected_delivery, status,
-               owner_share_pct, owners_json, notes
+               owner_share_pct, owners_json, notes, ai_notes
         FROM wines
         WHERE id = ?
         """,
@@ -866,12 +873,12 @@ def insert_wine(conn: sqlite3.Connection, wine: dict) -> dict:
         INSERT INTO wines (
             id, name, producer, vintage, quantity, format, type, region, appellation,
             price, current_value, currency, merchant, order_date, expected_delivery, status,
-            owner_share_pct, owners_json, notes
+            owner_share_pct, owners_json, notes, ai_notes
         )
         VALUES (
             :id, :name, :producer, :vintage, :quantity, :format, :type, :region, :appellation,
             :price, :current_value, :currency, :merchant, :order_date, :expected_delivery, :status,
-            :owner_share_pct, :owners_json, :notes
+            :owner_share_pct, :owners_json, :notes, :ai_notes
         )
         """,
         data,
@@ -890,12 +897,12 @@ def upsert_wine(payload: dict, wine_id: str | None = None) -> dict:
             INSERT INTO wines (
                 id, name, producer, vintage, quantity, format, type, region, appellation,
                 price, current_value, currency, merchant, order_date, expected_delivery, status,
-                owner_share_pct, owners_json, notes
+                owner_share_pct, owners_json, notes, ai_notes
             )
             VALUES (
                 :id, :name, :producer, :vintage, :quantity, :format, :type, :region, :appellation,
                 :price, :current_value, :currency, :merchant, :order_date, :expected_delivery, :status,
-                :owner_share_pct, :owners_json, :notes
+                :owner_share_pct, :owners_json, :notes, :ai_notes
             )
             ON CONFLICT(id) DO UPDATE SET
                 name = excluded.name,
@@ -916,6 +923,7 @@ def upsert_wine(payload: dict, wine_id: str | None = None) -> dict:
                 owner_share_pct = excluded.owner_share_pct,
                 owners_json = excluded.owners_json,
                 notes = excluded.notes,
+                ai_notes = excluded.ai_notes,
                 updated_at = CURRENT_TIMESTAMP
             """,
             data,
@@ -1002,6 +1010,87 @@ def sell_bottles(wine_id: str, payload: dict) -> dict:
         updated = get_wine(conn, wine_id)
 
     return {"wine": updated, "sale": list_sales(wine_id)[0]}
+
+
+def extract_response_text(payload: dict) -> str:
+    if isinstance(payload.get("output_text"), str):
+        return payload["output_text"].strip()
+    texts: list[str] = []
+    for item in payload.get("output", []):
+        if not isinstance(item, dict):
+            continue
+        for content in item.get("content", []):
+            if isinstance(content, dict) and content.get("type") == "output_text":
+                texts.append(str(content.get("text", "")).strip())
+    return "\n".join(text for text in texts if text).strip()
+
+
+def generate_ai_notes(wine_id: str) -> dict:
+    with connect() as conn:
+        wine = get_wine(conn, wine_id)
+        if not wine:
+            raise LookupError("Wine not found")
+
+    if not OPENAI_API_KEY:
+        raise ValueError("OPENAI_API_KEY is not configured")
+
+    wine_context = {
+        "name": wine["name"],
+        "producer": wine["producer"],
+        "vintage": wine["vintage"],
+        "region": wine.get("region", ""),
+        "appellation": wine.get("appellation", ""),
+        "type": wine.get("type", ""),
+        "format": wine.get("format", ""),
+        "scores": wine.get("scores", []),
+    }
+    request_payload = {
+        "model": OPENAI_MODEL,
+        "instructions": (
+            "Sei un assistente esperto di vino. Scrivi note brevi, utili e interessanti "
+            "per un collezionista privato. Rispondi in italiano. Non inventare dati specifici "
+            "come punteggi, prezzi, date o classificazioni se non sono nel contesto. Se un fatto "
+            "e incerto, dillo in modo prudente."
+        ),
+        "input": (
+            "Genera una scheda 'Note AI' per questo vino. Usa 5-7 punti sintetici e pratici: "
+            "stile, produttore/territorio, annata se utile, abbinamenti, finestra indicativa di consumo "
+            "e una curiosita. Contesto:\n"
+            f"{json.dumps(wine_context, ensure_ascii=False)}"
+        ),
+        "max_output_tokens": 650,
+    }
+    request = Request(
+        OPENAI_RESPONSES_URL,
+        data=json.dumps(request_payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json",
+            "User-Agent": "WineCellar/1.0",
+        },
+        method="POST",
+    )
+
+    try:
+        with urlopen(request, timeout=30) as response:
+            response_payload = json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        error_body = exc.read().decode("utf-8", errors="replace")
+        raise ValueError(f"OpenAI request failed: {error_body or exc.reason}") from exc
+    except (URLError, TimeoutError, OSError) as exc:
+        raise ValueError(f"OpenAI request failed: {exc}") from exc
+
+    ai_notes = extract_response_text(response_payload)
+    if not ai_notes:
+        raise ValueError("OpenAI response did not include text")
+
+    with connect() as conn:
+        conn.execute(
+            "UPDATE wines SET ai_notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (ai_notes, wine_id),
+        )
+        updated = get_wine(conn, wine_id)
+    return updated
 
 
 def replace_all_wines(wines: list[dict]) -> list[dict]:
@@ -1104,6 +1193,13 @@ class CellarHandler(SimpleHTTPRequestHandler):
                 item_id = unquote(path.removeprefix("/api/wishlist/").removesuffix("/convert"))
                 try:
                     self.send_json(convert_wishlist_item(item_id, self.read_json()), HTTPStatus.CREATED)
+                except LookupError as exc:
+                    self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+                return
+            if path.startswith("/api/wines/") and path.endswith("/ai-notes"):
+                wine_id = unquote(path.removeprefix("/api/wines/").removesuffix("/ai-notes"))
+                try:
+                    self.send_json(generate_ai_notes(wine_id))
                 except LookupError as exc:
                     self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
                 return

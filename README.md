@@ -11,6 +11,7 @@ L'app usa un frontend HTML/CSS/JavaScript e un backend Python basato sulla libre
 - Valute CHF, EUR e USD con conversione verso CHF tramite Frankfurter API / tassi BCE.
 - Valore di acquisto e valore attuale unitario aggiornabile manualmente.
 - Note personali su ogni posizione.
+- Note AI generate a richiesta con OpenAI, salvate sulla posizione.
 - Wishlist separata per opportunita d'acquisto, con prezzo obiettivo, priorita e stato; tutte le utenze possono usarla, mentre eliminazione e conversione in ordine restano riservate ad admin.
 - Quote di proprieta per acquisti condivisi, con altri proprietari e percentuali.
 - Dettaglio posizione con valori personali e totali.
@@ -71,6 +72,8 @@ Modifica `.env`:
 ADMIN_PASSWORD=password-admin-forte
 VIEWER_PASSWORD=password-consultazione
 SHARED_VIEWER_PASSWORD=password-condivisi
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4.1-mini
 HOST=0.0.0.0
 PORT=4173
 ```
@@ -88,6 +91,11 @@ Ruoli:
 - `shared_viewer`: puo solo consultare le posizioni condivise, inclusi dettaglio, timeline, vendite e statistiche relative a quelle posizioni.
 
 Il blocco delle modifiche e applicato anche lato server.
+
+## Note AI
+
+Per usare il pulsante "Genera" nelle Note AI configura `OPENAI_API_KEY` in `.env` e riavvia l'app.
+La chiamata a OpenAI avviene solo lato server e solo quando un admin la richiede dal dettaglio di una posizione.
 
 ## Aggiornamento da Git
 
