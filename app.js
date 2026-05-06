@@ -46,6 +46,13 @@ const translations = {
     delete: "Delete",
     delivered: "Delivered",
     dessert: "Dessert",
+    drinkDecline: "Past peak",
+    drinkPeak: "Ideal",
+    drinkWindow: "Drinking Window",
+    drinkWindowEstimate: "AI estimate",
+    drinkWindowMissing: "No drinking window generated.",
+    drinkWindowYear: "Current year",
+    drinkYoung: "Young",
     drankOne: "Drank 1",
     edit: "Edit",
     emptyFilter: "No wines found for this filter.",
@@ -65,6 +72,9 @@ const translations = {
     generateAiNotes: "Generate",
     generateAiNotesConfirm: "Replace the current AI notes?",
     generateAiNotesUnable: "Unable to generate AI notes: {error}",
+    generateDrinkWindow: "Generate",
+    generateDrinkWindowConfirm: "Replace the current drinking window?",
+    generateDrinkWindowUnable: "Unable to generate drinking window: {error}",
     import: "Import",
     importInvalid: "The selected file does not contain a valid cellar.",
     insights: "Insights",
@@ -187,6 +197,13 @@ const translations = {
     delete: "Elimina",
     delivered: "In cantina",
     dessert: "Dolce",
+    drinkDecline: "Oltre apice",
+    drinkPeak: "Ideale",
+    drinkWindow: "Finestra degustazione",
+    drinkWindowEstimate: "Stima AI",
+    drinkWindowMissing: "Nessuna finestra di degustazione generata.",
+    drinkWindowYear: "Anno corrente",
+    drinkYoung: "Giovane",
     drankOne: "Bevuta 1",
     edit: "Modifica",
     emptyFilter: "Nessun vino trovato per questo filtro.",
@@ -206,6 +223,9 @@ const translations = {
     generateAiNotes: "Genera",
     generateAiNotesConfirm: "Sostituire le Note AI attuali?",
     generateAiNotesUnable: "Impossibile generare le Note AI: {error}",
+    generateDrinkWindow: "Genera",
+    generateDrinkWindowConfirm: "Sostituire la finestra di degustazione attuale?",
+    generateDrinkWindowUnable: "Impossibile generare la finestra di degustazione: {error}",
     import: "Importa",
     importInvalid: "Il file selezionato non contiene una cantina valida.",
     insights: "Statistiche",
@@ -332,6 +352,7 @@ const form = document.querySelector("#wine-form");
 const deleteButton = document.querySelector("#delete-button");
 const drinkButton = document.querySelector("#drink-bottle-button");
 const generateAiNotesButton = document.querySelector("#generate-ai-notes-button");
+const generateDrinkWindowButton = document.querySelector("#generate-drink-window-button");
 const ownersFormList = document.querySelector("#owners-form-list");
 const scoresFormList = document.querySelector("#scores-form-list");
 const bottomNav = document.querySelector(".bottom-nav");
@@ -634,6 +655,46 @@ function showScreen(name) {
   if (name === "wishlist") renderWishlist();
 }
 
+function renderDrinkWindow(wine) {
+  const chart = document.querySelector("#drink-window-chart");
+  const empty = document.querySelector("#drink-window-empty");
+  const notes = document.querySelector("#drink-window-notes");
+  const values = ["drink_peak_from", "drink_peak_to", "drink_to"].map((field) => Number(wine[field]));
+  const vintage = Number.parseInt(wine.vintage, 10);
+  const hasWindow = Number.isFinite(vintage) && values.every((value) => Number.isFinite(value) && value > 0);
+
+  chart.hidden = !hasWindow;
+  empty.hidden = hasWindow;
+  notes.hidden = !hasWindow;
+  if (!hasWindow) {
+    empty.textContent = t("drinkWindowMissing");
+    notes.textContent = "";
+    return;
+  }
+
+  const currentYear = new Date().getFullYear();
+  const startYear = Math.min(vintage, Number(wine.drink_from) || vintage);
+  const peakFrom = Number(wine.drink_peak_from);
+  const peakTo = Number(wine.drink_peak_to);
+  const endYear = Math.max(Number(wine.drink_to), peakTo + 1);
+  const totalSpan = Math.max(endYear - startYear, 1);
+  const youngPct = Math.max(((peakFrom - startYear) / totalSpan) * 100, 8);
+  const peakPct = Math.max(((peakTo - peakFrom) / totalSpan) * 100, 8);
+  const declinePct = Math.max(100 - youngPct - peakPct, 8);
+  const markerPct = Math.min(Math.max(((currentYear - startYear) / totalSpan) * 100, 0), 100);
+
+  document.querySelector("#drink-window-start-year").textContent = `${startYear}`;
+  document.querySelector("#drink-window-peak-years").textContent = `${peakFrom}-${peakTo}`;
+  document.querySelector("#drink-window-end-year").textContent = `${endYear}`;
+  document.querySelector("#drink-segment-young").style.flexBasis = `${youngPct}%`;
+  document.querySelector("#drink-segment-peak").style.flexBasis = `${peakPct}%`;
+  document.querySelector("#drink-segment-decline").style.flexBasis = `${declinePct}%`;
+  const marker = document.querySelector("#drink-current-marker");
+  marker.style.left = `${markerPct}%`;
+  marker.title = `${t("drinkWindowYear")}: ${currentYear}`;
+  notes.textContent = wine.drink_window_notes ? `${t("drinkWindowEstimate")}: ${wine.drink_window_notes}` : t("drinkWindowEstimate");
+}
+
 function openDetail(wine) {
   if (!wine) return;
   state.selectedWineId = wine.id;
@@ -676,6 +737,7 @@ function openDetail(wine) {
   document.querySelector("#detail-expected-delivery").textContent = formatDate(wine.expected_delivery);
   document.querySelector("#detail-notes").textContent = wine.notes || t("notSpecified");
   document.querySelector("#detail-ai-notes").textContent = wine.ai_notes || t("notSpecified");
+  renderDrinkWindow(wine);
   drinkButton.disabled = Number(wine.quantity) <= 0 || wine.status !== "Delivered";
   drinkButton.title = wine.status === "Delivered" ? "" : t("onlyDelivered");
   renderOwnerList(wine);
@@ -1189,6 +1251,11 @@ function formToWine() {
     scores: collectScores(),
     notes: data.get("notes").trim(),
     ai_notes: existingWine?.ai_notes || "",
+    drink_from: existingWine?.drink_from ?? null,
+    drink_peak_from: existingWine?.drink_peak_from ?? null,
+    drink_peak_to: existingWine?.drink_peak_to ?? null,
+    drink_to: existingWine?.drink_to ?? null,
+    drink_window_notes: existingWine?.drink_window_notes || "",
   };
 }
 
@@ -1256,6 +1323,25 @@ async function generateAiNotes() {
   } finally {
     generateAiNotesButton.disabled = false;
     generateAiNotesButton.textContent = previousText;
+  }
+}
+
+async function generateDrinkWindow() {
+  const wine = state.wines.find((item) => item.id === state.selectedWineId);
+  if (!wine) return;
+  if (wine.drink_to && !confirm(t("generateDrinkWindowConfirm"))) return;
+
+  generateDrinkWindowButton.disabled = true;
+  const previousText = generateDrinkWindowButton.textContent;
+  generateDrinkWindowButton.textContent = "...";
+  try {
+    const saved = await api(`/api/wines/${encodeURIComponent(wine.id)}/drink-window`, { method: "POST" });
+    const index = state.wines.findIndex((item) => item.id === saved.id);
+    if (index >= 0) state.wines[index] = saved;
+    openDetail(saved);
+  } finally {
+    generateDrinkWindowButton.disabled = false;
+    generateDrinkWindowButton.textContent = previousText;
   }
 }
 
@@ -1428,6 +1514,12 @@ generateAiNotesButton.addEventListener("click", () => {
   generateAiNotes().catch((error) => {
     generateAiNotesButton.disabled = false;
     alert(t("generateAiNotesUnable", { error: error.message }));
+  });
+});
+generateDrinkWindowButton.addEventListener("click", () => {
+  generateDrinkWindow().catch((error) => {
+    generateDrinkWindowButton.disabled = false;
+    alert(t("generateDrinkWindowUnable", { error: error.message }));
   });
 });
 showSaleFormButton.addEventListener("click", () => {

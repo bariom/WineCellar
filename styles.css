@@ -735,6 +735,7 @@ h2 {
 .scores-panel,
 .notes-panel,
 .ai-notes-panel,
+.drink-window-panel,
 .sales-panel {
   display: grid;
   gap: 10px;
@@ -744,6 +745,7 @@ h2 {
 .scores-panel h2,
 .notes-panel h2,
 .ai-notes-panel h2,
+.drink-window-panel h2,
 .sales-panel h2 {
   margin: 0;
   font-size: 1.15rem;
@@ -758,6 +760,62 @@ h2 {
   color: #4f5665;
   background: rgba(255, 250, 243, 0.55);
   white-space: pre-wrap;
+}
+
+.drink-window-chart {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(223, 210, 192, 0.75);
+  border-radius: 10px;
+  background: rgba(255, 250, 243, 0.55);
+}
+
+.drink-window-years,
+.drink-window-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.drink-window-bar {
+  position: relative;
+  display: flex;
+  height: 18px;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid rgba(39, 39, 42, 0.12);
+  background: #f8f1e5;
+}
+
+.drink-segment {
+  min-width: 8%;
+}
+
+.drink-young {
+  background: #e8c84f;
+}
+
+.drink-peak {
+  background: #4f9a62;
+}
+
+.drink-decline {
+  background: #b94a48;
+}
+
+.drink-current-marker {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 3px;
+  border-radius: 999px;
+  background: #1f2933;
+  transform: translateX(-50%);
+  box-shadow: 0 0 0 2px rgba(255, 250, 243, 0.85);
 }
 
 .wishlist-form {

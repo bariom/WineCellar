@@ -335,6 +335,32 @@
             </div>
             <p class="notes-box" id="detail-ai-notes"></p>
           </section>
+          <section class="drink-window-panel">
+            <div class="section-title-row">
+              <h2 data-i18n="drinkWindow">Finestra degustazione</h2>
+              <button class="btn btn-soft admin-only" id="generate-drink-window-button" type="button" data-i18n="generateDrinkWindow">Genera</button>
+            </div>
+            <div class="drink-window-chart" id="drink-window-chart" hidden>
+              <div class="drink-window-years">
+                <span id="drink-window-start-year"></span>
+                <span id="drink-window-peak-years"></span>
+                <span id="drink-window-end-year"></span>
+              </div>
+              <div class="drink-window-bar" aria-hidden="true">
+                <span class="drink-segment drink-young" id="drink-segment-young"></span>
+                <span class="drink-segment drink-peak" id="drink-segment-peak"></span>
+                <span class="drink-segment drink-decline" id="drink-segment-decline"></span>
+                <span class="drink-current-marker" id="drink-current-marker"></span>
+              </div>
+              <div class="drink-window-legend">
+                <span data-i18n="drinkYoung">Giovane</span>
+                <span data-i18n="drinkPeak">Ideale</span>
+                <span data-i18n="drinkDecline">Oltre apice</span>
+              </div>
+            </div>
+            <p class="notes-box" id="drink-window-empty"></p>
+            <p class="notes-box" id="drink-window-notes"></p>
+          </section>
           <section class="sales-panel">
             <div class="section-title-row">
               <h2 data-i18n="sales">Sales</h2>
