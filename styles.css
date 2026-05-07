@@ -415,6 +415,28 @@ h2 {
   font-weight: 850;
 }
 
+.price-stack {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.current-card-value {
+  display: grid;
+  justify-items: end;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+  line-height: 1.15;
+}
+
+.current-card-value small {
+  color: var(--wine);
+  font-size: 0.64rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
 .timeline {
   padding: 38px 0 12px;
 }

@@ -38,6 +38,7 @@ const translations = {
     color: "Color",
     clearFilter: "Clear filter",
     currentPositionValue: "Current Position Value",
+    currentValueShort: "Current",
     currentUnitValue: "Current Unit Value",
     currentValue: "Current Value",
     currentValuePerUnit: "Current Value per Unit",
@@ -192,6 +193,7 @@ const translations = {
     color: "Colore",
     clearFilter: "Rimuovi filtro",
     currentPositionValue: "Valore attuale posizione",
+    currentValueShort: "Attuale",
     currentUnitValue: "Valore unitario attuale",
     currentValue: "Valore attuale",
     currentValuePerUnit: "Valore attuale unitario",
@@ -613,6 +615,15 @@ function unitCurrentValue(wine) {
   return Number(wine.current_value ?? wine.price ?? 0);
 }
 
+function hasCurrentUnitValue(wine) {
+  return wine.current_value !== null && wine.current_value !== undefined && wine.current_value !== "";
+}
+
+function renderCardCurrentValue(wine) {
+  if (!hasCurrentUnitValue(wine)) return "";
+  return `<span class="current-card-value"><small>${escapeHtml(t("currentValueShort"))}</small>${formatMoney(wine.current_value, wine.currency)}</span>`;
+}
+
 function insightFilterLabel(filter = state.insightFilter) {
   if (!filter) return "";
   const value = filter.field === "type" ? typeLabel(filter.value) : filter.value === "Unspecified" ? t("notSpecified") : filter.value;
@@ -905,7 +916,10 @@ function renderCellar() {
               <div class="card-side">
                 <span class="vintage">${escapeHtml(wine.vintage)}</span>
                 <span class="status-pill ${escapeHtml(wine.status)}">${escapeHtml(statusLabel(wine.status))}</span>
-                <span class="price">${formatMoney(wine.price, wine.currency)} &gt;</span>
+                <span class="price-stack">
+                  <span class="price">${formatMoney(wine.price, wine.currency)} &gt;</span>
+                  ${renderCardCurrentValue(wine)}
+                </span>
               </div>
             </button>
           `,
