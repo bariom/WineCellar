@@ -427,6 +427,20 @@ function typeLabel(type) {
   return t({ Red: "red", White: "white", Rose: "rose", Sparkling: "sparkling", Dessert: "dessert" }[type] || "notSpecified");
 }
 
+function hasRoseCue(wine) {
+  return [wine.name, wine.producer, wine.region, wine.appellation]
+    .filter(Boolean)
+    .some((value) => {
+      const normalized = String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      return /(^|[^a-z])rose([^a-z]|$)|(^|[^a-z])rosato([^a-z]|$)/.test(normalized);
+    });
+}
+
+function cardVisualType(wine) {
+  if (hasRoseCue(wine)) return "Rose";
+  return wine.type;
+}
+
 function formatLabel(format) {
   return (
     {
@@ -904,7 +918,7 @@ function renderCellar() {
     ? wines
         .map(
           (wine) => `
-            <button class="wine-card" data-id="${wine.id}" data-type="${escapeHtml(wine.type)}" type="button">
+            <button class="wine-card" data-id="${wine.id}" data-type="${escapeHtml(cardVisualType(wine))}" type="button">
               <div>
                 <p class="wine-title">${escapeHtml(wine.name)}</p>
                 <p class="wine-meta">${escapeHtml(wine.producer)}</p>
