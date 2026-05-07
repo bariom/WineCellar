@@ -408,6 +408,30 @@
     "format": "Bottle (750ml)"
   },
   {
+    "name": "Concordia Brut",
+    "producer": "Champagne Barons de Rothschild",
+    "region": "Champagne",
+    "appellation": "Champagne",
+    "type": "Sparkling",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Blanc de Blancs",
+    "producer": "Champagne Barons de Rothschild",
+    "region": "Champagne",
+    "appellation": "Champagne",
+    "type": "Sparkling",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Rose",
+    "producer": "Champagne Barons de Rothschild",
+    "region": "Champagne",
+    "appellation": "Champagne",
+    "type": "Sparkling",
+    "format": "Bottle (750ml)"
+  },
+  {
     "name": "Opus One",
     "producer": "Opus One Winery",
     "region": "Napa Valley",
