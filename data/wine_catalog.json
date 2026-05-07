@@ -64,6 +64,62 @@
     "format": "Bottle (750ml)"
   },
   {
+    "name": "Chateau Moulin Haut-Laroque",
+    "producer": "Chateau Moulin Haut-Laroque",
+    "region": "Bordeaux",
+    "appellation": "Fronsac",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau La Vieille Cure",
+    "producer": "Chateau La Vieille Cure",
+    "region": "Bordeaux",
+    "appellation": "Fronsac",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Dalem",
+    "producer": "Chateau Dalem",
+    "region": "Bordeaux",
+    "appellation": "Fronsac",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau de La Dauphine",
+    "producer": "Chateau de La Dauphine",
+    "region": "Bordeaux",
+    "appellation": "Fronsac",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Fontenil",
+    "producer": "Chateau Fontenil",
+    "region": "Bordeaux",
+    "appellation": "Fronsac",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Haut-Carles",
+    "producer": "Chateau Haut-Carles",
+    "region": "Bordeaux",
+    "appellation": "Fronsac",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Canon Pecresse",
+    "producer": "Chateau Canon Pecresse",
+    "region": "Bordeaux",
+    "appellation": "Canon-Fronsac",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
     "name": "Sassicaia",
     "producer": "Tenuta San Guido",
     "region": "Tuscany",
@@ -989,6 +1045,14 @@
     "region": "Veneto",
     "appellation": "Amarone della Valpolicella",
     "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Bidibi",
+    "producer": "Maculan",
+    "region": "Veneto",
+    "appellation": "Breganze DOC",
+    "type": "White",
     "format": "Bottle (750ml)"
   },
   {
