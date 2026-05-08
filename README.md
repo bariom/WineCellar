@@ -26,6 +26,7 @@ L'app usa un frontend HTML/CSS/JavaScript e un backend Python basato sulla libre
 - Filtri in cantina per stato e proprieta, con pannello collassabile.
 - Import/export JSON, incluse note e wishlist.
 - Interfaccia disponibile in italiano e inglese.
+- Installazione come PWA su Android/desktop tramite browser.
 - Modalita admin/viewer/shared viewer: chi consulta puo vedere i dati senza modificarli; lo shared viewer vede solo le posizioni condivise.
 
 ## Avvio locale
@@ -43,6 +44,11 @@ http://127.0.0.1:4173/
 ```
 
 Senza password configurate l'app parte automaticamente in modalita admin, utile per sviluppo locale.
+
+## Installazione PWA
+
+Su Android apri l'app via HTTPS, ad esempio `https://bariomwines.duckdns.org/`, poi usa il menu del browser e scegli "Aggiungi a schermata Home" o "Installa app".
+La PWA usa una cache leggera per l'interfaccia; dati, login e chiamate API restano serviti dal backend.
 
 ## Avvio su server Unix
 
