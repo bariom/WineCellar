@@ -506,7 +506,18 @@ h2 {
 }
 
 .drink-now-section h2 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
   margin-top: 8px;
+}
+
+.drink-now-section h2 span {
+  color: var(--muted);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 850;
 }
 
 .drink-now-side {
@@ -528,6 +539,45 @@ h2 {
   font-size: 0.75rem;
   font-weight: 850;
   text-align: center;
+}
+
+.drink-now-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  margin-bottom: 9px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #fff;
+  background: #557663;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.drink-now-card[data-status="dontWait"] .drink-now-status {
+  background: #9b2226;
+}
+
+.drink-now-card[data-status="ideal"] .drink-now-status {
+  background: #3f7d58;
+}
+
+.drink-now-card[data-status="pastIdeal"] .drink-now-status {
+  color: #4f2f00;
+  background: #e9b44c;
+}
+
+.drink-now-card[data-status="ready"] .drink-now-status {
+  background: #547b8f;
+}
+
+.drink-now-card[data-status="wait"] .drink-now-status {
+  background: #6b7280;
+}
+
+.drink-now-card[data-status="unknown"] .drink-now-status {
+  color: #4f4637;
+  background: #e8dcc8;
 }
 
 .drink-now-window-grid {
@@ -567,7 +617,7 @@ h2 {
 }
 
 .drink-now-reason {
-  margin: 8px 0 4px;
+  margin: 10px 0 4px;
   color: var(--muted);
   font-size: 0.86rem;
   line-height: 1.35;

@@ -1070,7 +1070,7 @@ function renderDrinkNow() {
       if (!items.length) return "";
       return `
         <section class="drink-now-section">
-          <h2>${escapeHtml(sectionLabels[section])}</h2>
+          <h2>${escapeHtml(sectionLabels[section])} <span>${escapeHtml(formatNumber(items.length))}</span></h2>
           <div class="content-list">
             ${items
               .map(({ wine, status }) => {
@@ -1078,8 +1078,9 @@ function renderDrinkNow() {
                   ? `<button class="btn btn-soft drink-now-action" data-drink-now-drink="${escapeAttribute(wine.id)}" type="button">${escapeHtml(t("drankOne"))}</button>`
                   : "";
                 return `
-                  <article class="drink-now-card" data-id="${escapeAttribute(wine.id)}" data-type="${escapeHtml(cardVisualType(wine))}" tabindex="0">
+                  <article class="drink-now-card" data-id="${escapeAttribute(wine.id)}" data-status="${escapeAttribute(status.section)}" data-type="${escapeHtml(cardVisualType(wine))}" tabindex="0">
                     <div>
+                      <span class="drink-now-status">${escapeHtml(sectionLabels[status.section])}</span>
                       <p class="wine-title">${escapeHtml(wine.name)} <span class="small-vintage">${escapeHtml(wine.vintage)}</span></p>
                       <p class="wine-meta">${escapeHtml(wine.producer)} - ${escapeHtml(wine.region || t("notSpecified"))}</p>
                       <div class="drink-now-window-grid">
@@ -1092,6 +1093,7 @@ function renderDrinkNow() {
                           <strong>${escapeHtml(drinkRangeLabel(wine))}</strong>
                         </div>
                       </div>
+                      ${renderMiniDrinkWindow(wine)}
                       <p class="drink-now-reason"><strong>${escapeHtml(t("drinkNowStatus"))}:</strong> ${escapeHtml(status.reason)}</p>
                     </div>
                     <div class="drink-now-side">
