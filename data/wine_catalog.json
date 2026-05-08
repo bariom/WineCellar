@@ -360,6 +360,94 @@
     "format": "Bottle (750ml)"
   },
   {
+    "name": "Selvarossa",
+    "producer": "Cantine Due Palme",
+    "region": "Puglia",
+    "appellation": "Salice Salentino Rosso DOP Riserva",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Selvarossa Terra",
+    "producer": "Cantine Due Palme",
+    "region": "Puglia",
+    "appellation": "Salice Salentino Rosso DOP Riserva",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "1943",
+    "producer": "Cantine Due Palme",
+    "region": "Puglia",
+    "appellation": "Salento IGP",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Ettamiano",
+    "producer": "Cantine Due Palme",
+    "region": "Puglia",
+    "appellation": "Primitivo Salento IGP",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "SanGaetano",
+    "producer": "Cantine Due Palme",
+    "region": "Puglia",
+    "appellation": "Primitivo di Manduria DOP",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "SanGaetano Riserva",
+    "producer": "Cantine Due Palme",
+    "region": "Puglia",
+    "appellation": "Primitivo di Manduria Rosso DOP Riserva",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Serre",
+    "producer": "Cantine Due Palme",
+    "region": "Puglia",
+    "appellation": "Susumaniello Salento IGP",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Albrizzi",
+    "producer": "Cantine Due Palme",
+    "region": "Puglia",
+    "appellation": "Salento IGP",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Passo a Due Bianco",
+    "producer": "Cantine Due Palme",
+    "region": "Puglia",
+    "appellation": "Salento IGP",
+    "type": "White",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Corerosa",
+    "producer": "Cantine Due Palme",
+    "region": "Puglia",
+    "appellation": "Rosato Salento IGP",
+    "type": "Rose",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Rosalita",
+    "producer": "Cantine Due Palme",
+    "region": "Puglia",
+    "appellation": "Rosato Salento IGP",
+    "type": "Rose",
+    "format": "Bottle (750ml)"
+  },
+  {
     "name": "Montrachet Grand Cru",
     "producer": "Domaine Leflaive",
     "region": "Burgundy",
