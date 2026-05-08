@@ -530,11 +530,36 @@ h2 {
   text-align: center;
 }
 
+.drink-now-ideal {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 7px 10px;
+  border: 1px solid rgba(116, 23, 27, 0.16);
+  border-radius: 10px;
+  color: var(--wine);
+  background: #fff6e1;
+}
+
+.drink-now-ideal span {
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.drink-now-ideal strong {
+  color: #111;
+  font-size: 1.08rem;
+  line-height: 1;
+}
+
 .drink-now-reason {
   margin: 8px 0 4px;
-  color: var(--wine);
-  font-size: 0.9rem;
-  font-weight: 850;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.35;
 }
 
 .drink-now-action {

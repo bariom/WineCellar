@@ -1027,6 +1027,14 @@ function drinkWindowSummary(wine) {
   return [window, peak].filter(Boolean).join(" - ");
 }
 
+function idealWindowLabel(wine) {
+  const peakFrom = Number(wine.drink_peak_from) || null;
+  const peakTo = Number(wine.drink_peak_to) || null;
+  if (peakFrom && peakTo) return `${peakFrom}-${peakTo}`;
+  if (peakFrom) return `${peakFrom}`;
+  return t("notSpecified");
+}
+
 function renderDrinkNow() {
   const sectionLabels = {
     dontWait: t("drinkNowSectionDontWait"),
@@ -1063,8 +1071,11 @@ function renderDrinkNow() {
                     <div>
                       <p class="wine-title">${escapeHtml(wine.name)} <span class="small-vintage">${escapeHtml(wine.vintage)}</span></p>
                       <p class="wine-meta">${escapeHtml(wine.producer)} - ${escapeHtml(wine.region || t("notSpecified"))}</p>
-                      <p class="drink-now-reason">${escapeHtml(status.reason)}</p>
-                      <p class="wine-meta">${escapeHtml(drinkWindowSummary(wine))}</p>
+                      <div class="drink-now-ideal">
+                        <span>${escapeHtml(t("drinkPeak"))}</span>
+                        <strong>${escapeHtml(idealWindowLabel(wine))}</strong>
+                      </div>
+                      <p class="drink-now-reason">${escapeHtml(status.reason)} - ${escapeHtml(drinkWindowSummary(wine))}</p>
                     </div>
                     <div class="drink-now-side">
                       <span class="drink-now-chip">${escapeHtml(drinkNowCategory(wine))}</span>
