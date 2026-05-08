@@ -131,7 +131,7 @@ const translations = {
     pairingCellarMatches: "From your cellar",
     pairingDish: "Dish or food",
     pairingEmptyDish: "Enter a dish first.",
-    pairingIncludeMarket: "Also show 3 bottles outside my cellar",
+    pairingIncludeMarket: "Also show 2 bottles outside my cellar",
     pairingMarketFallback: "Suggested bottles to buy",
     pairingMarketOnly: "Restaurant mode: ignore my cellar",
     pairingNoCellarMatch: "No ideal bottle found in your cellar.",
@@ -321,7 +321,7 @@ const translations = {
     pairingCellarMatches: "Dalla tua cantina",
     pairingDish: "Piatto o pietanza",
     pairingEmptyDish: "Inserisci prima un piatto.",
-    pairingIncludeMarket: "Mostra anche 3 proposte fuori cantina",
+    pairingIncludeMarket: "Mostra anche 2 proposte fuori cantina",
     pairingMarketFallback: "Bottiglie suggerite da acquistare",
     pairingMarketOnly: "Sono al ristorante: ignora la mia cantina",
     pairingNoCellarMatch: "Nessuna bottiglia ideale trovata in cantina.",
@@ -1207,7 +1207,7 @@ function renderPairingResult(result) {
                         (item) => `
                           <article>
                             <strong>${escapeHtml(item.name || "")}</strong>
-                            <span>${escapeHtml(item.producer || "")}</span>
+                            ${item.producer ? `<span>${escapeHtml(item.producer)}</span>` : ""}
                             ${item.price_hint ? `<span>${escapeHtml(item.price_hint)}</span>` : ""}
                             <p>${escapeHtml(item.reason || "")}</p>
                           </article>

@@ -1104,6 +1104,14 @@ def parse_json_object(text: str) -> dict:
 
 
 def clean_market_recommendations(payload: dict) -> dict:
+    def clean_optional_producer(value: object) -> str:
+        producer = str(value or "").strip()
+        lowered = producer.lower()
+        placeholders = ("esempio", "example", "produttore", "cantina esempio", "domaine dell'esempio")
+        if any(placeholder in lowered for placeholder in placeholders):
+            return ""
+        return producer
+
     recommendations: dict[str, list[dict]] = {}
     for tier in ("low", "medium", "high"):
         items = payload.get(tier, [])
@@ -1112,11 +1120,11 @@ def clean_market_recommendations(payload: dict) -> dict:
         recommendations[tier] = [
             {
                 "name": str(item.get("name", "")).strip(),
-                "producer": str(item.get("producer", "")).strip(),
+                "producer": clean_optional_producer(item.get("producer", "")),
                 "price_hint": str(item.get("price_hint", "")).strip(),
                 "reason": str(item.get("reason", "")).strip(),
             }
-            for item in items[:3]
+            for item in items[:2]
             if isinstance(item, dict) and str(item.get("name", "")).strip()
         ]
     return recommendations
@@ -1196,19 +1204,22 @@ def suggest_pairing(payload: dict, role: str) -> dict:
             "Sei un sommelier privato. Devi consigliare vini per un piatto usando prima solo "
             "le bottiglie disponibili in cantina. Rispondi solo con JSON valido, senza Markdown "
             "e senza testo prima o dopo. Se market_only è true, ignora la cantina: cellar_matches "
-            "deve essere vuoto e devi proporre solo bottiglie fuori cantina per le tre fasce prezzo. "
+            "deve essere vuoto e devi proporre solo due bottiglie fuori cantina per ciascuna delle tre fasce prezzo. "
             "Se market_only è false e trovi uno o piu vini adeguati in cantina, mettili in "
             "cellar_matches. Se include_market è false e trovi vini adeguati in cantina, lascia "
-            "market_recommendations vuoto. Se include_market è true, proponi sempre anche tre "
+            "market_recommendations vuoto. Se include_market è true, proponi sempre anche due "
             "bottiglie fuori cantina per fascia prezzo in CHF. Se nessun vino in cantina è davvero "
-            "adeguato, cellar_matches deve essere vuoto e devi proporre tre bottiglie per fascia "
+            "adeguato, cellar_matches deve essere vuoto e devi proporre due bottiglie per fascia "
             "prezzo in CHF: low entro 30 CHF, medium entro 60 CHF, high oltre "
             "60 CHF. Non inventare che un vino è in cantina se non è nel contesto. Usa italiano "
             "corretto con accenti in summary, reason e serving_note, ad esempio 'è', 'perché', "
             "'può', 'già', 'qualità'. Per le proposte fuori cantina, se conosci un prezzo di "
             "mercato indicativo e plausibile in Svizzera o Europa, inseriscilo in price_hint "
             "come intervallo o circa, ad esempio 'circa 45 CHF' o '40-55 CHF'. Se non hai un "
-            "riferimento attendibile, indica solo la fascia, ad esempio 'entro 60 CHF'."
+            "riferimento attendibile, indica solo la fascia, ad esempio 'entro 60 CHF'. Usa solo "
+            "produttori reali: non scrivere mai valori segnaposto come 'Produttore esempio', "
+            "'Cantina esempio' o 'Domaine dell'esempio'. Se non sei sicuro del produttore, lascia "
+            "producer come stringa vuota."
         ),
         "input": (
             "Piatto o pietanza: "
@@ -1220,8 +1231,8 @@ def suggest_pairing(payload: dict, role: str) -> dict:
             "Restituisci solo questo oggetto JSON: "
             "{\"summary\":\"testo breve\","
             "\"cellar_matches\":[{\"wine_id\":\"id dal contesto\",\"wine_name\":\"nome\","
-            "\"producer\":\"produttore\",\"reason\":\"perché funziona\",\"serving_note\":\"servizio\"}],"
-            "\"market_recommendations\":{\"low\":[{\"name\":\"vino\",\"producer\":\"produttore\","
+            "\"producer\":\"produttore reale\",\"reason\":\"perché funziona\",\"serving_note\":\"servizio\"}],"
+            "\"market_recommendations\":{\"low\":[{\"name\":\"vino reale\",\"producer\":\"produttore reale o stringa vuota\","
             "\"price_hint\":\"prezzo di mercato indicativo o fascia CHF\",\"reason\":\"perché\"}],"
             "\"medium\":[],\"high\":[]}}."
         ),
