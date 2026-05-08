@@ -1585,6 +1585,19 @@ class CellarHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
 
+    def guess_type(self, path: str) -> str:
+        if path.endswith(".webmanifest"):
+            return "application/manifest+json"
+        if path.endswith(".js"):
+            return "text/javascript"
+        return super().guess_type(path)
+
+    def end_headers(self) -> None:
+        path = urlparse(self.path).path
+        if path in {"/manifest.webmanifest", "/sw.js"}:
+            self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
+
     def do_GET(self) -> None:
         path = urlparse(self.path).path
         if path == "/api/session":
