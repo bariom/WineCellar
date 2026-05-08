@@ -12,7 +12,7 @@
       integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
       crossorigin="anonymous"
     />
-    <link rel="stylesheet" href="styles.css?v=20260508-fixed-nav" />
+    <link rel="stylesheet" href="styles.css?v=20260508-market-pairing" />
   </head>
   <body>
     <main class="app-shell">
@@ -97,6 +97,10 @@
               <label class="form-field">
                 <span data-i18n="pairingDish">Piatto o pietanza</span>
                 <textarea class="form-control" id="pairing-dish" name="dish" rows="3" data-i18n-placeholder="pairingPlaceholder" placeholder="Es. risotto ai funghi, brasato, sushi"></textarea>
+              </label>
+              <label class="pairing-option">
+                <input id="pairing-include-market" name="include_market" type="checkbox" />
+                <span data-i18n="pairingIncludeMarket">Mostra anche 3 proposte fuori cantina</span>
               </label>
               <button class="btn btn-wine save-button" type="submit" data-i18n="pairingSubmit">Trova abbinamento</button>
             </form>
@@ -574,6 +578,6 @@
       </nav>
     </main>
 
-    <script src="app.js?v=20260508-fixed-nav"></script>
+    <script src="app.js?v=20260508-market-pairing"></script>
   </body>
 </html>

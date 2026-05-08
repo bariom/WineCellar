@@ -564,6 +564,23 @@ h2 {
   gap: 10px;
 }
 
+.pairing-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.pairing-option input {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: var(--wine);
+}
+
 .pairing-result {
   display: grid;
   gap: 12px;

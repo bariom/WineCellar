@@ -1122,7 +1122,7 @@ def clean_market_recommendations(payload: dict) -> dict:
     return recommendations
 
 
-def clean_pairing_payload(payload: dict, available_wine_ids: set[str]) -> dict:
+def clean_pairing_payload(payload: dict, available_wine_ids: set[str], include_market: bool) -> dict:
     matches = payload.get("cellar_matches", [])
     if not isinstance(matches, list):
         matches = []
@@ -1147,7 +1147,7 @@ def clean_pairing_payload(payload: dict, available_wine_ids: set[str]) -> dict:
 
     market = (
         {"low": [], "medium": [], "high": []}
-        if cleaned_matches
+        if cleaned_matches and not include_market
         else clean_market_recommendations(payload.get("market_recommendations", {}) if isinstance(payload.get("market_recommendations"), dict) else {})
     )
     summary = str(payload.get("summary", "")).strip()
@@ -1160,6 +1160,7 @@ def suggest_pairing(payload: dict, role: str) -> dict:
         raise ValueError("Dish is required")
     if len(dish) > 240:
         raise ValueError("Dish is too long")
+    include_market = bool(payload.get("include_market"))
     if not OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY is not configured")
 
@@ -1194,16 +1195,19 @@ def suggest_pairing(payload: dict, role: str) -> dict:
             "Sei un sommelier privato. Devi consigliare vini per un piatto usando prima solo "
             "le bottiglie disponibili in cantina. Rispondi solo con JSON valido, senza Markdown "
             "e senza testo prima o dopo. Se trovi uno o piu vini adeguati in cantina, mettili in "
-            "cellar_matches e lascia comunque market_recommendations vuoto. Se nessun vino in "
-            "cantina e davvero adeguato, cellar_matches deve essere vuoto e devi proporre tre "
-            "bottiglie per fascia prezzo in CHF: low entro 30 CHF, medium entro 60 CHF, high oltre "
+            "cellar_matches. Se include_market è false e trovi vini adeguati in cantina, lascia "
+            "market_recommendations vuoto. Se include_market è true, proponi sempre anche tre "
+            "bottiglie fuori cantina per fascia prezzo in CHF. Se nessun vino in cantina è davvero "
+            "adeguato, cellar_matches deve essere vuoto e devi proporre tre bottiglie per fascia "
+            "prezzo in CHF: low entro 30 CHF, medium entro 60 CHF, high oltre "
             "60 CHF. Non inventare che un vino è in cantina se non è nel contesto. Usa italiano "
             "corretto con accenti in summary, reason e serving_note, ad esempio 'è', 'perché', "
             "'può', 'già', 'qualità'."
         ),
         "input": (
             "Piatto o pietanza: "
-            f"{dish}\n\n"
+            f"{dish}\n"
+            f"include_market: {str(include_market).lower()}\n\n"
             "Vini disponibili in cantina, solo questi possono essere scelti come cellar_matches:\n"
             f"{json.dumps(wine_context, ensure_ascii=False)}\n\n"
             "Restituisci solo questo oggetto JSON: "
@@ -1238,7 +1242,7 @@ def suggest_pairing(payload: dict, role: str) -> dict:
     raw_text = extract_response_text(response_payload)
     if not raw_text:
         raise ValueError("OpenAI response did not include text")
-    return clean_pairing_payload(parse_json_object(raw_text), {wine["id"] for wine in cellar_wines})
+    return clean_pairing_payload(parse_json_object(raw_text), {wine["id"] for wine in cellar_wines}, include_market)
 
 
 def generate_ai_notes(wine_id: str) -> dict:
