@@ -133,6 +133,7 @@ const translations = {
     pairingEmptyDish: "Enter a dish first.",
     pairingIncludeMarket: "Also show 3 bottles outside my cellar",
     pairingMarketFallback: "Suggested bottles to buy",
+    pairingMarketOnly: "Restaurant mode: ignore my cellar",
     pairingNoCellarMatch: "No ideal bottle found in your cellar.",
     pairingPlaceholder: "E.g. mushroom risotto, braised beef, sushi",
     pairingSubmit: "Find pairing",
@@ -322,6 +323,7 @@ const translations = {
     pairingEmptyDish: "Inserisci prima un piatto.",
     pairingIncludeMarket: "Mostra anche 3 proposte fuori cantina",
     pairingMarketFallback: "Bottiglie suggerite da acquistare",
+    pairingMarketOnly: "Sono al ristorante: ignora la mia cantina",
     pairingNoCellarMatch: "Nessuna bottiglia ideale trovata in cantina.",
     pairingPlaceholder: "Es. risotto ai funghi, brasato, sushi",
     pairingSubmit: "Trova abbinamento",
@@ -1231,6 +1233,7 @@ async function suggestPairing(event) {
     return;
   }
   const includeMarket = Boolean(pairingForm.elements.include_market?.checked);
+  const marketOnly = Boolean(pairingForm.elements.market_only?.checked);
   const submitButton = pairingForm.querySelector("button[type='submit']");
   const previousText = submitButton.textContent;
   submitButton.disabled = true;
@@ -1238,7 +1241,7 @@ async function suggestPairing(event) {
   pairingResult.hidden = false;
   pairingResult.innerHTML = `<p class="pairing-summary">...</p>`;
   try {
-    const result = await api("/api/pairing", { method: "POST", body: JSON.stringify({ dish, include_market: includeMarket }) });
+    const result = await api("/api/pairing", { method: "POST", body: JSON.stringify({ dish, include_market: includeMarket, market_only: marketOnly }) });
     renderPairingResult(result);
   } finally {
     submitButton.disabled = false;

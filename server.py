@@ -1161,10 +1161,11 @@ def suggest_pairing(payload: dict, role: str) -> dict:
     if len(dish) > 240:
         raise ValueError("Dish is too long")
     include_market = bool(payload.get("include_market"))
+    market_only = bool(payload.get("market_only"))
     if not OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY is not configured")
 
-    cellar_wines = [
+    cellar_wines = [] if market_only else [
         wine
         for wine in visible_wines(role)
         if wine.get("status") == "Delivered" and int(wine.get("quantity") or 0) > 0
@@ -1194,7 +1195,9 @@ def suggest_pairing(payload: dict, role: str) -> dict:
         "instructions": (
             "Sei un sommelier privato. Devi consigliare vini per un piatto usando prima solo "
             "le bottiglie disponibili in cantina. Rispondi solo con JSON valido, senza Markdown "
-            "e senza testo prima o dopo. Se trovi uno o piu vini adeguati in cantina, mettili in "
+            "e senza testo prima o dopo. Se market_only è true, ignora la cantina: cellar_matches "
+            "deve essere vuoto e devi proporre solo bottiglie fuori cantina per le tre fasce prezzo. "
+            "Se market_only è false e trovi uno o piu vini adeguati in cantina, mettili in "
             "cellar_matches. Se include_market è false e trovi vini adeguati in cantina, lascia "
             "market_recommendations vuoto. Se include_market è true, proponi sempre anche tre "
             "bottiglie fuori cantina per fascia prezzo in CHF. Se nessun vino in cantina è davvero "
@@ -1211,6 +1214,7 @@ def suggest_pairing(payload: dict, role: str) -> dict:
             "Piatto o pietanza: "
             f"{dish}\n"
             f"include_market: {str(include_market).lower()}\n\n"
+            f"market_only: {str(market_only).lower()}\n\n"
             "Vini disponibili in cantina, solo questi possono essere scelti come cellar_matches:\n"
             f"{json.dumps(wine_context, ensure_ascii=False)}\n\n"
             "Restituisci solo questo oggetto JSON: "
