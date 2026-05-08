@@ -22,6 +22,7 @@ html {
 }
 
 body {
+  overflow: hidden;
   min-height: 100vh;
   margin: 0;
   color: var(--ink);
@@ -31,6 +32,7 @@ body {
 
 .app-shell {
   position: relative;
+  height: 100vh;
   min-height: 100vh;
   max-width: 540px;
   margin: 0 auto;
@@ -41,9 +43,11 @@ body {
 
 .screen {
   display: none;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
   padding: max(18px, env(safe-area-inset-top)) 18px calc(88px + env(safe-area-inset-bottom));
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .screen.active {
@@ -1643,13 +1647,15 @@ h2 {
 
   .app-shell {
     width: min(540px, 100%);
-    min-height: min(920px, calc(100vh - 48px));
+    height: min(920px, calc(100vh - 48px));
+    min-height: 0;
     border: 1px solid #e4ded4;
     border-radius: 34px;
   }
 
   .screen {
-    min-height: min(920px, calc(100vh - 48px));
+    height: 100%;
+    min-height: 0;
   }
 
   .bottom-nav {
