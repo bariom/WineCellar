@@ -28,7 +28,8 @@ VIEWER_PASSWORD = os.environ.get("VIEWER_PASSWORD", "")
 SHARED_VIEWER_PASSWORD = os.environ.get("SHARED_VIEWER_PASSWORD", "")
 AUTH_ENABLED = bool(ADMIN_PASSWORD and (VIEWER_PASSWORD or SHARED_VIEWER_PASSWORD))
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.4-nano")
+OPENAI_VALUE_MODEL = os.environ.get("OPENAI_VALUE_MODEL", "gpt-5.4-mini")
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 SESSION_COOKIE = "wine_cellar_session"
 SESSIONS: dict[str, str] = {}
@@ -1487,7 +1488,7 @@ def generate_ai_value(wine_id: str) -> dict:
         "drink_window_notes": wine.get("drink_window_notes", ""),
     }
     request_payload = {
-        "model": OPENAI_MODEL,
+        "model": OPENAI_VALUE_MODEL,
         "instructions": (
             "Sei un assistente esperto di valutazioni di vino. Stima un valore attuale unitario "
             "indicativo per un collezionista privato. Rispondi solo con JSON valido, senza Markdown "

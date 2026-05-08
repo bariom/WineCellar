@@ -75,7 +75,8 @@ ADMIN_PASSWORD=password-admin-forte
 VIEWER_PASSWORD=password-consultazione
 SHARED_VIEWER_PASSWORD=password-condivisi
 OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MODEL=gpt-5.4-nano
+OPENAI_VALUE_MODEL=gpt-5.4-mini
 HOST=0.0.0.0
 PORT=4173
 ```
@@ -97,6 +98,7 @@ Il blocco delle modifiche e applicato anche lato server.
 ## Note AI
 
 Per usare i pulsanti "Genera" nelle Note AI, nella finestra di degustazione e nella stima valore configura `OPENAI_API_KEY` in `.env` e riavvia l'app.
+`OPENAI_MODEL` controlla abbinamenti, note e finestra di degustazione; `OPENAI_VALUE_MODEL` controlla la stima valore.
 Le chiamate a OpenAI avvengono solo lato server e solo quando un admin le richiede dal dettaglio di una posizione.
 
 ## Aggiornamento da Git
