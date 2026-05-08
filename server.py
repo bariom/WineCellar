@@ -1103,6 +1103,142 @@ def parse_json_object(text: str) -> dict:
     return payload
 
 
+def clean_market_recommendations(payload: dict) -> dict:
+    recommendations: dict[str, list[dict]] = {}
+    for tier in ("low", "medium", "high"):
+        items = payload.get(tier, [])
+        if not isinstance(items, list):
+            items = []
+        recommendations[tier] = [
+            {
+                "name": str(item.get("name", "")).strip(),
+                "producer": str(item.get("producer", "")).strip(),
+                "price_hint": str(item.get("price_hint", "")).strip(),
+                "reason": str(item.get("reason", "")).strip(),
+            }
+            for item in items[:3]
+            if isinstance(item, dict) and str(item.get("name", "")).strip()
+        ]
+    return recommendations
+
+
+def clean_pairing_payload(payload: dict, available_wine_ids: set[str]) -> dict:
+    matches = payload.get("cellar_matches", [])
+    if not isinstance(matches, list):
+        matches = []
+    cleaned_matches = []
+    seen_ids = set()
+    for match in matches[:3]:
+        if not isinstance(match, dict):
+            continue
+        wine_id = str(match.get("wine_id", "")).strip()
+        if wine_id not in available_wine_ids or wine_id in seen_ids:
+            continue
+        seen_ids.add(wine_id)
+        cleaned_matches.append(
+            {
+                "wine_id": wine_id,
+                "wine_name": str(match.get("wine_name", "")).strip(),
+                "producer": str(match.get("producer", "")).strip(),
+                "reason": str(match.get("reason", "")).strip(),
+                "serving_note": str(match.get("serving_note", "")).strip(),
+            }
+        )
+
+    market = (
+        {"low": [], "medium": [], "high": []}
+        if cleaned_matches
+        else clean_market_recommendations(payload.get("market_recommendations", {}) if isinstance(payload.get("market_recommendations"), dict) else {})
+    )
+    summary = str(payload.get("summary", "")).strip()
+    return {"summary": summary, "cellar_matches": cleaned_matches, "market_recommendations": market}
+
+
+def suggest_pairing(payload: dict, role: str) -> dict:
+    dish = str(payload.get("dish", "")).strip()
+    if len(dish) < 2:
+        raise ValueError("Dish is required")
+    if len(dish) > 240:
+        raise ValueError("Dish is too long")
+    if not OPENAI_API_KEY:
+        raise ValueError("OPENAI_API_KEY is not configured")
+
+    cellar_wines = [
+        wine
+        for wine in visible_wines(role)
+        if wine.get("status") == "Delivered" and int(wine.get("quantity") or 0) > 0
+    ]
+    wine_context = [
+        {
+            "id": wine["id"],
+            "name": wine["name"],
+            "producer": wine["producer"],
+            "vintage": wine["vintage"],
+            "type": wine.get("type", ""),
+            "region": wine.get("region", ""),
+            "appellation": wine.get("appellation", ""),
+            "quantity": wine.get("quantity", 0),
+            "format": wine.get("format", ""),
+            "current_value": wine.get("current_value") if wine.get("current_value") not in (None, "") else wine.get("price"),
+            "currency": wine.get("currency", "CHF"),
+            "drink_peak_from": wine.get("drink_peak_from"),
+            "drink_peak_to": wine.get("drink_peak_to"),
+            "drink_to": wine.get("drink_to"),
+            "scores": wine.get("scores", []),
+        }
+        for wine in cellar_wines[:120]
+    ]
+    request_payload = {
+        "model": OPENAI_MODEL,
+        "instructions": (
+            "Sei un sommelier privato. Devi consigliare vini per un piatto usando prima solo "
+            "le bottiglie disponibili in cantina. Rispondi solo con JSON valido, senza Markdown "
+            "e senza testo prima o dopo. Se trovi uno o piu vini adeguati in cantina, mettili in "
+            "cellar_matches e lascia comunque market_recommendations vuoto. Se nessun vino in "
+            "cantina e davvero adeguato, cellar_matches deve essere vuoto e devi proporre tre "
+            "bottiglie per fascia prezzo in CHF: low entro 30 CHF, medium entro 60 CHF, high oltre "
+            "60 CHF. Non inventare che un vino e in cantina se non e nel contesto."
+        ),
+        "input": (
+            "Piatto o pietanza: "
+            f"{dish}\n\n"
+            "Vini disponibili in cantina, solo questi possono essere scelti come cellar_matches:\n"
+            f"{json.dumps(wine_context, ensure_ascii=False)}\n\n"
+            "Restituisci solo questo oggetto JSON: "
+            "{\"summary\":\"testo breve\","
+            "\"cellar_matches\":[{\"wine_id\":\"id dal contesto\",\"wine_name\":\"nome\","
+            "\"producer\":\"produttore\",\"reason\":\"perche funziona\",\"serving_note\":\"servizio\"}],"
+            "\"market_recommendations\":{\"low\":[{\"name\":\"vino\",\"producer\":\"produttore\","
+            "\"price_hint\":\"entro 30 CHF\",\"reason\":\"perche\"}],\"medium\":[],\"high\":[]}}."
+        ),
+        "max_output_tokens": 1200,
+    }
+    request = Request(
+        OPENAI_RESPONSES_URL,
+        data=json.dumps(request_payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json",
+            "User-Agent": "WineCellar/1.0",
+        },
+        method="POST",
+    )
+
+    try:
+        with urlopen(request, timeout=40) as response:
+            response_payload = json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        error_body = exc.read().decode("utf-8", errors="replace")
+        raise ValueError(f"OpenAI request failed: {error_body or exc.reason}") from exc
+    except (URLError, TimeoutError, OSError) as exc:
+        raise ValueError(f"OpenAI request failed: {exc}") from exc
+
+    raw_text = extract_response_text(response_payload)
+    if not raw_text:
+        raise ValueError("OpenAI response did not include text")
+    return clean_pairing_payload(parse_json_object(raw_text), {wine["id"] for wine in cellar_wines})
+
+
 def generate_ai_notes(wine_id: str) -> dict:
     with connect() as conn:
         wine = get_wine(conn, wine_id)
@@ -1475,6 +1611,9 @@ class CellarHandler(SimpleHTTPRequestHandler):
                 self.send_json(upsert_wishlist_item(self.read_json()), HTTPStatus.CREATED)
                 return
             if path.startswith("/api/") and not self.require_admin():
+                return
+            if path == "/api/pairing":
+                self.send_json(suggest_pairing(self.read_json(), self.current_role()))
                 return
             if path.startswith("/api/wishlist/") and path.endswith("/convert"):
                 item_id = unquote(path.removeprefix("/api/wishlist/").removesuffix("/convert"))

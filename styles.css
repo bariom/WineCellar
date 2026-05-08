@@ -532,6 +532,91 @@ h2 {
   padding-top: 16px;
 }
 
+.pairing-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #f7f1e8;
+}
+
+.pairing-form {
+  display: grid;
+  gap: 10px;
+}
+
+.pairing-result {
+  display: grid;
+  gap: 12px;
+}
+
+.pairing-result[hidden] {
+  display: none;
+}
+
+.pairing-result h2 {
+  margin: 8px 0 0;
+  font-size: 1.18rem;
+}
+
+.pairing-summary {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.pairing-match-list,
+.pairing-market-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.pairing-match {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(223, 210, 192, 0.85);
+  border-left: 5px solid var(--wine);
+  border-radius: 9px;
+  color: inherit;
+  background: var(--paper);
+  text-align: left;
+}
+
+.pairing-match span,
+.pairing-market-tier span,
+.pairing-market-tier p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.pairing-market-tier {
+  display: grid;
+  gap: 8px;
+}
+
+.pairing-market-tier h3 {
+  margin: 2px 0 0;
+  color: var(--wine);
+  font-size: 0.9rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pairing-market-tier article {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid rgba(223, 210, 192, 0.85);
+  border-radius: 9px;
+  background: var(--paper);
+}
+
 .drink-now-section h2 {
   display: flex;
   align-items: baseline;

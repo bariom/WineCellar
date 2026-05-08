@@ -126,6 +126,16 @@ const translations = {
     ownerName: "Owner name",
     ownership: "Ownership",
     password: "Password",
+    pairing: "Pairing",
+    pairingCellarMatches: "From your cellar",
+    pairingDish: "Dish or food",
+    pairingEmptyDish: "Enter a dish first.",
+    pairingMarketFallback: "Suggested bottles to buy",
+    pairingNoCellarMatch: "No ideal bottle found in your cellar.",
+    pairingPlaceholder: "E.g. mushroom risotto, braised beef, sushi",
+    pairingSubmit: "Find pairing",
+    pairingUnable: "Unable to suggest a pairing: {error}",
+    pairingWhy: "Why",
     priceRequired: "Price per Unit *",
     priority: "Priority",
     priorityHigh: "High",
@@ -303,6 +313,16 @@ const translations = {
     ownerName: "Nome proprietario",
     ownership: "Proprietà",
     password: "Password",
+    pairing: "Abbinamento",
+    pairingCellarMatches: "Dalla tua cantina",
+    pairingDish: "Piatto o pietanza",
+    pairingEmptyDish: "Inserisci prima un piatto.",
+    pairingMarketFallback: "Bottiglie suggerite da acquistare",
+    pairingNoCellarMatch: "Nessuna bottiglia ideale trovata in cantina.",
+    pairingPlaceholder: "Es. risotto ai funghi, brasato, sushi",
+    pairingSubmit: "Trova abbinamento",
+    pairingUnable: "Impossibile suggerire un abbinamento: {error}",
+    pairingWhy: "Perche",
     priceRequired: "Prezzo unitario *",
     priority: "Priorita",
     priorityHigh: "Alta",
@@ -396,6 +416,8 @@ const filterCount = document.querySelector("#filter-count");
 const activeInsightFilter = document.querySelector("#active-insight-filter");
 const timelineList = document.querySelector("#timeline-list");
 const drinkNowList = document.querySelector("#drink-now-list");
+const pairingForm = document.querySelector("#pairing-form");
+const pairingResult = document.querySelector("#pairing-result");
 const regionList = document.querySelector("#region-list");
 const colorList = document.querySelector("#color-list");
 const sharedRegionList = document.querySelector("#shared-region-list");
@@ -1116,6 +1138,97 @@ function renderDrinkNow() {
     .join("");
 }
 
+function renderPairingResult(result) {
+  const matches = Array.isArray(result.cellar_matches) ? result.cellar_matches : [];
+  const market = result.market_recommendations || {};
+  const marketGroups = [
+    ["low", t("priorityLow")],
+    ["medium", t("priorityMedium")],
+    ["high", t("priorityHigh")],
+  ];
+
+  pairingResult.hidden = false;
+  pairingResult.innerHTML = `
+    ${result.summary ? `<p class="pairing-summary">${escapeHtml(result.summary)}</p>` : ""}
+    ${
+      matches.length
+        ? `
+          <h2>${escapeHtml(t("pairingCellarMatches"))}</h2>
+          <div class="pairing-match-list">
+            ${matches
+              .map((match) => {
+                const wine = state.wines.find((item) => item.id === match.wine_id);
+                return `
+                  <button class="pairing-match" data-pairing-wine="${escapeAttribute(match.wine_id)}" type="button">
+                    <strong>${escapeHtml(match.wine_name || wine?.name || "")} ${wine?.vintage ? `<span class="small-vintage">${escapeHtml(wine.vintage)}</span>` : ""}</strong>
+                    <span>${escapeHtml(match.producer || wine?.producer || "")}</span>
+                    <span><b>${escapeHtml(t("pairingWhy"))}:</b> ${escapeHtml(match.reason || "")}</span>
+                    ${match.serving_note ? `<span>${escapeHtml(match.serving_note)}</span>` : ""}
+                  </button>
+                `;
+              })
+              .join("")}
+          </div>
+        `
+        : `<p class="pairing-summary">${escapeHtml(t("pairingNoCellarMatch"))}</p>`
+    }
+    ${
+      marketGroups.some(([key]) => Array.isArray(market[key]) && market[key].length)
+        ? `
+          <h2>${escapeHtml(t("pairingMarketFallback"))}</h2>
+          <div class="pairing-market-grid">
+            ${marketGroups
+              .map(([key, label]) => {
+                const items = Array.isArray(market[key]) ? market[key] : [];
+                if (!items.length) return "";
+                return `
+                  <section class="pairing-market-tier">
+                    <h3>${escapeHtml(label)}</h3>
+                    ${items
+                      .map(
+                        (item) => `
+                          <article>
+                            <strong>${escapeHtml(item.name || "")}</strong>
+                            <span>${escapeHtml(item.producer || "")}</span>
+                            <span>${escapeHtml(item.price_hint || "")}</span>
+                            <p>${escapeHtml(item.reason || "")}</p>
+                          </article>
+                        `,
+                      )
+                      .join("")}
+                  </section>
+                `;
+              })
+              .join("")}
+          </div>
+        `
+        : ""
+    }
+  `;
+}
+
+async function suggestPairing(event) {
+  event.preventDefault();
+  const dish = pairingForm.elements.dish.value.trim();
+  if (!dish) {
+    alert(t("pairingEmptyDish"));
+    return;
+  }
+  const submitButton = pairingForm.querySelector("button[type='submit']");
+  const previousText = submitButton.textContent;
+  submitButton.disabled = true;
+  submitButton.textContent = "...";
+  pairingResult.hidden = false;
+  pairingResult.innerHTML = `<p class="pairing-summary">...</p>`;
+  try {
+    const result = await api("/api/pairing", { method: "POST", body: JSON.stringify({ dish }) });
+    renderPairingResult(result);
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = previousText;
+  }
+}
+
 function wishlistStatusLabel(status) {
   return t(
     {
@@ -1822,6 +1935,9 @@ document.querySelector("#cancel-sale-button").addEventListener("click", () => {
   saleForm.reset();
 });
 saleForm.addEventListener("submit", saveSale);
+pairingForm.addEventListener("submit", (event) => {
+  suggestPairing(event).catch((error) => alert(t("pairingUnable", { error: error.message })));
+});
 document.querySelector("#export-button").addEventListener("click", exportData);
 document.querySelector("#import-input").addEventListener("change", (event) => {
   const [file] = event.target.files;
@@ -1883,6 +1999,12 @@ drinkNowList.addEventListener("keydown", (event) => {
   if (!card) return;
   event.preventDefault();
   openDetail(state.wines.find((wine) => wine.id === card.dataset.id));
+});
+
+pairingResult.addEventListener("click", (event) => {
+  const match = event.target.closest("[data-pairing-wine]");
+  if (!match) return;
+  openDetail(state.wines.find((wine) => wine.id === match.dataset.pairingWine));
 });
 
 document.querySelectorAll(".nav-item").forEach((button) => {
