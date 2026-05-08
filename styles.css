@@ -296,7 +296,8 @@ h2 {
   gap: 12px;
 }
 
-.wine-card {
+.wine-card,
+.drink-now-card {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 8px 14px;
@@ -310,13 +311,21 @@ h2 {
   text-align: left;
 }
 
+.drink-now-card {
+  cursor: pointer;
+}
+
 .wine-card[data-type="White"],
-.wine-card[data-type="Sparkling"] {
+.wine-card[data-type="Sparkling"],
+.drink-now-card[data-type="White"],
+.drink-now-card[data-type="Sparkling"] {
   border-left-color: var(--gold);
 }
 
 .wine-card[data-type="Rose"],
-.wine-card[data-type="Dessert"] {
+.wine-card[data-type="Dessert"],
+.drink-now-card[data-type="Rose"],
+.drink-now-card[data-type="Dessert"] {
   border-left-color: var(--rose);
 }
 
@@ -488,6 +497,51 @@ h2 {
 
 .timeline-card strong {
   font-size: 1.08rem;
+}
+
+.drink-now-list {
+  display: grid;
+  gap: 18px;
+  padding-top: 18px;
+}
+
+.drink-now-section h2 {
+  margin-top: 8px;
+}
+
+.drink-now-side {
+  display: grid;
+  justify-items: end;
+  align-content: start;
+  gap: 8px;
+  min-width: 96px;
+}
+
+.drink-now-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  color: var(--wine);
+  background: #f3e6e4;
+  font-size: 0.75rem;
+  font-weight: 850;
+  text-align: center;
+}
+
+.drink-now-reason {
+  margin: 8px 0 4px;
+  color: var(--wine);
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.drink-now-action {
+  min-height: 32px;
+  padding: 4px 9px;
+  font-size: 0.76rem;
+  white-space: nowrap;
 }
 
 .small-vintage {
@@ -1312,7 +1366,7 @@ h2 {
   left: 0;
   z-index: 5;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   max-width: 540px;
   min-height: calc(70px + env(safe-area-inset-bottom));
   margin: 0 auto;
@@ -1327,7 +1381,7 @@ h2 {
   border: 0;
   color: #6d737c;
   background: transparent;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
 }
 
 .nav-item.active {
@@ -1394,6 +1448,17 @@ h2 {
 
   .values-grid {
     grid-template-columns: 1fr;
+  }
+
+  .drink-now-card {
+    grid-template-columns: 1fr;
+  }
+
+  .drink-now-side {
+    grid-template-columns: repeat(3, auto);
+    justify-content: start;
+    justify-items: start;
+    align-items: center;
   }
 
   .owner-form-row {

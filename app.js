@@ -47,7 +47,24 @@ const translations = {
     delete: "Delete",
     delivered: "Delivered",
     dessert: "Dessert",
+    drinkCategoryDinner: "Dinner",
+    drinkCategoryEveryday: "Everyday",
+    drinkCategoryGreatBottle: "Great bottle",
+    drinkCategoryReady: "Ready",
     drinkDecline: "Past peak",
+    drinkNow: "Drink Now",
+    drinkNowEmpty: "No delivered bottles with quantity available.",
+    drinkNowNav: "Drink",
+    drinkNowReasonDecline: "Past the estimated window",
+    drinkNowReasonIdeal: "Inside the ideal window",
+    drinkNowReasonMissing: "No drinking window yet",
+    drinkNowReasonReady: "Inside the drinking window",
+    drinkNowReasonWait: "Better to wait",
+    drinkNowSectionDontWait: "Do not wait",
+    drinkNowSectionIdeal: "Ideal now",
+    drinkNowSectionReady: "Ready",
+    drinkNowSectionWait: "Too young",
+    drinkNowSectionUnknown: "No window",
     drinkPeak: "Ideal",
     drinkWindow: "Drinking Window",
     drinkWindowEstimate: "AI estimate",
@@ -202,7 +219,24 @@ const translations = {
     delete: "Elimina",
     delivered: "In cantina",
     dessert: "Dolce",
+    drinkCategoryDinner: "Cena",
+    drinkCategoryEveryday: "Quotidiano",
+    drinkCategoryGreatBottle: "Grande bottiglia",
+    drinkCategoryReady: "Pronto",
     drinkDecline: "Oltre apice",
+    drinkNow: "Da bere ora",
+    drinkNowEmpty: "Nessuna bottiglia in cantina con quantita disponibile.",
+    drinkNowNav: "Bere",
+    drinkNowReasonDecline: "Oltre la finestra stimata",
+    drinkNowReasonIdeal: "Dentro la finestra ideale",
+    drinkNowReasonMissing: "Finestra degustazione assente",
+    drinkNowReasonReady: "Dentro la finestra di degustazione",
+    drinkNowReasonWait: "Meglio aspettare",
+    drinkNowSectionDontWait: "Da non aspettare",
+    drinkNowSectionIdeal: "Ideale ora",
+    drinkNowSectionReady: "Pronto",
+    drinkNowSectionWait: "Troppo giovane",
+    drinkNowSectionUnknown: "Senza finestra",
     drinkPeak: "Ideale",
     drinkWindow: "Finestra degustazione",
     drinkWindowEstimate: "Stima AI",
@@ -331,6 +365,7 @@ const screens = {
   login: document.querySelector("#screen-login"),
   cellar: document.querySelector("#screen-cellar"),
   timeline: document.querySelector("#screen-timeline"),
+  drinkNow: document.querySelector("#screen-drink-now"),
   insights: document.querySelector("#screen-insights"),
   wishlist: document.querySelector("#screen-wishlist"),
   detail: document.querySelector("#screen-detail"),
@@ -350,6 +385,7 @@ const filterPanel = document.querySelector("#filter-panel");
 const filterCount = document.querySelector("#filter-count");
 const activeInsightFilter = document.querySelector("#active-insight-filter");
 const timelineList = document.querySelector("#timeline-list");
+const drinkNowList = document.querySelector("#drink-now-list");
 const regionList = document.querySelector("#region-list");
 const colorList = document.querySelector("#color-list");
 const sharedRegionList = document.querySelector("#shared-region-list");
@@ -410,6 +446,7 @@ function applyTranslations() {
   renderCellar();
   const currentScreen = Object.entries(screens).find(([, screen]) => screen.classList.contains("active"))?.[0];
   if (currentScreen === "timeline") renderTimeline();
+  if (currentScreen === "drinkNow") renderDrinkNow();
   if (currentScreen === "insights") renderInsights();
   if (currentScreen === "wishlist") renderWishlist();
   if (currentScreen === "detail") openDetail(state.wines.find((wine) => wine.id === state.selectedWineId));
@@ -683,6 +720,7 @@ function showScreen(name) {
   });
 
   if (name === "timeline") renderTimeline();
+  if (name === "drinkNow") renderDrinkNow();
   if (name === "insights") renderInsights();
   if (name === "wishlist") renderWishlist();
 }
@@ -940,6 +978,108 @@ function renderCellar() {
         )
         .join("")
     : `<p class="empty-state">${state.insightFilter ? t("emptyInsightFilter", { filter: insightFilterLabel() }) : t("emptyFilter")}</p>`;
+}
+
+function drinkNowStatus(wine) {
+  const currentYear = new Date().getFullYear();
+  const drinkFrom = Number(wine.drink_from);
+  const peakFrom = Number(wine.drink_peak_from);
+  const peakTo = Number(wine.drink_peak_to);
+  const drinkTo = Number(wine.drink_to);
+
+  if (Number.isFinite(drinkTo) && drinkTo > 0 && currentYear > drinkTo) {
+    return { section: "dontWait", priority: 100 + currentYear - drinkTo, reason: t("drinkNowReasonDecline") };
+  }
+
+  if (Number.isFinite(peakFrom) && Number.isFinite(peakTo) && peakFrom > 0 && peakTo > 0 && currentYear >= peakFrom && currentYear <= peakTo) {
+    const nearEnd = Number.isFinite(drinkTo) && drinkTo > 0 && drinkTo - currentYear <= 1;
+    return { section: nearEnd ? "dontWait" : "ideal", priority: nearEnd ? 95 : 90, reason: t("drinkNowReasonIdeal") };
+  }
+
+  if (Number.isFinite(drinkFrom) && Number.isFinite(drinkTo) && drinkFrom > 0 && drinkTo > 0 && currentYear >= drinkFrom && currentYear <= drinkTo) {
+    const nearEnd = drinkTo - currentYear <= 1;
+    return { section: nearEnd ? "dontWait" : "ready", priority: nearEnd ? 88 : 70, reason: t("drinkNowReasonReady") };
+  }
+
+  if (Number.isFinite(drinkFrom) && drinkFrom > 0 && currentYear < drinkFrom) {
+    return { section: "wait", priority: Math.max(1, 40 - (drinkFrom - currentYear)), reason: t("drinkNowReasonWait") };
+  }
+
+  return { section: "unknown", priority: 50, reason: t("drinkNowReasonMissing") };
+}
+
+function drinkNowCategory(wine) {
+  const value = unitCurrentValue(wine);
+  if (value >= 180) return t("drinkCategoryGreatBottle");
+  if (value >= 70) return t("drinkCategoryDinner");
+  if (value > 0) return t("drinkCategoryEveryday");
+  return t("drinkCategoryReady");
+}
+
+function drinkWindowSummary(wine) {
+  const drinkFrom = Number(wine.drink_from) || null;
+  const peakFrom = Number(wine.drink_peak_from) || null;
+  const peakTo = Number(wine.drink_peak_to) || null;
+  const drinkTo = Number(wine.drink_to) || null;
+  if (![drinkFrom, peakFrom, peakTo, drinkTo].some(Boolean)) return t("drinkWindowMissing");
+  const window = drinkFrom && drinkTo ? `${t("drinkWindow")}: ${drinkFrom}-${drinkTo}` : "";
+  const peak = peakFrom && peakTo ? `${t("drinkPeak")}: ${peakFrom}-${peakTo}` : "";
+  return [window, peak].filter(Boolean).join(" - ");
+}
+
+function renderDrinkNow() {
+  const sectionLabels = {
+    dontWait: t("drinkNowSectionDontWait"),
+    ideal: t("drinkNowSectionIdeal"),
+    ready: t("drinkNowSectionReady"),
+    unknown: t("drinkNowSectionUnknown"),
+    wait: t("drinkNowSectionWait"),
+  };
+  const recommendations = state.wines
+    .filter((wine) => wine.status === "Delivered" && Number(wine.quantity || 0) > 0)
+    .map((wine) => ({ wine, status: drinkNowStatus(wine) }))
+    .sort((a, b) => b.status.priority - a.status.priority || a.wine.name.localeCompare(b.wine.name));
+
+  if (!recommendations.length) {
+    drinkNowList.innerHTML = `<p class="empty-state">${escapeHtml(t("drinkNowEmpty"))}</p>`;
+    return;
+  }
+
+  drinkNowList.innerHTML = ["dontWait", "ideal", "ready", "unknown", "wait"]
+    .map((section) => {
+      const items = recommendations.filter((item) => item.status.section === section);
+      if (!items.length) return "";
+      return `
+        <section class="drink-now-section">
+          <h2>${escapeHtml(sectionLabels[section])}</h2>
+          <div class="content-list">
+            ${items
+              .map(({ wine, status }) => {
+                const drinkAction = isAdmin()
+                  ? `<button class="btn btn-soft drink-now-action" data-drink-now-drink="${escapeAttribute(wine.id)}" type="button">${escapeHtml(t("drankOne"))}</button>`
+                  : "";
+                return `
+                  <article class="drink-now-card" data-id="${escapeAttribute(wine.id)}" data-type="${escapeHtml(cardVisualType(wine))}" tabindex="0">
+                    <div>
+                      <p class="wine-title">${escapeHtml(wine.name)} <span class="small-vintage">${escapeHtml(wine.vintage)}</span></p>
+                      <p class="wine-meta">${escapeHtml(wine.producer)} - ${escapeHtml(wine.region || t("notSpecified"))}</p>
+                      <p class="drink-now-reason">${escapeHtml(status.reason)}</p>
+                      <p class="wine-meta">${escapeHtml(drinkWindowSummary(wine))}</p>
+                    </div>
+                    <div class="drink-now-side">
+                      <span class="drink-now-chip">${escapeHtml(drinkNowCategory(wine))}</span>
+                      <span class="wine-meta">${escapeHtml(formatNumber(wine.quantity))} ${escapeHtml(bottleLabel(wine.quantity))}</span>
+                      ${drinkAction}
+                    </div>
+                  </article>
+                `;
+              })
+              .join("")}
+          </div>
+        </section>
+      `;
+    })
+    .join("");
 }
 
 function wishlistStatusLabel(status) {
@@ -1378,13 +1518,19 @@ async function drinkBottle() {
   if (!wine || Number(wine.quantity) <= 0) return;
 
   drinkButton.disabled = true;
-  const saved = await api(`/api/wines/${encodeURIComponent(wine.id)}/drink`, { method: "POST" });
+  const saved = await markBottleDrunk(wine.id);
+  openDetail(saved);
+}
+
+async function markBottleDrunk(wineId) {
+  const saved = await api(`/api/wines/${encodeURIComponent(wineId)}/drink`, { method: "POST" });
   const index = state.wines.findIndex((item) => item.id === saved.id);
   if (index >= 0) state.wines[index] = saved;
   renderWineSuggestions();
   renderCellar();
+  renderDrinkNow();
   await renderInsights();
-  openDetail(saved);
+  return saved;
 }
 
 async function generateAiNotes() {
@@ -1679,6 +1825,30 @@ wishlistList.addEventListener("click", (event) => {
   if (convertButton) {
     convertWishlistItem(convertButton.dataset.wishlistConvert).catch((error) => alert(error.message));
   }
+});
+
+drinkNowList.addEventListener("click", (event) => {
+  const drinkButton = event.target.closest("[data-drink-now-drink]");
+  if (drinkButton) {
+    drinkButton.disabled = true;
+    markBottleDrunk(drinkButton.dataset.drinkNowDrink).catch((error) => {
+      drinkButton.disabled = false;
+      alert(t("unableBottleCount", { error: error.message }));
+    });
+    return;
+  }
+
+  const card = event.target.closest(".drink-now-card");
+  if (!card) return;
+  openDetail(state.wines.find((wine) => wine.id === card.dataset.id));
+});
+
+drinkNowList.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const card = event.target.closest(".drink-now-card");
+  if (!card) return;
+  event.preventDefault();
+  openDetail(state.wines.find((wine) => wine.id === card.dataset.id));
 });
 
 document.querySelectorAll(".nav-item").forEach((button) => {
