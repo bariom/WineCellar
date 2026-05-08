@@ -1206,7 +1206,7 @@ function renderPairingResult(result) {
                           <article>
                             <strong>${escapeHtml(item.name || "")}</strong>
                             <span>${escapeHtml(item.producer || "")}</span>
-                            <span>${escapeHtml(item.price_hint || "")}</span>
+                            ${item.price_hint ? `<span>${escapeHtml(item.price_hint)}</span>` : ""}
                             <p>${escapeHtml(item.reason || "")}</p>
                           </article>
                         `,

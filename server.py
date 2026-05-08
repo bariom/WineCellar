@@ -1202,7 +1202,10 @@ def suggest_pairing(payload: dict, role: str) -> dict:
             "prezzo in CHF: low entro 30 CHF, medium entro 60 CHF, high oltre "
             "60 CHF. Non inventare che un vino è in cantina se non è nel contesto. Usa italiano "
             "corretto con accenti in summary, reason e serving_note, ad esempio 'è', 'perché', "
-            "'può', 'già', 'qualità'."
+            "'può', 'già', 'qualità'. Per le proposte fuori cantina, se conosci un prezzo di "
+            "mercato indicativo e plausibile in Svizzera o Europa, inseriscilo in price_hint "
+            "come intervallo o circa, ad esempio 'circa 45 CHF' o '40-55 CHF'. Se non hai un "
+            "riferimento attendibile, indica solo la fascia, ad esempio 'entro 60 CHF'."
         ),
         "input": (
             "Piatto o pietanza: "
@@ -1215,7 +1218,8 @@ def suggest_pairing(payload: dict, role: str) -> dict:
             "\"cellar_matches\":[{\"wine_id\":\"id dal contesto\",\"wine_name\":\"nome\","
             "\"producer\":\"produttore\",\"reason\":\"perché funziona\",\"serving_note\":\"servizio\"}],"
             "\"market_recommendations\":{\"low\":[{\"name\":\"vino\",\"producer\":\"produttore\","
-            "\"price_hint\":\"entro 30 CHF\",\"reason\":\"perché\"}],\"medium\":[],\"high\":[]}}."
+            "\"price_hint\":\"prezzo di mercato indicativo o fascia CHF\",\"reason\":\"perché\"}],"
+            "\"medium\":[],\"high\":[]}}."
         ),
         "max_output_tokens": 1200,
     }
