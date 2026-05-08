@@ -14,6 +14,8 @@ const state = {
   authEnabled: false,
 };
 
+let installPromptEvent = null;
+
 const translations = {
   en: {
     addOwner: "Add Owner",
@@ -102,6 +104,7 @@ const translations = {
     generateDrinkWindowConfirm: "Replace the current drinking window?",
     generateDrinkWindowUnable: "Unable to generate drinking window: {error}",
     import: "Import",
+    installApp: "Install",
     importInvalid: "The selected file does not contain a valid cellar.",
     insights: "Insights",
     invalidLogin: "Invalid password.",
@@ -292,6 +295,7 @@ const translations = {
     generateDrinkWindowConfirm: "Sostituire la finestra di degustazione attuale?",
     generateDrinkWindowUnable: "Impossibile generare la finestra di degustazione: {error}",
     import: "Importa",
+    installApp: "Installa",
     importInvalid: "Il file selezionato non contiene una cantina valida.",
     insights: "Statistiche",
     invalidLogin: "Password non valida.",
@@ -441,6 +445,7 @@ const generateAiValueButton = document.querySelector("#generate-ai-value-button"
 const ownersFormList = document.querySelector("#owners-form-list");
 const scoresFormList = document.querySelector("#scores-form-list");
 const bottomNav = document.querySelector(".bottom-nav");
+const installAppButton = document.querySelector("#install-app-button");
 const languageButton = document.querySelector("#language-button");
 const saleForm = document.querySelector("#sale-form");
 const showSaleFormButton = document.querySelector("#show-sale-form-button");
@@ -1889,6 +1894,26 @@ document.querySelector("#logout-button").addEventListener("click", async () => {
     showScreen("cellar");
   }
 });
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  installPromptEvent = event;
+  installAppButton.hidden = false;
+});
+
+window.addEventListener("appinstalled", () => {
+  installPromptEvent = null;
+  installAppButton.hidden = true;
+});
+
+installAppButton.addEventListener("click", async () => {
+  if (!installPromptEvent) return;
+  installPromptEvent.prompt();
+  await installPromptEvent.userChoice;
+  installPromptEvent = null;
+  installAppButton.hidden = true;
+});
+
 cellarSearch.addEventListener("input", () => {
   state.search = cellarSearch.value;
   renderCellar();
