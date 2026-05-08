@@ -1,10 +1,12 @@
-const CACHE_NAME = "winecellar-pwa-20260508";
+const CACHE_NAME = "winecellar-pwa-20260508-icons";
 const APP_SHELL = [
   "/",
   "/index.html",
   "/styles.css?v=20260508-pairing-real-producers",
   "/app.js",
   "/favicon.svg",
+  "/pwa-icon-192.png",
+  "/pwa-icon-512.png",
   "/pwa-icon.svg",
   "/manifest.webmanifest"
 ];
