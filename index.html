@@ -12,7 +12,7 @@
       integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
       crossorigin="anonymous"
     />
-    <link rel="stylesheet" href="styles.css?v=20260508-pairing" />
+    <link rel="stylesheet" href="styles.css?v=20260508-pairing-tabs" />
   </head>
   <body>
     <main class="app-shell">
@@ -84,17 +84,25 @@
         <header class="simple-header">
           <h1 id="drink-now-title" data-i18n="drinkNow">Drink Now</h1>
         </header>
-        <section class="pairing-panel admin-only">
-          <form class="pairing-form" id="pairing-form">
-            <label class="form-field">
-              <span data-i18n="pairingDish">Piatto o pietanza</span>
-              <textarea class="form-control" id="pairing-dish" name="dish" rows="3" data-i18n-placeholder="pairingPlaceholder" placeholder="Es. risotto ai funghi, brasato, sushi"></textarea>
-            </label>
-            <button class="btn btn-wine save-button" type="submit" data-i18n="pairingSubmit">Trova abbinamento</button>
-          </form>
-          <div class="pairing-result" id="pairing-result" hidden></div>
+        <div class="segmented-tabs drink-now-tabs" role="tablist" aria-label="Cosa bere">
+          <button class="insight-tab active" data-drink-now-tab="list" type="button" data-i18n="drinkNowListTab">Lista</button>
+          <button class="insight-tab admin-only" data-drink-now-tab="pairing" type="button" data-i18n="pairing">Abbinamento</button>
+        </div>
+        <section class="drink-now-panel active" id="drink-now-list-panel">
+          <div class="drink-now-list" id="drink-now-list"></div>
         </section>
-        <div class="drink-now-list" id="drink-now-list"></div>
+        <section class="drink-now-panel admin-only" id="drink-now-pairing-panel">
+          <div class="pairing-panel">
+            <form class="pairing-form" id="pairing-form">
+              <label class="form-field">
+                <span data-i18n="pairingDish">Piatto o pietanza</span>
+                <textarea class="form-control" id="pairing-dish" name="dish" rows="3" data-i18n-placeholder="pairingPlaceholder" placeholder="Es. risotto ai funghi, brasato, sushi"></textarea>
+              </label>
+              <button class="btn btn-wine save-button" type="submit" data-i18n="pairingSubmit">Trova abbinamento</button>
+            </form>
+            <div class="pairing-result" id="pairing-result" hidden></div>
+          </div>
+        </section>
       </section>
 
       <section class="screen" id="screen-insights" aria-labelledby="insights-title">
@@ -566,6 +574,6 @@
       </nav>
     </main>
 
-    <script src="app.js?v=20260508-pairing"></script>
+    <script src="app.js?v=20260508-pairing-tabs"></script>
   </body>
 </html>

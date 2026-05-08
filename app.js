@@ -54,6 +54,7 @@ const translations = {
     drinkDecline: "Past peak",
     drinkNow: "Drink Now",
     drinkNowEmpty: "No delivered bottles with quantity available.",
+    drinkNowListTab: "List",
     drinkNowNav: "What to drink?",
     drinkNowReasonDecline: "Past the estimated window",
     drinkNowReasonIdeal: "Inside the ideal window",
@@ -241,6 +242,7 @@ const translations = {
     drinkDecline: "Oltre apice",
     drinkNow: "Da bere ora",
     drinkNowEmpty: "Nessuna bottiglia in cantina con quantita disponibile.",
+    drinkNowListTab: "Lista",
     drinkNowNav: "Cosa bere?",
     drinkNowReasonDecline: "Oltre la finestra stimata",
     drinkNowReasonIdeal: "Dentro la finestra ideale",
@@ -322,7 +324,7 @@ const translations = {
     pairingPlaceholder: "Es. risotto ai funghi, brasato, sushi",
     pairingSubmit: "Trova abbinamento",
     pairingUnable: "Impossibile suggerire un abbinamento: {error}",
-    pairingWhy: "Perche",
+    pairingWhy: "Perché",
     priceRequired: "Prezzo unitario *",
     priority: "Priorita",
     priorityHigh: "Alta",
@@ -416,6 +418,8 @@ const filterCount = document.querySelector("#filter-count");
 const activeInsightFilter = document.querySelector("#active-insight-filter");
 const timelineList = document.querySelector("#timeline-list");
 const drinkNowList = document.querySelector("#drink-now-list");
+const drinkNowListPanel = document.querySelector("#drink-now-list-panel");
+const drinkNowPairingPanel = document.querySelector("#drink-now-pairing-panel");
 const pairingForm = document.querySelector("#pairing-form");
 const pairingResult = document.querySelector("#pairing-result");
 const regionList = document.querySelector("#region-list");
@@ -571,6 +575,7 @@ function applyPermissions() {
       item.classList.toggle("active", item.dataset.ownerFilter === "All");
     });
   }
+  if (!isAdmin()) showDrinkNowTab("list");
   updateFilterCount();
 }
 
@@ -1136,6 +1141,15 @@ function renderDrinkNow() {
       `;
     })
     .join("");
+}
+
+function showDrinkNowTab(tab) {
+  const selectedTab = tab === "pairing" && isAdmin() ? "pairing" : "list";
+  document.querySelectorAll("[data-drink-now-tab]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.drinkNowTab === selectedTab);
+  });
+  drinkNowListPanel.classList.toggle("active", selectedTab === "list");
+  drinkNowPairingPanel.classList.toggle("active", selectedTab === "pairing");
 }
 
 function renderPairingResult(result) {
@@ -1886,6 +1900,9 @@ document.querySelector(".insights").addEventListener("click", (event) => {
   const row = event.target.closest("[data-insight-field]");
   if (!row) return;
   applyInsightListFilter(row.dataset.insightField, row.dataset.insightValue, row.dataset.insightScope);
+});
+document.querySelectorAll("[data-drink-now-tab]").forEach((button) => {
+  button.addEventListener("click", () => showDrinkNowTab(button.dataset.drinkNowTab));
 });
 document.querySelector("#cancel-form-button").addEventListener("click", () => {
   if (state.formReturn === "detail") {

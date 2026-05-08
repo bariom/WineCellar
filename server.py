@@ -1197,7 +1197,9 @@ def suggest_pairing(payload: dict, role: str) -> dict:
             "cellar_matches e lascia comunque market_recommendations vuoto. Se nessun vino in "
             "cantina e davvero adeguato, cellar_matches deve essere vuoto e devi proporre tre "
             "bottiglie per fascia prezzo in CHF: low entro 30 CHF, medium entro 60 CHF, high oltre "
-            "60 CHF. Non inventare che un vino e in cantina se non e nel contesto."
+            "60 CHF. Non inventare che un vino è in cantina se non è nel contesto. Usa italiano "
+            "corretto con accenti in summary, reason e serving_note, ad esempio 'è', 'perché', "
+            "'può', 'già', 'qualità'."
         ),
         "input": (
             "Piatto o pietanza: "
@@ -1207,9 +1209,9 @@ def suggest_pairing(payload: dict, role: str) -> dict:
             "Restituisci solo questo oggetto JSON: "
             "{\"summary\":\"testo breve\","
             "\"cellar_matches\":[{\"wine_id\":\"id dal contesto\",\"wine_name\":\"nome\","
-            "\"producer\":\"produttore\",\"reason\":\"perche funziona\",\"serving_note\":\"servizio\"}],"
+            "\"producer\":\"produttore\",\"reason\":\"perché funziona\",\"serving_note\":\"servizio\"}],"
             "\"market_recommendations\":{\"low\":[{\"name\":\"vino\",\"producer\":\"produttore\","
-            "\"price_hint\":\"entro 30 CHF\",\"reason\":\"perche\"}],\"medium\":[],\"high\":[]}}."
+            "\"price_hint\":\"entro 30 CHF\",\"reason\":\"perché\"}],\"medium\":[],\"high\":[]}}."
         ),
         "max_output_tokens": 1200,
     }
@@ -1264,8 +1266,10 @@ def generate_ai_notes(wine_id: str) -> dict:
             "Sei un assistente esperto di vino. Scrivi note brevi, utili e interessanti "
             "per un collezionista privato. Rispondi in italiano. Non inventare dati specifici "
             "come punteggi, prezzi, date o classificazioni se non sono nel contesto. Se un fatto "
-            "e incerto, dillo in modo prudente. Usa solo testo semplice: niente Markdown, niente "
-            "asterischi, niente grassetti, niente titoli con simboli e niente markup HTML."
+            "è incerto, dillo in modo prudente. Usa ortografia italiana corretta con accenti "
+            "e apostrofi, ad esempio 'è', 'perché', 'può', 'già', 'qualità'. Usa solo testo "
+            "semplice: niente Markdown, niente asterischi, niente grassetti, niente titoli con "
+            "simboli e niente markup HTML."
         ),
         "input": (
             "Genera una scheda 'Note AI' per questo vino in testo semplice. Usa 5-7 righe brevi, "
@@ -1361,14 +1365,15 @@ def generate_drink_window(wine_id: str) -> dict:
             "Sei un assistente esperto di vino. Stima una finestra di degustazione indicativa "
             "per un collezionista privato. Rispondi solo con JSON valido, senza Markdown, senza "
             "testo prima o dopo. Non inventare precisione eccessiva: se sei incerto, scegli una "
-            "finestra prudente e spiega brevemente l'assunzione nelle note."
+            "finestra prudente e spiega brevemente l'assunzione nelle note. Usa italiano corretto "
+            "con accenti nelle note, ad esempio 'è', 'perché', 'può', 'già', 'qualità'."
         ),
         "input": (
             "Usa l'annata come riferimento temporale. Restituisci solo questo oggetto JSON: "
             "{\"drink_from\": anno, \"drink_peak_from\": anno, \"drink_peak_to\": anno, "
             "\"drink_to\": anno, \"notes\": \"testo semplice\"}. "
-            "drink_from e l'inizio della fase in cui il vino e bevibile; drink_peak_from e "
-            "drink_peak_to delimitano la maturazione ideale; drink_to e la fine indicativa della "
+            "drink_from è l'inizio della fase in cui il vino è bevibile; drink_peak_from e "
+            "drink_peak_to delimitano la maturazione ideale; drink_to è la fine indicativa della "
             "finestra utile prima del declino. Contesto:\n"
             f"{json.dumps(wine_context, ensure_ascii=False)}"
         ),
@@ -1464,12 +1469,14 @@ def generate_ai_value(wine_id: str) -> dict:
             "Sei un assistente esperto di valutazioni di vino. Stima un valore attuale unitario "
             "indicativo per un collezionista privato. Rispondi solo con JSON valido, senza Markdown "
             "e senza testo prima o dopo. Non presentare la stima come quotazione live o prezzo certo. "
-            "Se non hai dati sufficienti, usa una stima prudente e spiega il limite nelle note."
+            "Se non hai dati sufficienti, usa una stima prudente e spiega il limite nelle note. "
+            "Usa italiano corretto con accenti nelle note, ad esempio 'è', 'perché', 'può', "
+            "'già', 'qualità'."
         ),
         "input": (
             "Restituisci solo questo oggetto JSON: "
             "{\"current_value\": numero, \"currency\": \"CHF|EUR|USD\", \"notes\": \"testo semplice\"}. "
-            "La valuta deve essere la stessa del vino se supportata. current_value e il valore stimato "
+            "La valuta deve essere la stessa del vino se supportata. current_value è il valore stimato "
             "per una singola bottiglia nel formato indicato. Le note devono spiegare in 1-2 frasi "
             "che si tratta di una stima indicativa e quali fattori sono stati considerati. Contesto:\n"
             f"{json.dumps(wine_context, ensure_ascii=False)}"

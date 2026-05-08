@@ -532,6 +532,19 @@ h2 {
   padding-top: 16px;
 }
 
+.drink-now-tabs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 16px;
+}
+
+.drink-now-panel {
+  display: none;
+}
+
+.drink-now-panel.active {
+  display: block;
+}
+
 .pairing-panel {
   display: grid;
   gap: 12px;
