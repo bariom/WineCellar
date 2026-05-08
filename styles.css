@@ -86,6 +86,8 @@ body {
   display: flex;
   align-items: center;
   min-height: 64px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(223, 210, 192, 0.55);
 }
 
 .topbar {
@@ -293,7 +295,7 @@ h2 {
 
 .content-list {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .wine-card,
@@ -302,10 +304,10 @@ h2 {
   grid-template-columns: 1fr auto;
   gap: 8px 14px;
   width: 100%;
-  padding: 16px 14px 14px 18px;
+  padding: 15px 14px 14px 18px;
   border: 1px solid var(--line);
   border-left: 6px solid var(--wine);
-  border-radius: 10px;
+  border-radius: 9px;
   color: inherit;
   background: var(--panel);
   text-align: left;
@@ -313,6 +315,7 @@ h2 {
 
 .drink-now-card {
   cursor: pointer;
+  background: #f7f1e8;
 }
 
 .wine-card[data-type="White"],
@@ -331,7 +334,8 @@ h2 {
 
 .wine-title {
   margin: 0;
-  font-size: 1.22rem;
+  font-size: 1.16rem;
+  line-height: 1.18;
 }
 
 .wine-meta,
@@ -339,6 +343,28 @@ h2 {
   margin: 4px 0 0;
   color: var(--muted);
   line-height: 1.45;
+}
+
+.wine-producer {
+  color: #5d625e;
+}
+
+.wine-card-main {
+  min-width: 0;
+}
+
+.wine-card-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.wine-card-details span {
+  display: inline-flex;
 }
 
 .score-summary {
@@ -398,6 +424,7 @@ h2 {
   align-items: flex-end;
   justify-content: space-between;
   min-width: 86px;
+  gap: 8px;
 }
 
 .status-pill {
@@ -501,8 +528,8 @@ h2 {
 
 .drink-now-list {
   display: grid;
-  gap: 18px;
-  padding-top: 18px;
+  gap: 20px;
+  padding-top: 16px;
 }
 
 .drink-now-section h2 {
@@ -525,18 +552,18 @@ h2 {
   justify-items: end;
   align-content: start;
   gap: 8px;
-  min-width: 96px;
+  min-width: 92px;
 }
 
 .drink-now-chip {
   display: inline-flex;
   align-items: center;
-  min-height: 26px;
-  padding: 3px 9px;
+  min-height: 24px;
+  padding: 3px 8px;
   border-radius: 999px;
   color: var(--wine);
-  background: #f3e6e4;
-  font-size: 0.75rem;
+  background: rgba(116, 23, 27, 0.08);
+  font-size: 0.72rem;
   font-weight: 850;
   text-align: center;
 }
@@ -584,7 +611,7 @@ h2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, max-content));
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .drink-now-window-cell {
@@ -599,7 +626,7 @@ h2 {
 }
 
 .drink-now-window-cell.highlight {
-  border-color: rgba(116, 23, 27, 0.18);
+  border-color: rgba(217, 154, 22, 0.4);
   color: var(--wine);
   background: #fff6e1;
 }
@@ -630,6 +657,7 @@ h2 {
 .drink-now-action {
   min-height: 32px;
   padding: 4px 9px;
+  border-color: rgba(116, 23, 27, 0.22);
   font-size: 0.76rem;
   white-space: nowrap;
 }
@@ -641,7 +669,7 @@ h2 {
 }
 
 .insights {
-  padding-top: 34px;
+  padding-top: 18px;
 }
 
 .segmented-tabs {
@@ -650,7 +678,7 @@ h2 {
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 12px;
   background: #efe6d7;
 }
 
@@ -687,8 +715,8 @@ h2 {
 
 .value-card {
   display: grid;
-  gap: 14px;
-  padding: 24px;
+  gap: 8px;
+  padding: 18px;
   background: var(--wine);
   color: #fff;
 }
@@ -708,26 +736,30 @@ h2 {
 
 .value-card strong {
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(2rem, 12vw, 3rem);
+  font-size: clamp(1.7rem, 9vw, 2.45rem);
   font-weight: 500;
+  line-height: 1;
 }
 
 .metric-card {
   display: grid;
-  gap: 5px;
-  min-height: 104px;
-  padding: 20px;
+  gap: 4px;
+  min-height: 86px;
+  padding: 14px;
   background: var(--panel);
 }
 
 .metric-card strong {
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.8rem;
+  font-size: 1.42rem;
   font-weight: 500;
+  line-height: 1.05;
 }
 
 .metric-card span {
   color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.2;
 }
 
 .region-list {
@@ -740,13 +772,14 @@ h2 {
   display: flex;
   width: 100%;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
   border: 0;
   background: transparent;
-  padding: 16px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--line);
   color: inherit;
   font-weight: 760;
+  font-size: 0.92rem;
   text-align: left;
   overflow: hidden;
 }
@@ -1458,9 +1491,9 @@ h2 {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   max-width: 540px;
-  min-height: calc(70px + env(safe-area-inset-bottom));
+  min-height: calc(68px + env(safe-area-inset-bottom));
   margin: 0 auto;
-  padding-bottom: env(safe-area-inset-bottom);
+  padding: 4px 5px env(safe-area-inset-bottom);
   border-top: 1px solid rgba(223, 210, 192, 0.75);
   background: rgba(255, 250, 243, 0.96);
 }
@@ -1468,14 +1501,26 @@ h2 {
 .nav-item {
   display: grid;
   place-items: center;
+  min-width: 0;
+  padding: 4px 3px;
   border: 0;
+  border-radius: 10px;
   color: #6d737c;
   background: transparent;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
+  line-height: 1.05;
+  text-align: center;
+}
+
+.nav-item span {
+  display: block;
+  max-width: 78px;
+  overflow-wrap: normal;
 }
 
 .nav-item.active {
   color: var(--wine);
+  background: rgba(116, 23, 27, 0.08);
   font-weight: 800;
 }
 

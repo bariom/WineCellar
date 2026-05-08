@@ -967,12 +967,14 @@ function renderCellar() {
         .map(
           (wine) => `
             <button class="wine-card" data-id="${wine.id}" data-type="${escapeHtml(cardVisualType(wine))}" type="button">
-              <div>
+              <div class="wine-card-main">
                 <p class="wine-title">${escapeHtml(wine.name)}</p>
-                <p class="wine-meta">${escapeHtml(wine.producer)}</p>
-                <p class="wine-meta">${wine.quantity}x ${escapeHtml(formatLabel(wine.format))}</p>
+                <p class="wine-meta wine-producer">${escapeHtml(wine.producer)}</p>
+                <div class="wine-card-details">
+                  <span>${wine.quantity}x ${escapeHtml(formatLabel(wine.format))}</span>
+                  <span>${state.lang === "it" ? "Arrivo" : "Arrival"}: ${formatMonthYear(wine.expected_delivery)}</span>
+                </div>
                 ${scoreSummary(wine) ? `<p class="score-summary">${escapeHtml(scoreSummary(wine))}</p>` : ""}
-                <p class="wine-meta">${state.lang === "it" ? "Arrivo" : "Arrival"}: ${formatMonthYear(wine.expected_delivery)}</p>
                 ${renderMiniDrinkWindow(wine)}
               </div>
               <div class="card-side">
