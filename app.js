@@ -58,13 +58,17 @@ const translations = {
     drinkNowReasonDecline: "Past the estimated window",
     drinkNowReasonIdeal: "Inside the ideal window",
     drinkNowReasonMissing: "No drinking window yet",
+    drinkNowReasonPastIdeal: "Past the ideal window",
     drinkNowReasonReady: "Inside the drinking window",
     drinkNowReasonWait: "Better to wait",
     drinkNowSectionDontWait: "Do not wait",
     drinkNowSectionIdeal: "Ideal now",
+    drinkNowSectionPastIdeal: "Past ideal",
     drinkNowSectionReady: "Ready",
     drinkNowSectionWait: "Too young",
     drinkNowSectionUnknown: "No window",
+    drinkNowStatus: "Status",
+    drinkNowWindow: "Window",
     drinkPeak: "Ideal",
     drinkWindow: "Drinking Window",
     drinkWindowEstimate: "AI estimate",
@@ -230,13 +234,17 @@ const translations = {
     drinkNowReasonDecline: "Oltre la finestra stimata",
     drinkNowReasonIdeal: "Dentro la finestra ideale",
     drinkNowReasonMissing: "Finestra degustazione assente",
+    drinkNowReasonPastIdeal: "Oltre la finestra ideale",
     drinkNowReasonReady: "Dentro la finestra di degustazione",
     drinkNowReasonWait: "Meglio aspettare",
     drinkNowSectionDontWait: "Da non aspettare",
     drinkNowSectionIdeal: "Ideale ora",
+    drinkNowSectionPastIdeal: "Oltre ideale",
     drinkNowSectionReady: "Pronto",
     drinkNowSectionWait: "Troppo giovane",
     drinkNowSectionUnknown: "Senza finestra",
+    drinkNowStatus: "Stato",
+    drinkNowWindow: "Finestra",
     drinkPeak: "Ideale",
     drinkWindow: "Finestra degustazione",
     drinkWindowEstimate: "Stima AI",
@@ -996,6 +1004,11 @@ function drinkNowStatus(wine) {
     return { section: nearEnd ? "dontWait" : "ideal", priority: nearEnd ? 95 : 90, reason: t("drinkNowReasonIdeal") };
   }
 
+  if (Number.isFinite(peakTo) && peakTo > 0 && currentYear > peakTo) {
+    const nearEnd = Number.isFinite(drinkTo) && drinkTo > 0 && drinkTo - currentYear <= 1;
+    return { section: nearEnd ? "dontWait" : "pastIdeal", priority: nearEnd ? 89 : 84, reason: t("drinkNowReasonPastIdeal") };
+  }
+
   if (Number.isFinite(drinkFrom) && Number.isFinite(drinkTo) && drinkFrom > 0 && drinkTo > 0 && currentYear >= drinkFrom && currentYear <= drinkTo) {
     const nearEnd = drinkTo - currentYear <= 1;
     return { section: nearEnd ? "dontWait" : "ready", priority: nearEnd ? 88 : 70, reason: t("drinkNowReasonReady") };
@@ -1016,17 +1029,6 @@ function drinkNowCategory(wine) {
   return t("drinkCategoryReady");
 }
 
-function drinkWindowSummary(wine) {
-  const drinkFrom = Number(wine.drink_from) || null;
-  const peakFrom = Number(wine.drink_peak_from) || null;
-  const peakTo = Number(wine.drink_peak_to) || null;
-  const drinkTo = Number(wine.drink_to) || null;
-  if (![drinkFrom, peakFrom, peakTo, drinkTo].some(Boolean)) return t("drinkWindowMissing");
-  const window = drinkFrom && drinkTo ? `${t("drinkWindow")}: ${drinkFrom}-${drinkTo}` : "";
-  const peak = peakFrom && peakTo ? `${t("drinkPeak")}: ${peakFrom}-${peakTo}` : "";
-  return [window, peak].filter(Boolean).join(" - ");
-}
-
 function idealWindowLabel(wine) {
   const peakFrom = Number(wine.drink_peak_from) || null;
   const peakTo = Number(wine.drink_peak_to) || null;
@@ -1035,10 +1037,19 @@ function idealWindowLabel(wine) {
   return t("notSpecified");
 }
 
+function drinkRangeLabel(wine) {
+  const drinkFrom = Number(wine.drink_from) || null;
+  const drinkTo = Number(wine.drink_to) || null;
+  if (drinkFrom && drinkTo) return `${drinkFrom}-${drinkTo}`;
+  if (drinkTo) return `${drinkTo}`;
+  return t("notSpecified");
+}
+
 function renderDrinkNow() {
   const sectionLabels = {
     dontWait: t("drinkNowSectionDontWait"),
     ideal: t("drinkNowSectionIdeal"),
+    pastIdeal: t("drinkNowSectionPastIdeal"),
     ready: t("drinkNowSectionReady"),
     unknown: t("drinkNowSectionUnknown"),
     wait: t("drinkNowSectionWait"),
@@ -1053,7 +1064,7 @@ function renderDrinkNow() {
     return;
   }
 
-  drinkNowList.innerHTML = ["dontWait", "ideal", "ready", "unknown", "wait"]
+  drinkNowList.innerHTML = ["dontWait", "ideal", "pastIdeal", "ready", "unknown", "wait"]
     .map((section) => {
       const items = recommendations.filter((item) => item.status.section === section);
       if (!items.length) return "";
@@ -1071,11 +1082,17 @@ function renderDrinkNow() {
                     <div>
                       <p class="wine-title">${escapeHtml(wine.name)} <span class="small-vintage">${escapeHtml(wine.vintage)}</span></p>
                       <p class="wine-meta">${escapeHtml(wine.producer)} - ${escapeHtml(wine.region || t("notSpecified"))}</p>
-                      <div class="drink-now-ideal">
-                        <span>${escapeHtml(t("drinkPeak"))}</span>
-                        <strong>${escapeHtml(idealWindowLabel(wine))}</strong>
+                      <div class="drink-now-window-grid">
+                        <div class="drink-now-window-cell highlight">
+                          <span>${escapeHtml(t("drinkPeak"))}</span>
+                          <strong>${escapeHtml(idealWindowLabel(wine))}</strong>
+                        </div>
+                        <div class="drink-now-window-cell">
+                          <span>${escapeHtml(t("drinkNowWindow"))}</span>
+                          <strong>${escapeHtml(drinkRangeLabel(wine))}</strong>
+                        </div>
                       </div>
-                      <p class="drink-now-reason">${escapeHtml(status.reason)} - ${escapeHtml(drinkWindowSummary(wine))}</p>
+                      <p class="drink-now-reason"><strong>${escapeHtml(t("drinkNowStatus"))}:</strong> ${escapeHtml(status.reason)}</p>
                     </div>
                     <div class="drink-now-side">
                       <span class="drink-now-chip">${escapeHtml(drinkNowCategory(wine))}</span>
