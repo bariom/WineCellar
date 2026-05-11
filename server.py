@@ -33,6 +33,18 @@ OPENAI_VALUE_MODEL = os.environ.get("OPENAI_VALUE_MODEL", "gpt-5.4-mini")
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 SESSION_COOKIE = "wine_cellar_session"
 SESSIONS: dict[str, str] = {}
+PUBLIC_STATIC_PATHS = {
+    "/",
+    "/index.html",
+    "/styles.css",
+    "/app.js",
+    "/favicon.svg",
+    "/manifest.webmanifest",
+    "/sw.js",
+    "/pwa-icon.svg",
+    "/pwa-icon-192.png",
+    "/pwa-icon-512.png",
+}
 
 FIELDS = [
     "id",
@@ -1598,6 +1610,20 @@ class CellarHandler(SimpleHTTPRequestHandler):
             self.send_header("Cache-Control", "no-cache")
         super().end_headers()
 
+    def is_public_static_path(self) -> bool:
+        path = unquote(urlparse(self.path).path)
+        return path in PUBLIC_STATIC_PATHS
+
+    def do_HEAD(self) -> None:
+        path = urlparse(self.path).path
+        if path.startswith("/api/"):
+            self.send_error(HTTPStatus.METHOD_NOT_ALLOWED)
+            return
+        if not self.is_public_static_path():
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        super().do_HEAD()
+
     def do_GET(self) -> None:
         path = urlparse(self.path).path
         if path == "/api/session":
@@ -1637,6 +1663,9 @@ class CellarHandler(SimpleHTTPRequestHandler):
                 self.send_json(get_summary(self.current_role()))
             except ValueError as exc:
                 self.send_json({"error": str(exc)}, HTTPStatus.BAD_GATEWAY)
+            return
+        if not self.is_public_static_path():
+            self.send_error(HTTPStatus.NOT_FOUND)
             return
         super().do_GET()
 

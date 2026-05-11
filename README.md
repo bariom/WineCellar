@@ -66,6 +66,29 @@ Di default ascolta su `0.0.0.0:4173`. Log e PID vengono scritti in:
 - `winecellar.log`
 - `winecellar.pid`
 
+## Nginx e sicurezza
+
+In produzione l'app deve essere esposta tramite Nginx come reverse proxy verso `127.0.0.1:4173`, non servendo direttamente la directory del progetto come root statica.
+Usa come base la configurazione in `deploy/nginx/winecellar.conf`, che blocca file nascosti e sensibili come `.env`, `.git`, database, log, script e directory dati.
+
+Dopo aver aggiornato `/etc/nginx/sites-available/winecellar`:
+
+```sh
+sudo nginx -t
+sudo systemctl reload nginx
+sudo systemctl restart winecellar
+```
+
+Verifica che i file sensibili non siano esposti:
+
+```sh
+curl -I https://bariomwines.duckdns.org/.env
+curl -I https://bariomwines.duckdns.org/.git/config
+curl -I https://bariomwines.duckdns.org/cellar.db
+```
+
+Devono rispondere `404` o `403`, mai `200`.
+
 ## Configurazione accessi
 
 Copia il file di esempio:
