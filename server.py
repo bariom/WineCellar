@@ -33,6 +33,41 @@ OPENAI_VALUE_MODEL = os.environ.get("OPENAI_VALUE_MODEL", "gpt-5.4-mini")
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 SESSION_COOKIE = "wine_cellar_session"
 SESSIONS: dict[str, str] = {}
+OPENAI_MODEL_OPTIONS = [
+    {
+        "id": "gpt-5.4-nano",
+        "label": "GPT-5.4 nano",
+        "description": "Economico e veloce. Buono per abbinamenti quotidiani.",
+        "input_per_million": 0.20,
+        "output_per_million": 1.25,
+        "relative_cost": 1.0,
+    },
+    {
+        "id": "gpt-5.4-mini",
+        "label": "GPT-5.4 mini",
+        "description": "Più preciso. Scelta utile per piatti complessi o richieste importanti.",
+        "input_per_million": 0.75,
+        "output_per_million": 4.50,
+        "relative_cost": 3.6,
+    },
+    {
+        "id": "gpt-5.4",
+        "label": "GPT-5.4",
+        "description": "Modello più forte, ma sensibilmente più costoso.",
+        "input_per_million": 2.50,
+        "output_per_million": 15.00,
+        "relative_cost": 12.3,
+    },
+    {
+        "id": "gpt-5.5",
+        "label": "GPT-5.5",
+        "description": "Massima qualità disponibile in lista, da usare solo quando serve.",
+        "input_per_million": 5.00,
+        "output_per_million": 30.00,
+        "relative_cost": 24.6,
+    },
+]
+OPENAI_MODEL_OPTION_IDS = {option["id"] for option in OPENAI_MODEL_OPTIONS}
 PUBLIC_STATIC_PATHS = {
     "/",
     "/index.html",
@@ -266,6 +301,15 @@ def init_db() -> None:
         )
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS app_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS sales (
                 id TEXT PRIMARY KEY,
                 wine_id TEXT NOT NULL,
@@ -366,6 +410,43 @@ def list_catalog_wines() -> list[dict]:
             """
         ).fetchall()
     return [dict(row) for row in rows]
+
+
+def get_setting(conn: sqlite3.Connection, key: str, default: str) -> str:
+    row = conn.execute("SELECT value FROM app_settings WHERE key = ?", (key,)).fetchone()
+    return str(row["value"]) if row else default
+
+
+def get_pairing_model(conn: sqlite3.Connection) -> str:
+    model = get_setting(conn, "pairing_model", OPENAI_MODEL)
+    return model if model in OPENAI_MODEL_OPTION_IDS else OPENAI_MODEL
+
+
+def get_app_settings() -> dict:
+    with connect() as conn:
+        pairing_model = get_pairing_model(conn)
+    return {
+        "pairing_model": pairing_model,
+        "model_options": OPENAI_MODEL_OPTIONS,
+        "pricing_note": "Prezzi indicativi OpenAI standard per 1M token. Il costo reale dipende da input e output della richiesta.",
+    }
+
+
+def update_app_settings(payload: dict) -> dict:
+    pairing_model = str(payload.get("pairing_model", "")).strip()
+    if pairing_model not in OPENAI_MODEL_OPTION_IDS:
+        raise ValueError("Invalid pairing model")
+
+    with connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO app_settings (key, value, updated_at)
+            VALUES ('pairing_model', ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+            """,
+            (pairing_model,),
+        )
+    return get_app_settings()
 
 
 def list_wines() -> list[dict]:
@@ -1185,6 +1266,8 @@ def suggest_pairing(payload: dict, role: str) -> dict:
     market_only = bool(payload.get("market_only"))
     if not OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY is not configured")
+    with connect() as conn:
+        pairing_model = get_pairing_model(conn)
 
     cellar_wines = [] if market_only else [
         wine
@@ -1212,7 +1295,7 @@ def suggest_pairing(payload: dict, role: str) -> dict:
         for wine in cellar_wines[:120]
     ]
     request_payload = {
-        "model": OPENAI_MODEL,
+        "model": pairing_model,
         "instructions": (
             "Sei un sommelier privato. Devi consigliare vini per un piatto usando prima solo "
             "le bottiglie disponibili in cantina. Rispondi solo con JSON valido, senza Markdown "
@@ -1274,7 +1357,9 @@ def suggest_pairing(payload: dict, role: str) -> dict:
     raw_text = extract_response_text(response_payload)
     if not raw_text:
         raise ValueError("OpenAI response did not include text")
-    return clean_pairing_payload(parse_json_object(raw_text), {wine["id"] for wine in cellar_wines}, include_market)
+    cleaned_payload = clean_pairing_payload(parse_json_object(raw_text), {wine["id"] for wine in cellar_wines}, include_market)
+    cleaned_payload["model"] = pairing_model
+    return cleaned_payload
 
 
 def generate_ai_notes(wine_id: str) -> dict:
@@ -1637,6 +1722,11 @@ class CellarHandler(SimpleHTTPRequestHandler):
         if path == "/api/wine-catalog":
             self.send_json(list_catalog_wines())
             return
+        if path == "/api/settings":
+            if not self.require_admin():
+                return
+            self.send_json(get_app_settings())
+            return
         if path == "/api/wishlist":
             self.send_json(list_wishlist())
             return
@@ -1684,6 +1774,9 @@ class CellarHandler(SimpleHTTPRequestHandler):
                 self.send_json(upsert_wishlist_item(self.read_json()), HTTPStatus.CREATED)
                 return
             if path.startswith("/api/") and not self.require_admin():
+                return
+            if path == "/api/settings":
+                self.send_json(update_app_settings(self.read_json()))
                 return
             if path == "/api/pairing":
                 self.send_json(suggest_pairing(self.read_json(), self.current_role()))

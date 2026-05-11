@@ -12,6 +12,7 @@ const state = {
   search: "",
   role: "anonymous",
   authEnabled: false,
+  settings: null,
 };
 
 let installPromptEvent = null;
@@ -34,6 +35,7 @@ const translations = {
     cachedRates: "cached rates",
     addSale: "Add Sale",
     addWishlistItem: "+ Add",
+    adminSettings: "Admin",
     buyer: "Buyer",
     cellar: "Cellar",
     cellarValue: "Cellar Value",
@@ -138,11 +140,16 @@ const translations = {
     pairingIncludeMarket: "Also show 2 bottles outside my cellar",
     pairingMarketFallback: "Suggested bottles to buy",
     pairingMarketOnly: "Restaurant mode: ignore my cellar",
+    pairingModelUsed: "Model used: {model}",
     pairingNoCellarMatch: "No ideal bottle found in your cellar.",
     pairingPlaceholder: "E.g. mushroom risotto, braised beef, sushi",
     pairingSubmit: "Find pairing",
     pairingUnable: "Unable to suggest a pairing: {error}",
     pairingWhy: "Why",
+    pairingModelHelp: "Choose the OpenAI model used for pairing requests. More expensive models can give more accurate answers.",
+    pairingModelLegend: "Model",
+    pairingModelSaved: "Settings saved.",
+    pairingModelTitle: "Pairing model",
     priceRequired: "Price per Unit *",
     priority: "Priority",
     priorityHigh: "High",
@@ -156,6 +163,7 @@ const translations = {
     rose: "Rose",
     saveOrder: "Save Order",
     saveSale: "Save Sale",
+    saveSettings: "Save settings",
     saveWishlistItem: "Save",
     saveUnable: "Unable to save order: {error}",
     salePrice: "Sale Price",
@@ -226,6 +234,7 @@ const translations = {
     cachedRates: "cambi in cache",
     addSale: "Aggiungi vendita",
     addWishlistItem: "+ Aggiungi",
+    adminSettings: "Admin",
     buyer: "Acquirente",
     cellar: "Cantina",
     cellarValue: "Valore cantina",
@@ -330,11 +339,16 @@ const translations = {
     pairingIncludeMarket: "Mostra anche 2 proposte fuori cantina",
     pairingMarketFallback: "Bottiglie suggerite da acquistare",
     pairingMarketOnly: "Sono al ristorante: ignora la mia cantina",
+    pairingModelUsed: "Modello usato: {model}",
     pairingNoCellarMatch: "Nessuna bottiglia ideale trovata in cantina.",
     pairingPlaceholder: "Es. risotto ai funghi, brasato, sushi",
     pairingSubmit: "Trova abbinamento",
     pairingUnable: "Impossibile suggerire un abbinamento: {error}",
     pairingWhy: "Perché",
+    pairingModelHelp: "Scegli il modello OpenAI usato per la richiesta di abbinamento. Modelli piu costosi possono dare risposte piu accurate.",
+    pairingModelLegend: "Modello",
+    pairingModelSaved: "Impostazioni salvate.",
+    pairingModelTitle: "Modello abbinamenti",
     priceRequired: "Prezzo unitario *",
     priority: "Priorita",
     priorityHigh: "Alta",
@@ -348,6 +362,7 @@ const translations = {
     rose: "Rosé",
     saveOrder: "Salva ordine",
     saveSale: "Salva vendita",
+    saveSettings: "Salva impostazioni",
     saveWishlistItem: "Salva",
     saveUnable: "Impossibile salvare l'ordine: {error}",
     salePrice: "Prezzo vendita",
@@ -410,6 +425,7 @@ const screens = {
   drinkNow: document.querySelector("#screen-drink-now"),
   insights: document.querySelector("#screen-insights"),
   wishlist: document.querySelector("#screen-wishlist"),
+  settings: document.querySelector("#screen-settings"),
   detail: document.querySelector("#screen-detail"),
   form: document.querySelector("#screen-form"),
 };
@@ -432,6 +448,9 @@ const drinkNowListPanel = document.querySelector("#drink-now-list-panel");
 const drinkNowPairingPanel = document.querySelector("#drink-now-pairing-panel");
 const pairingForm = document.querySelector("#pairing-form");
 const pairingResult = document.querySelector("#pairing-result");
+const settingsForm = document.querySelector("#settings-form");
+const pairingModelOptions = document.querySelector("#pairing-model-options");
+const settingsPricingNote = document.querySelector("#settings-pricing-note");
 const regionList = document.querySelector("#region-list");
 const colorList = document.querySelector("#color-list");
 const sharedRegionList = document.querySelector("#shared-region-list");
@@ -613,6 +632,62 @@ async function loadWines() {
   renderWishlist();
 }
 
+async function loadSettings() {
+  if (!isAdmin()) return null;
+  state.settings = await api("/api/settings");
+  renderSettings();
+  return state.settings;
+}
+
+function formatModelPrice(value) {
+  return `$${Number(value).toFixed(2)}/1M`;
+}
+
+function renderSettings() {
+  if (!state.settings) return;
+  pairingModelOptions.innerHTML = state.settings.model_options
+    .map((option) => {
+      const checked = option.id === state.settings.pairing_model ? "checked" : "";
+      return `
+        <label class="model-option">
+          <input type="radio" name="pairing_model" value="${escapeAttribute(option.id)}" ${checked} />
+          <span>
+            <strong>${escapeHtml(option.label)}</strong>
+            <small>${escapeHtml(option.description)}</small>
+            <em>${escapeHtml(formatModelPrice(option.input_per_million))} input · ${escapeHtml(formatModelPrice(option.output_per_million))} output · ~${escapeHtml(String(option.relative_cost))}x nano</em>
+          </span>
+        </label>
+      `;
+    })
+    .join("");
+  settingsPricingNote.textContent = state.settings.pricing_note || "";
+}
+
+async function openSettings() {
+  if (!isAdmin()) return;
+  showScreen("settings");
+  await loadSettings();
+}
+
+async function saveSettings(event) {
+  event.preventDefault();
+  const submitButton = settingsForm.querySelector("button[type='submit']");
+  const previousText = submitButton.textContent;
+  submitButton.disabled = true;
+  submitButton.textContent = "...";
+  try {
+    state.settings = await api("/api/settings", {
+      method: "POST",
+      body: JSON.stringify({ pairing_model: settingsForm.elements.pairing_model.value }),
+    });
+    renderSettings();
+    alert(t("pairingModelSaved"));
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = previousText;
+  }
+}
+
 function renderWineSuggestions() {
   const seen = new Set();
   const suggestions = [
@@ -758,6 +833,7 @@ function updateActiveInsightFilterCount(count) {
 function showScreen(name) {
   if (name !== "login" && !isAuthenticated()) name = "login";
   if (name === "form" && !isAdmin()) name = "cellar";
+  if (name === "settings" && !isAdmin()) name = "cellar";
   Object.entries(screens).forEach(([key, screen]) => {
     screen.classList.toggle("active", key === name);
   });
@@ -771,6 +847,7 @@ function showScreen(name) {
   if (name === "drinkNow") renderDrinkNow();
   if (name === "insights") renderInsights();
   if (name === "wishlist") renderWishlist();
+  if (name === "settings" && state.settings) renderSettings();
 }
 
 function renderDrinkWindow(wine) {
@@ -1175,6 +1252,7 @@ function renderPairingResult(result) {
   pairingResult.hidden = false;
   pairingResult.innerHTML = `
     ${result.summary ? `<p class="pairing-summary">${escapeHtml(result.summary)}</p>` : ""}
+    ${result.model ? `<p class="pairing-model-used">${escapeHtml(t("pairingModelUsed", { model: result.model }))}</p>` : ""}
     ${
       matches.length
         ? `
@@ -1888,6 +1966,10 @@ languageButton.addEventListener("click", () => {
   state.lang = state.lang === "it" ? "en" : "it";
   localStorage.setItem("wine-cellar-language", state.lang);
   applyTranslations();
+  renderSettings();
+});
+document.querySelector("#settings-button").addEventListener("click", () => {
+  openSettings().catch((error) => alert(error.message));
 });
 document.querySelector("#logout-button").addEventListener("click", async () => {
   await api("/api/logout", { method: "POST" });
@@ -1900,6 +1982,9 @@ document.querySelector("#logout-button").addEventListener("click", async () => {
     await loadWines();
     showScreen("cellar");
   }
+});
+settingsForm.addEventListener("submit", (event) => {
+  saveSettings(event).catch((error) => alert(error.message));
 });
 
 window.addEventListener("beforeinstallprompt", (event) => {
