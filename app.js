@@ -73,6 +73,7 @@ const translations = {
     drinkNowStatus: "Status",
     drinkNowWindow: "Window",
     drinkPeak: "Ideal",
+    drinkConfirm: "Mark one bottle of {wine} as drunk?",
     drinkWindow: "Drinking Window",
     drinkWindowEstimate: "AI estimate",
     drinkWindowMissing: "No drinking window generated.",
@@ -264,6 +265,7 @@ const translations = {
     drinkNowStatus: "Stato",
     drinkNowWindow: "Finestra",
     drinkPeak: "Ideale",
+    drinkConfirm: "Segnare una bottiglia di {wine} come bevuta?",
     drinkWindow: "Finestra degustazione",
     drinkWindowEstimate: "Stima AI",
     drinkWindowMissing: "Nessuna finestra di degustazione generata.",
@@ -1688,10 +1690,15 @@ async function deleteCurrentWine() {
 async function drinkBottle() {
   const wine = state.wines.find((item) => item.id === state.selectedWineId);
   if (!wine || Number(wine.quantity) <= 0) return;
+  if (!confirm(t("drinkConfirm", { wine: wine.name }))) return;
 
   drinkButton.disabled = true;
-  const saved = await markBottleDrunk(wine.id);
-  openDetail(saved);
+  try {
+    const saved = await markBottleDrunk(wine.id);
+    openDetail(saved);
+  } finally {
+    drinkButton.disabled = false;
+  }
 }
 
 async function markBottleDrunk(wineId) {
@@ -2028,6 +2035,8 @@ wishlistList.addEventListener("click", (event) => {
 drinkNowList.addEventListener("click", (event) => {
   const drinkButton = event.target.closest("[data-drink-now-drink]");
   if (drinkButton) {
+    const wine = state.wines.find((item) => item.id === drinkButton.dataset.drinkNowDrink);
+    if (!wine || !confirm(t("drinkConfirm", { wine: wine.name }))) return;
     drinkButton.disabled = true;
     markBottleDrunk(drinkButton.dataset.drinkNowDrink).catch((error) => {
       drinkButton.disabled = false;
