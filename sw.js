@@ -1,4 +1,4 @@
-const CACHE_NAME = "winecellar-pwa-20260508-icons";
+const CACHE_NAME = "winecellar-pwa-20260511-drink-confirm";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -41,5 +41,13 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request)));
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        const responseCopy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseCopy));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
+  );
 });
