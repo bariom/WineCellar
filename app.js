@@ -1884,9 +1884,10 @@ async function exportData() {
   const data = await api("/api/export");
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
+  const timestamp = new Date().toISOString().slice(0, 19).replace("T", "_").replaceAll(":", "-");
   const link = document.createElement("a");
   link.href = url;
-  link.download = "wine-cellar.json";
+  link.download = `wine-cellar-${timestamp}.json`;
   link.click();
   URL.revokeObjectURL(url);
 }
