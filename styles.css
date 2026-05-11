@@ -1,15 +1,17 @@
 :root {
-  --wine: #74171b;
-  --wine-dark: #5c1115;
-  --ink: #211c1a;
-  --muted: #736d68;
-  --line: #dfd2c0;
-  --paper: #fffaf3;
-  --panel: #f4eee4;
-  --sage: #477259;
-  --gold: #d99a16;
-  --rose: #b45c6a;
-  --shadow: 0 18px 55px rgba(56, 31, 20, 0.13);
+  --wine: #7a1e25;
+  --wine-dark: #551217;
+  --ink: #1f1b18;
+  --muted: #746f68;
+  --line: #ded3c4;
+  --paper: #fffaf4;
+  --panel: #f7f1e8;
+  --panel-strong: #f0e6d8;
+  --sage: #426f56;
+  --gold: #c58a19;
+  --rose: #ad5968;
+  --shadow: 0 24px 70px rgba(42, 31, 23, 0.15);
+  --soft-shadow: 0 10px 28px rgba(42, 31, 23, 0.08);
 }
 
 * {
@@ -18,7 +20,7 @@
 
 html {
   min-height: 100%;
-  background: #f5f4f1;
+  background: #efede8;
 }
 
 body {
@@ -26,7 +28,9 @@ body {
   min-height: 100vh;
   margin: 0;
   color: var(--ink);
-  background: #f5f4f1;
+  background:
+    radial-gradient(circle at 50% -16%, rgba(122, 30, 37, 0.08), transparent 38%),
+    #efede8;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -68,9 +72,10 @@ body {
   width: min(100%, 360px);
   margin: 0 auto;
   padding: 26px 20px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--panel);
+  border: 1px solid rgba(222, 211, 196, 0.95);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fffaf4 0%, var(--panel) 100%);
+  box-shadow: var(--soft-shadow);
 }
 
 .login-panel p {
@@ -91,12 +96,22 @@ body {
   align-items: center;
   min-height: 64px;
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(223, 210, 192, 0.55);
+  border-bottom: 1px solid rgba(222, 211, 196, 0.65);
 }
 
 .topbar {
   justify-content: space-between;
   gap: 12px;
+}
+
+.topbar > .d-flex {
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.topbar .btn {
+  max-width: 100%;
 }
 
 h1,
@@ -109,7 +124,7 @@ h2,
 
 h1 {
   margin: 0;
-  color: #050505;
+  color: #14110f;
   font-size: 1.65rem;
   line-height: 1.1;
 }
@@ -131,6 +146,8 @@ h2 {
   --bs-btn-active-bg: var(--wine-dark);
   border-radius: 999px;
   min-height: 40px;
+  box-shadow: 0 8px 18px rgba(122, 30, 37, 0.16);
+  font-weight: 800;
 }
 
 .btn-outline-wine {
@@ -158,9 +175,17 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--ink);
-  background: #fbf4e9;
+  background: rgba(255, 250, 244, 0.86);
   font-size: 0.78rem;
   font-weight: 800;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset;
+}
+
+.btn-soft:hover,
+.btn-soft:focus-visible {
+  border-color: rgba(122, 30, 37, 0.28);
+  color: var(--wine);
+  background: #fffaf4;
 }
 
 .icon-button input {
@@ -178,16 +203,18 @@ h2 {
   gap: 10px;
   margin: 0 -18px 12px;
   padding: 10px 18px;
-  border-top: 1px solid rgba(223, 210, 192, 0.7);
-  border-bottom: 1px solid rgba(223, 210, 192, 0.7);
-  background: rgba(255, 250, 243, 0.97);
+  border-top: 1px solid rgba(222, 211, 196, 0.78);
+  border-bottom: 1px solid rgba(222, 211, 196, 0.78);
+  background: rgba(255, 250, 244, 0.96);
+  backdrop-filter: blur(14px);
 }
 
 .search-input {
   min-height: 42px;
+  border-color: rgba(222, 211, 196, 0.95);
   border-radius: 999px;
   padding-inline: 16px;
-  background: #fbf4e9;
+  background: #fffaf4;
 }
 
 .filter-toggle {
@@ -235,6 +262,10 @@ h2 {
 .filter-panel {
   display: grid;
   gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(222, 211, 196, 0.78);
+  border-radius: 14px;
+  background: rgba(255, 250, 244, 0.7);
 }
 
 .filter-panel[hidden] {
@@ -246,12 +277,12 @@ h2 {
   align-items: center;
   justify-content: space-between;
   min-height: 34px;
-  border: 1px solid rgba(116, 23, 27, 0.28);
-  border-left: 5px solid var(--wine);
-  border-radius: 10px;
+  border: 1px solid rgba(122, 30, 37, 0.24);
+  border-left: 4px solid var(--wine);
+  border-radius: 12px;
   padding: 9px 12px;
   color: var(--wine);
-  background: rgba(116, 23, 27, 0.08);
+  background: rgba(122, 30, 37, 0.06);
   font-size: 0.82rem;
   font-weight: 850;
   text-align: left;
@@ -282,10 +313,10 @@ h2 {
 .status-chip {
   min-height: 30px;
   padding: 0 13px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(222, 211, 196, 0.95);
   border-radius: 999px;
   color: var(--ink);
-  background: #efe6d7;
+  background: var(--panel-strong);
   font-size: 0.86rem;
   font-weight: 750;
   white-space: nowrap;
@@ -295,31 +326,45 @@ h2 {
   border-color: var(--wine);
   color: #fff;
   background: var(--wine);
+  box-shadow: 0 7px 18px rgba(122, 30, 37, 0.12);
 }
 
 .content-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .wine-card,
 .drink-now-card {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 8px 14px;
+  gap: 10px 16px;
   width: 100%;
-  padding: 15px 14px 14px 18px;
-  border: 1px solid var(--line);
-  border-left: 6px solid var(--wine);
-  border-radius: 9px;
+  padding: 16px 15px 15px 18px;
+  border: 1px solid rgba(222, 211, 196, 0.95);
+  border-left: 4px solid var(--wine);
+  border-radius: 12px;
   color: inherit;
-  background: var(--panel);
+  background: linear-gradient(180deg, #fffaf4 0%, var(--panel) 100%);
+  box-shadow: var(--soft-shadow);
   text-align: left;
 }
 
 .drink-now-card {
   cursor: pointer;
-  background: #f7f1e8;
+  background: linear-gradient(180deg, #fffaf4 0%, #f4ecdf 100%);
+}
+
+.wine-card:hover,
+.drink-now-card:hover {
+  border-color: rgba(122, 30, 37, 0.24);
+  transform: translateY(-1px);
+}
+
+.wine-card:focus-visible,
+.drink-now-card:focus-visible {
+  outline: 3px solid rgba(122, 30, 37, 0.18);
+  outline-offset: 2px;
 }
 
 .wine-card[data-type="White"],
@@ -338,7 +383,8 @@ h2 {
 
 .wine-title {
   margin: 0;
-  font-size: 1.16rem;
+  color: #140f0d;
+  font-size: 1.18rem;
   line-height: 1.18;
 }
 
@@ -350,7 +396,7 @@ h2 {
 }
 
 .wine-producer {
-  color: #5d625e;
+  color: #5d615c;
 }
 
 .wine-card-main {
@@ -377,8 +423,9 @@ h2 {
   margin: 8px 0 0;
   padding: 4px 9px;
   border-radius: 999px;
+  border: 1px solid rgba(122, 30, 37, 0.12);
   color: var(--wine);
-  background: rgba(116, 23, 27, 0.08);
+  background: rgba(122, 30, 37, 0.06);
   font-size: 0.78rem;
   font-weight: 850;
   line-height: 1.25;
@@ -406,8 +453,8 @@ h2 {
   height: 9px;
   overflow: hidden;
   border-radius: 999px;
-  border: 1px solid rgba(39, 39, 42, 0.1);
-  background: #f8f1e5;
+  border: 1px solid rgba(39, 39, 42, 0.08);
+  background: #f4eadb;
 }
 
 .mini-drink-window-bar .drink-current-marker {
@@ -420,6 +467,7 @@ h2 {
   color: var(--wine);
   font-family: Georgia, "Times New Roman", serif;
   font-weight: 700;
+  letter-spacing: 0;
 }
 
 .card-side {
@@ -509,9 +557,10 @@ h2 {
 .timeline-card {
   position: relative;
   padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--panel);
+  border: 1px solid rgba(222, 211, 196, 0.95);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fffaf4 0%, var(--panel) 100%);
+  box-shadow: var(--soft-shadow);
 }
 
 .timeline-card::before {
@@ -554,9 +603,10 @@ h2 {
   gap: 12px;
   margin-top: 16px;
   padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: #f7f1e8;
+  border: 1px solid rgba(222, 211, 196, 0.95);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fffaf4 0%, var(--panel) 100%);
+  box-shadow: var(--soft-shadow);
 }
 
 .pairing-form {
@@ -612,9 +662,9 @@ h2 {
   gap: 4px;
   width: 100%;
   padding: 12px;
-  border: 1px solid rgba(223, 210, 192, 0.85);
-  border-left: 5px solid var(--wine);
-  border-radius: 9px;
+  border: 1px solid rgba(222, 211, 196, 0.86);
+  border-left: 4px solid var(--wine);
+  border-radius: 12px;
   color: inherit;
   background: var(--paper);
   text-align: left;
@@ -646,8 +696,8 @@ h2 {
   display: grid;
   gap: 3px;
   padding: 10px;
-  border: 1px solid rgba(223, 210, 192, 0.85);
-  border-radius: 9px;
+  border: 1px solid rgba(222, 211, 196, 0.86);
+  border-radius: 12px;
   background: var(--paper);
 }
 
@@ -698,6 +748,7 @@ h2 {
   background: #557663;
   font-size: 0.76rem;
   font-weight: 900;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22) inset;
 }
 
 .drink-now-card[data-status="dontWait"] .drink-now-status {
@@ -738,16 +789,16 @@ h2 {
   gap: 3px;
   min-width: 96px;
   padding: 7px 10px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  border: 1px solid rgba(222, 211, 196, 0.95);
+  border-radius: 12px;
   color: var(--muted);
-  background: #fffaf3;
+  background: #fffaf4;
 }
 
 .drink-now-window-cell.highlight {
-  border-color: rgba(217, 154, 22, 0.4);
+  border-color: rgba(197, 138, 25, 0.48);
   color: var(--wine);
-  background: #fff6e1;
+  background: #fff5dc;
 }
 
 .drink-now-window-cell span {
@@ -796,9 +847,9 @@ h2 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
   padding: 4px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #efe6d7;
+  border: 1px solid rgba(222, 211, 196, 0.95);
+  border-radius: 14px;
+  background: var(--panel-strong);
 }
 
 .insight-tab {
@@ -815,6 +866,7 @@ h2 {
 .insight-tab.active {
   color: #fff;
   background: var(--wine);
+  box-shadow: 0 7px 18px rgba(122, 30, 37, 0.14);
 }
 
 .insight-panel {
@@ -828,7 +880,7 @@ h2 {
 .value-card,
 .metric-card,
 .region-list {
-  border: 1px solid var(--line);
+  border: 1px solid rgba(222, 211, 196, 0.95);
   border-radius: 14px;
 }
 
@@ -865,7 +917,8 @@ h2 {
   gap: 4px;
   min-height: 86px;
   padding: 14px;
-  background: var(--panel);
+  background: linear-gradient(180deg, #fffaf4 0%, var(--panel) 100%);
+  box-shadow: var(--soft-shadow);
 }
 
 .metric-card strong {
@@ -884,6 +937,7 @@ h2 {
 .region-list {
   overflow: hidden;
   background: var(--panel);
+  box-shadow: var(--soft-shadow);
 }
 
 .region-row {
@@ -949,7 +1003,7 @@ h2 {
   align-items: center;
   justify-content: space-between;
   min-height: 64px;
-  border-bottom: 1px solid rgba(223, 210, 192, 0.75);
+  border-bottom: 1px solid rgba(222, 211, 196, 0.75);
 }
 
 .detail-actions {
@@ -963,10 +1017,11 @@ h2 {
   gap: 18px;
   margin-top: 18px;
   padding: 18px;
-  border: 1px solid var(--line);
-  border-left: 6px solid var(--wine);
-  border-radius: 12px;
-  background: var(--panel);
+  border: 1px solid rgba(222, 211, 196, 0.95);
+  border-left: 4px solid var(--wine);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fffaf4 0%, var(--panel) 100%);
+  box-shadow: var(--soft-shadow);
 }
 
 .detail-title-row,
@@ -984,6 +1039,7 @@ h2 {
 .detail-title-row p {
   margin: 8px 0 0;
   color: var(--muted);
+  line-height: 1.35;
 }
 
 .detail-status-row {
@@ -994,9 +1050,9 @@ h2 {
   display: grid;
   gap: 12px;
   padding: 14px;
-  border: 1px solid rgba(223, 210, 192, 0.85);
-  border-radius: 12px;
-  background: rgba(255, 250, 243, 0.6);
+  border: 1px solid rgba(222, 211, 196, 0.88);
+  border-radius: 14px;
+  background: rgba(255, 250, 244, 0.72);
 }
 
 .values-panel h2 {
@@ -1015,8 +1071,8 @@ h2 {
   gap: 8px;
   min-height: 88px;
   padding: 12px;
-  border: 1px solid rgba(223, 210, 192, 0.75);
-  border-radius: 10px;
+  border: 1px solid rgba(222, 211, 196, 0.78);
+  border-radius: 12px;
   background: var(--paper);
 }
 
@@ -1047,9 +1103,9 @@ h2 {
   gap: 4px;
   min-height: 78px;
   padding: 12px;
-  border: 1px solid rgba(223, 210, 192, 0.75);
-  border-radius: 10px;
-  background: rgba(255, 250, 243, 0.55);
+  border: 1px solid rgba(222, 211, 196, 0.78);
+  border-radius: 12px;
+  background: rgba(255, 250, 244, 0.68);
 }
 
 .detail-grid .quantity-action {
@@ -1105,10 +1161,10 @@ h2 {
   min-height: 54px;
   margin: 0;
   padding: 12px;
-  border: 1px solid rgba(223, 210, 192, 0.75);
-  border-radius: 10px;
+  border: 1px solid rgba(222, 211, 196, 0.78);
+  border-radius: 12px;
   color: #4f5665;
-  background: rgba(255, 250, 243, 0.55);
+  background: rgba(255, 250, 244, 0.68);
   white-space: pre-wrap;
 }
 
@@ -1121,9 +1177,9 @@ h2 {
   display: grid;
   gap: 8px;
   padding: 12px;
-  border: 1px solid rgba(223, 210, 192, 0.75);
-  border-radius: 10px;
-  background: rgba(255, 250, 243, 0.55);
+  border: 1px solid rgba(222, 211, 196, 0.78);
+  border-radius: 14px;
+  background: rgba(255, 250, 244, 0.7);
 }
 
 .drink-window-years,
@@ -1139,11 +1195,11 @@ h2 {
 .drink-window-bar {
   position: relative;
   display: flex;
-  height: 18px;
+  height: 20px;
   overflow: hidden;
   border-radius: 999px;
-  border: 1px solid rgba(39, 39, 42, 0.12);
-  background: #f8f1e5;
+  border: 1px solid rgba(39, 39, 42, 0.09);
+  background: #f4eadb;
 }
 
 .drink-segment {
@@ -1151,15 +1207,15 @@ h2 {
 }
 
 .drink-young {
-  background: #e8c84f;
+  background: #e0bd47;
 }
 
 .drink-peak {
-  background: #4f9a62;
+  background: #4e9460;
 }
 
 .drink-decline {
-  background: #b94a48;
+  background: #b44d4b;
 }
 
 .drink-current-marker {
@@ -1168,9 +1224,9 @@ h2 {
   bottom: -3px;
   width: 3px;
   border-radius: 999px;
-  background: #1f2933;
+  background: #1d232b;
   transform: translateX(-50%);
-  box-shadow: 0 0 0 2px rgba(255, 250, 243, 0.85);
+  box-shadow: 0 0 0 2px rgba(255, 250, 244, 0.9), 0 2px 8px rgba(29, 35, 43, 0.25);
 }
 
 .wishlist-form {
@@ -1184,10 +1240,11 @@ h2 {
   display: grid;
   gap: 0;
   width: 100%;
-  border: 1px solid rgba(223, 210, 192, 0.9);
+  border: 1px solid rgba(222, 211, 196, 0.92);
   border-radius: 14px;
   overflow: hidden;
-  background: rgba(255, 250, 243, 0.9);
+  background: linear-gradient(180deg, #fffaf4 0%, var(--panel) 100%);
+  box-shadow: var(--soft-shadow);
   text-align: left;
 }
 
@@ -1278,8 +1335,8 @@ h2 {
 }
 
 .wishlist-card-header[aria-expanded="true"] {
-  border-bottom: 1px solid rgba(223, 210, 192, 0.75);
-  background: rgba(244, 238, 228, 0.65);
+  border-bottom: 1px solid rgba(222, 211, 196, 0.78);
+  background: rgba(240, 230, 216, 0.72);
 }
 
 .wishlist-card-detail {
@@ -1287,9 +1344,9 @@ h2 {
   gap: 12px;
   margin: 12px;
   padding: 12px;
-  border: 1px solid rgba(223, 210, 192, 0.95);
+  border: 1px solid rgba(222, 211, 196, 0.95);
   border-radius: 12px;
-  background: rgba(255, 250, 243, 0.72);
+  background: rgba(255, 250, 244, 0.78);
 }
 
 .wishlist-card-detail[hidden] {
@@ -1301,8 +1358,8 @@ h2 {
   gap: 0;
   margin: 0;
   overflow: hidden;
-  border: 1px solid rgba(223, 210, 192, 0.7);
-  border-radius: 9px;
+  border: 1px solid rgba(222, 211, 196, 0.74);
+  border-radius: 12px;
   background: var(--paper);
 }
 
@@ -1342,9 +1399,9 @@ h2 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   padding: 12px;
-  border: 1px solid rgba(223, 210, 192, 0.75);
-  border-radius: 10px;
-  background: rgba(255, 250, 243, 0.55);
+  border: 1px solid rgba(222, 211, 196, 0.78);
+  border-radius: 12px;
+  background: rgba(255, 250, 244, 0.68);
 }
 
 .sale-buyer,
@@ -1360,9 +1417,9 @@ h2 {
 
 .sale-list {
   overflow: hidden;
-  border: 1px solid rgba(223, 210, 192, 0.75);
-  border-radius: 10px;
-  background: rgba(255, 250, 243, 0.55);
+  border: 1px solid rgba(222, 211, 196, 0.78);
+  border-radius: 12px;
+  background: rgba(255, 250, 244, 0.68);
 }
 
 .sale-row {
@@ -1402,22 +1459,22 @@ h2 {
 
 .owner-list {
   overflow: hidden;
-  border: 1px solid rgba(223, 210, 192, 0.75);
-  border-radius: 10px;
-  background: rgba(255, 250, 243, 0.55);
+  border: 1px solid rgba(222, 211, 196, 0.78);
+  border-radius: 12px;
+  background: rgba(255, 250, 244, 0.68);
 }
 
 .score-list {
   overflow: hidden;
-  border: 1px solid rgba(223, 210, 192, 0.75);
-  border-radius: 10px;
-  background: rgba(255, 250, 243, 0.55);
+  border: 1px solid rgba(222, 211, 196, 0.78);
+  border-radius: 12px;
+  background: rgba(255, 250, 244, 0.68);
 }
 
 .score-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   padding: 12px;
   border-bottom: 1px solid rgba(223, 210, 192, 0.75);
@@ -1438,12 +1495,20 @@ h2 {
 }
 
 .score-value-pill {
-  min-width: 58px;
-  padding: 7px 10px;
-  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  min-height: 48px;
+  padding: 7px 8px;
+  border-radius: 18px;
   color: #fff;
   background: var(--wine);
+  font-size: 0.88rem;
+  font-weight: 900;
+  line-height: 1.05;
   text-align: center;
+  overflow-wrap: anywhere;
+  box-shadow: 0 7px 18px rgba(122, 30, 37, 0.14);
 }
 
 .owner-row {
@@ -1466,7 +1531,7 @@ h2 {
 
 .form-header {
   justify-content: flex-start;
-  border-bottom: 1px solid rgba(223, 210, 192, 0.75);
+  border-bottom: 1px solid rgba(222, 211, 196, 0.75);
 }
 
 .form-header h1 {
@@ -1475,11 +1540,18 @@ h2 {
 
 .link-button {
   border: 0;
-  padding: 0 4px 0 0;
+  min-height: 38px;
+  padding: 0 10px 0 0;
   color: var(--wine);
   background: transparent;
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.2rem;
+}
+
+.link-button:focus-visible {
+  outline: 3px solid rgba(122, 30, 37, 0.18);
+  outline-offset: 2px;
+  border-radius: 8px;
 }
 
 .wine-form {
@@ -1492,8 +1564,9 @@ h2 {
 .form-field {
   display: grid;
   gap: 7px;
-  color: #4f5665;
-  font-weight: 650;
+  color: #5c5a55;
+  font-size: 0.9rem;
+  font-weight: 720;
 }
 
 .span-2 {
@@ -1503,15 +1576,21 @@ h2 {
 .form-control,
 .form-select {
   min-height: 48px;
-  border-color: var(--line);
-  border-radius: 8px;
-  background-color: var(--panel);
+  border-color: rgba(222, 211, 196, 0.95);
+  border-radius: 10px;
+  background-color: #fffaf4;
+  color: var(--ink);
 }
 
 .form-control:focus,
 .form-select:focus {
   border-color: var(--wine);
-  box-shadow: 0 0 0 0.2rem rgba(116, 23, 27, 0.16);
+  background-color: #fffdf8;
+  box-shadow: 0 0 0 0.2rem rgba(122, 30, 37, 0.14);
+}
+
+.form-control::placeholder {
+  color: #9a9288;
 }
 
 .choice-row {
@@ -1528,7 +1607,7 @@ h2 {
 .choice-row legend {
   width: 100%;
   margin-bottom: 8px;
-  color: #4f5665;
+  color: #5c5a55;
   font-size: 1rem;
   font-weight: 650;
 }
@@ -1593,8 +1672,14 @@ h2 {
 .save-button,
 .form-actions .btn-danger {
   min-height: 52px;
-  border-radius: 7px;
+  border-radius: 10px;
   font-weight: 800;
+}
+
+.form-actions .btn-danger {
+  border-color: #9b2226;
+  background: #9b2226;
+  box-shadow: 0 8px 18px rgba(155, 34, 38, 0.13);
 }
 
 .form-actions .btn-danger[hidden] {
@@ -1610,25 +1695,28 @@ h2 {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   max-width: 540px;
-  min-height: calc(68px + env(safe-area-inset-bottom));
+  min-height: calc(70px + env(safe-area-inset-bottom));
   margin: 0 auto;
-  padding: 4px 5px env(safe-area-inset-bottom);
-  border-top: 1px solid rgba(223, 210, 192, 0.75);
-  background: rgba(255, 250, 243, 0.96);
+  padding: 6px 7px env(safe-area-inset-bottom);
+  border-top: 1px solid rgba(222, 211, 196, 0.78);
+  background: rgba(255, 250, 244, 0.94);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 -12px 26px rgba(42, 31, 23, 0.08);
 }
 
 .nav-item {
   display: grid;
   place-items: center;
   min-width: 0;
-  padding: 4px 3px;
+  padding: 5px 4px;
   border: 0;
-  border-radius: 10px;
-  color: #6d737c;
+  border-radius: 12px;
+  color: #68645e;
   background: transparent;
   font-size: 0.68rem;
   line-height: 1.05;
   text-align: center;
+  transition: background-color 0.16s ease, color 0.16s ease;
 }
 
 .nav-item span {
@@ -1639,8 +1727,13 @@ h2 {
 
 .nav-item.active {
   color: var(--wine);
-  background: rgba(116, 23, 27, 0.08);
+  background: rgba(122, 30, 37, 0.09);
   font-weight: 800;
+}
+
+.nav-item:focus-visible {
+  outline: 3px solid rgba(122, 30, 37, 0.18);
+  outline-offset: 2px;
 }
 
 .empty-state {
@@ -1667,12 +1760,32 @@ h2 {
     height: min(920px, calc(100vh - 48px));
     min-height: 0;
     border: 1px solid #e4ded4;
-    border-radius: 34px;
+    border-radius: 30px;
   }
 
   .screen {
     height: 100%;
     min-height: 0;
+  }
+
+  .topbar {
+    align-items: flex-start;
+  }
+
+  .topbar h1 {
+    padding-top: 8px;
+  }
+
+  .topbar > .d-flex {
+    flex: 1 1 0;
+    gap: 8px !important;
+  }
+
+  .topbar #new-wine-button {
+    flex: 0 1 auto;
+    max-width: 170px;
+    white-space: normal;
+    line-height: 1.05;
   }
 
   .bottom-nav {
