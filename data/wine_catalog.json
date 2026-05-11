@@ -728,6 +728,126 @@
     "format": "Bottle (750ml)"
   },
   {
+    "name": "Chateau Citran",
+    "producer": "Chateau Citran",
+    "region": "Bordeaux",
+    "appellation": "Haut-Medoc",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Cantemerle",
+    "producer": "Chateau Cantemerle",
+    "region": "Bordeaux",
+    "appellation": "Haut-Medoc",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau La Lagune",
+    "producer": "Chateau La Lagune",
+    "region": "Bordeaux",
+    "appellation": "Haut-Medoc",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Sociando-Mallet",
+    "producer": "Chateau Sociando-Mallet",
+    "region": "Bordeaux",
+    "appellation": "Haut-Medoc",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Cambon la Pelouse",
+    "producer": "Chateau Cambon la Pelouse",
+    "region": "Bordeaux",
+    "appellation": "Haut-Medoc",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Beaumont",
+    "producer": "Chateau Beaumont",
+    "region": "Bordeaux",
+    "appellation": "Haut-Medoc",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Lanessan",
+    "producer": "Chateau Lanessan",
+    "region": "Bordeaux",
+    "appellation": "Haut-Medoc",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Caronne Sainte-Gemme",
+    "producer": "Chateau Caronne Sainte-Gemme",
+    "region": "Bordeaux",
+    "appellation": "Haut-Medoc",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Chasse-Spleen",
+    "producer": "Chateau Chasse-Spleen",
+    "region": "Bordeaux",
+    "appellation": "Moulis-en-Medoc",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Poujeaux",
+    "producer": "Chateau Poujeaux",
+    "region": "Bordeaux",
+    "appellation": "Moulis-en-Medoc",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Maucaillou",
+    "producer": "Chateau Maucaillou",
+    "region": "Bordeaux",
+    "appellation": "Moulis-en-Medoc",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Clarke",
+    "producer": "Chateau Clarke",
+    "region": "Bordeaux",
+    "appellation": "Listrac-Medoc",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Fourcas Hosten",
+    "producer": "Chateau Fourcas Hosten",
+    "region": "Bordeaux",
+    "appellation": "Listrac-Medoc",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Potensac",
+    "producer": "Chateau Potensac",
+    "region": "Bordeaux",
+    "appellation": "Medoc",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Chateau Tour de By",
+    "producer": "Chateau Tour de By",
+    "region": "Bordeaux",
+    "appellation": "Medoc",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
     "name": "Chateau Rauzan-Segla",
     "producer": "Chateau Rauzan-Segla",
     "region": "Bordeaux",
