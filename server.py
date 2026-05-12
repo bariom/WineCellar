@@ -1193,6 +1193,32 @@ def clean_ai_notes_text(text: str) -> str:
     return "\n".join(cleaned_lines).strip()
 
 
+def clean_ai_score_suggestions(payload: dict) -> list[dict]:
+    scores = payload.get("scores", payload if isinstance(payload, list) else [])
+    if not isinstance(scores, list):
+        raise ValueError("OpenAI response must include a scores list")
+
+    cleaned = []
+    seen = set()
+    for item in scores[:8]:
+        if not isinstance(item, dict):
+            continue
+        critic = str(item.get("critic", "")).strip()
+        score = str(item.get("score", "")).strip()
+        note = str(item.get("note", "")).strip()
+        confidence = str(item.get("confidence", "")).strip()
+        if not critic or not score:
+            continue
+        key = (critic.lower(), score.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        if confidence and confidence.lower() != "alta" and "verific" not in note.lower():
+            note = f"Da verificare: {note}" if note else "Da verificare prima del salvataggio."
+        cleaned.append({"critic": critic, "score": score, "note": note})
+    return cleaned
+
+
 def parse_json_object(text: str) -> dict:
     cleaned = text.strip()
     if cleaned.startswith("```"):
@@ -1446,6 +1472,70 @@ def generate_ai_notes(wine_id: str) -> dict:
         )
         updated = get_wine(conn, wine_id)
     return updated
+
+
+def suggest_ai_scores(wine_id: str) -> dict:
+    with connect() as conn:
+        wine = get_wine(conn, wine_id)
+        if not wine:
+            raise LookupError("Wine not found")
+
+    if not OPENAI_API_KEY:
+        raise ValueError("OPENAI_API_KEY is not configured")
+
+    wine_context = {
+        "name": wine["name"],
+        "producer": wine["producer"],
+        "vintage": wine["vintage"],
+        "region": wine.get("region", ""),
+        "appellation": wine.get("appellation", ""),
+        "type": wine.get("type", ""),
+        "existing_scores": wine.get("scores", []),
+    }
+    request_payload = {
+        "model": OPENAI_VALUE_MODEL,
+        "instructions": (
+            "Sei un assistente esperto di critica enologica. Suggerisci punteggi pubblicati "
+            "per un vino specifico solo se sei ragionevolmente sicuro che riguardino esattamente "
+            "quel vino e quella annata. Rispondi solo con JSON valido, senza Markdown. Non "
+            "inventare punteggi. Non usare punteggi di annate diverse. Se sei incerto, usa "
+            "confidence 'bassa' o 'media' e scrivi chiaramente 'Da verificare' nella nota. "
+            "Preferisci fonti/testate note come Wine Advocate, Vinous, James Suckling, Jeb Dunnuck, "
+            "Decanter, Falstaff, Wine Spectator, Wine Enthusiast."
+        ),
+        "input": (
+            "Trova al massimo 6 possibili punteggi per questo vino. Restituisci solo questo JSON: "
+            "{\"scores\":[{\"critic\":\"testata o critico\",\"score\":\"punteggio\","
+            "\"note\":\"nota breve con eventuale Da verificare\",\"confidence\":\"alta|media|bassa\"}]}.\n"
+            "Contesto:\n"
+            f"{json.dumps(wine_context, ensure_ascii=False)}"
+        ),
+        "max_output_tokens": 700,
+    }
+    request = Request(
+        OPENAI_RESPONSES_URL,
+        data=json.dumps(request_payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json",
+            "User-Agent": "WineCellar/1.0",
+        },
+        method="POST",
+    )
+
+    try:
+        with urlopen(request, timeout=35) as response:
+            response_payload = json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        error_body = exc.read().decode("utf-8", errors="replace")
+        raise ValueError(f"OpenAI request failed: {error_body or exc.reason}") from exc
+    except (URLError, TimeoutError, OSError) as exc:
+        raise ValueError(f"OpenAI request failed: {exc}") from exc
+
+    raw_text = extract_response_text(response_payload)
+    if not raw_text:
+        raise ValueError("OpenAI response did not include text")
+    return {"scores": clean_ai_score_suggestions(parse_json_object(raw_text))}
 
 
 def clean_drink_window_payload(payload: dict, vintage: str) -> dict:
@@ -1806,6 +1896,13 @@ class CellarHandler(SimpleHTTPRequestHandler):
                 wine_id = unquote(path.removeprefix("/api/wines/").removesuffix("/ai-notes"))
                 try:
                     self.send_json(generate_ai_notes(wine_id))
+                except LookupError as exc:
+                    self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+                return
+            if path.startswith("/api/wines/") and path.endswith("/ai-scores"):
+                wine_id = unquote(path.removeprefix("/api/wines/").removesuffix("/ai-scores"))
+                try:
+                    self.send_json(suggest_ai_scores(wine_id))
                 except LookupError as exc:
                     self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
                 return

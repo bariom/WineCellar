@@ -180,6 +180,10 @@ const translations = {
     score: "Score",
     scoreNote: "Note",
     scores: "Scores",
+    suggestScores: "Suggest",
+    suggestScoresEmpty: "No reliable score suggestions found.",
+    suggestScoresUnable: "Unable to suggest scores: {error}",
+    suggestedScoresAdded: "{count} score suggestions added to the edit form. Review and save to confirm.",
     critic: "Critic",
     shipped: "Shipped",
     sparkling: "Sparkling",
@@ -386,6 +390,10 @@ const translations = {
     score: "Punteggio",
     scoreNote: "Nota",
     scores: "Punteggi",
+    suggestScores: "Suggerisci",
+    suggestScoresEmpty: "Nessun suggerimento affidabile trovato.",
+    suggestScoresUnable: "Impossibile suggerire punteggi: {error}",
+    suggestedScoresAdded: "{count} suggerimenti aggiunti al form. Verifica e salva per confermare.",
     critic: "Critico",
     shipped: "Spedito",
     sparkling: "Spumante",
@@ -479,6 +487,7 @@ const drinkButton = document.querySelector("#drink-bottle-button");
 const generateAiNotesButton = document.querySelector("#generate-ai-notes-button");
 const generateDrinkWindowButton = document.querySelector("#generate-drink-window-button");
 const generateAiValueButton = document.querySelector("#generate-ai-value-button");
+const suggestAiScoresButton = document.querySelector("#suggest-ai-scores-button");
 const ownersFormList = document.querySelector("#owners-form-list");
 const scoresFormList = document.querySelector("#scores-form-list");
 const bottomNav = document.querySelector(".bottom-nav");
@@ -1844,6 +1853,37 @@ async function generateAiNotes() {
   }
 }
 
+async function suggestAiScores() {
+  const wine = state.wines.find((item) => item.id === state.selectedWineId);
+  if (!wine) return;
+
+  suggestAiScoresButton.disabled = true;
+  const previousText = suggestAiScoresButton.textContent;
+  suggestAiScoresButton.textContent = "...";
+  try {
+    const result = await api(`/api/wines/${encodeURIComponent(wine.id)}/ai-scores`, { method: "POST" });
+    const suggestions = Array.isArray(result.scores) ? result.scores : [];
+    if (!suggestions.length) {
+      alert(t("suggestScoresEmpty"));
+      return;
+    }
+    openForm(wine);
+    const existing = new Set(collectScores().map((score) => `${score.critic.toLowerCase()}|${score.score.toLowerCase()}`));
+    let added = 0;
+    suggestions.forEach((score) => {
+      const key = `${String(score.critic || "").toLowerCase()}|${String(score.score || "").toLowerCase()}`;
+      if (!score.critic || !score.score || existing.has(key)) return;
+      existing.add(key);
+      added += 1;
+      addScoreRow(score);
+    });
+    alert(added ? t("suggestedScoresAdded", { count: formatNumber(added) }) : t("suggestScoresEmpty"));
+  } finally {
+    suggestAiScoresButton.disabled = false;
+    suggestAiScoresButton.textContent = previousText;
+  }
+}
+
 async function generateAiValue() {
   const wine = state.wines.find((item) => item.id === state.selectedWineId);
   if (!wine) return;
@@ -2088,6 +2128,12 @@ generateAiNotesButton.addEventListener("click", () => {
   generateAiNotes().catch((error) => {
     generateAiNotesButton.disabled = false;
     alert(t("generateAiNotesUnable", { error: error.message }));
+  });
+});
+suggestAiScoresButton.addEventListener("click", () => {
+  suggestAiScores().catch((error) => {
+    suggestAiScoresButton.disabled = false;
+    alert(t("suggestScoresUnable", { error: error.message }));
   });
 });
 generateAiValueButton.addEventListener("click", () => {
