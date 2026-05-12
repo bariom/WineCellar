@@ -2,6 +2,7 @@ const state = {
   wines: [],
   filter: "All",
   ownerFilter: "All",
+  sort: "delivery-desc",
   insightFilter: null,
   selectedWineId: null,
   selectedWishlistId: null,
@@ -191,6 +192,13 @@ const translations = {
     topColors: "Top Colors",
     sharedPositions: "Shared Positions",
     shared: "Shared",
+    sortBy: "Sort by",
+    sortDeliveryDesc: "Newest arrival",
+    sortNameAsc: "Wine name A-Z",
+    sortProducerAsc: "Producer A-Z",
+    sortTypeAsc: "Type / color",
+    sortValueDesc: "Highest value",
+    sortVintageDesc: "Newest vintage",
     totalPositions: "Total Positions",
     totalPositionValue: "Total Position Value",
     totalCurrentPositionValue: "Total Current Position Value",
@@ -390,6 +398,13 @@ const translations = {
     topColors: "Colori principali",
     sharedPositions: "Posizioni condivise",
     shared: "Condivisi",
+    sortBy: "Ordina per",
+    sortDeliveryDesc: "Arrivo piu recente",
+    sortNameAsc: "Nome vino A-Z",
+    sortProducerAsc: "Produttore A-Z",
+    sortTypeAsc: "Tipo / colore",
+    sortValueDesc: "Valore piu alto",
+    sortVintageDesc: "Annata piu recente",
     totalPositions: "Posizioni totali",
     totalPositionValue: "Valore totale posizioni",
     totalCurrentPositionValue: "Valore attuale posizione totale",
@@ -438,6 +453,7 @@ const deleteWishlistButton = document.querySelector("#delete-wishlist-button");
 const loginForm = document.querySelector("#login-form");
 const loginError = document.querySelector("#login-error");
 const cellarSearch = document.querySelector("#cellar-search");
+const cellarSort = document.querySelector("#cellar-sort");
 const filterToggle = document.querySelector("#filter-toggle");
 const filterPanel = document.querySelector("#filter-panel");
 const filterCount = document.querySelector("#filter-count");
@@ -814,6 +830,23 @@ function matchesInsightFilter(wine) {
   return true;
 }
 
+function compareText(a, b) {
+  return String(a || "").localeCompare(String(b || ""), state.lang === "it" ? "it" : "en", { sensitivity: "base", numeric: true });
+}
+
+function sortWines(wines) {
+  const sorted = [...wines];
+  sorted.sort((a, b) => {
+    if (state.sort === "name-asc") return compareText(a.name, b.name) || compareText(a.producer, b.producer) || compareText(b.vintage, a.vintage);
+    if (state.sort === "type-asc") return compareText(typeLabel(a.type), typeLabel(b.type)) || compareText(a.name, b.name);
+    if (state.sort === "producer-asc") return compareText(a.producer, b.producer) || compareText(a.name, b.name);
+    if (state.sort === "vintage-desc") return compareText(b.vintage, a.vintage) || compareText(a.name, b.name);
+    if (state.sort === "value-desc") return unitCurrentValue(b) * Number(b.quantity || 0) - unitCurrentValue(a) * Number(a.quantity || 0) || compareText(a.name, b.name);
+    return compareText(b.expected_delivery, a.expected_delivery) || compareText(a.name, b.name);
+  });
+  return sorted;
+}
+
 function updateFilterCount() {
   const activeFilters = [state.filter !== "All", state.ownerFilter !== "All", Boolean(state.insightFilter)].filter(Boolean).length;
   filterCount.textContent = activeFilters ? String(activeFilters) : "";
@@ -1074,11 +1107,11 @@ function renderCellar() {
         .some((value) => String(value).toLowerCase().includes(query));
     })
     .filter(matchesInsightFilter)
-    .sort((a, b) => (b.expected_delivery || "").localeCompare(a.expected_delivery || ""));
+  const sortedWines = sortWines(wines);
 
-  updateActiveInsightFilterCount(wines.reduce((sum, wine) => sum + Number(wine.quantity || 0), 0));
-  wineList.innerHTML = wines.length
-    ? wines
+  updateActiveInsightFilterCount(sortedWines.reduce((sum, wine) => sum + Number(wine.quantity || 0), 0));
+  wineList.innerHTML = sortedWines.length
+    ? sortedWines
         .map(
           (wine) => `
             <button class="wine-card" data-id="${wine.id}" data-type="${escapeHtml(cardVisualType(wine))}" type="button">
@@ -1594,7 +1627,9 @@ function applyInsightListFilter(field, value, scope) {
   state.insightFilter = { field, value, scope };
   state.filter = "All";
   state.ownerFilter = "All";
+  state.sort = "delivery-desc";
   cellarSearch.value = "";
+  cellarSort.value = state.sort;
   state.search = "";
   document.querySelectorAll("[data-filter]").forEach((item) => item.classList.toggle("active", item.dataset.filter === "All"));
   document.querySelectorAll("[data-owner-filter]").forEach((item) => item.classList.toggle("active", item.dataset.ownerFilter === "All"));
@@ -2009,6 +2044,10 @@ installAppButton.addEventListener("click", async () => {
 
 cellarSearch.addEventListener("input", () => {
   state.search = cellarSearch.value;
+  renderCellar();
+});
+cellarSort.addEventListener("change", () => {
+  state.sort = cellarSort.value;
   renderCellar();
 });
 document.querySelectorAll("[data-insight-tab]").forEach((button) => {

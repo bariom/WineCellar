@@ -305,6 +305,18 @@ h2 {
   scrollbar-width: none;
 }
 
+.sort-control {
+  display: grid;
+  gap: 7px;
+  color: #5c5a55;
+  font-size: 0.9rem;
+  font-weight: 720;
+}
+
+.sort-control .form-select {
+  min-height: 42px;
+}
+
 .filter-row::-webkit-scrollbar,
 .scrollable::-webkit-scrollbar {
   display: none;
