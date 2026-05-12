@@ -2736,6 +2736,70 @@
     "format": "Bottle (750ml)"
   },
   {
+    "name": "Cadenazzi",
+    "producer": "Azienda Agricola Cadenazzi",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "MCCX",
+    "producer": "Azienda Agricola Cadenazzi",
+    "region": "Ticino",
+    "appellation": "Rosso del Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Carlor Americana",
+    "producer": "Azienda Agricola Cadenazzi",
+    "region": "Ticino",
+    "appellation": "Ticino",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Johanniter",
+    "producer": "Azienda Agricola Cadenazzi",
+    "region": "Ticino",
+    "appellation": "Ticino",
+    "type": "White",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Carla",
+    "producer": "Azienda Agricola Cadenazzi",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Cortenuova Merlot",
+    "producer": "Azienda Agricola Cadenazzi",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "Red",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Corte Nuova Bianco di Merlot",
+    "producer": "Azienda Agricola Cadenazzi",
+    "region": "Ticino",
+    "appellation": "Ticino DOC",
+    "type": "White",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Capriccio",
+    "producer": "Azienda Agricola Cadenazzi",
+    "region": "Ticino",
+    "appellation": "Ticino",
+    "type": "Sparkling",
+    "format": "Bottle (750ml)"
+  },
+  {
     "name": "Casimiro",
     "producer": "Tenuta Agricola Luigina",
     "region": "Ticino",
