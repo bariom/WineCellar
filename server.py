@@ -1181,6 +1181,18 @@ def extract_response_text(payload: dict) -> str:
     return "\n".join(text for text in texts if text).strip()
 
 
+def clean_ai_notes_text(text: str) -> str:
+    cleaned_lines = []
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.lower().startswith("etichetta:"):
+            line = line.split(":", 1)[1].strip()
+        cleaned_lines.append(line)
+    return "\n".join(cleaned_lines).strip()
+
+
 def parse_json_object(text: str) -> dict:
     cleaned = text.strip()
     if cleaned.startswith("```"):
@@ -1394,7 +1406,9 @@ def generate_ai_notes(wine_id: str) -> dict:
         ),
         "input": (
             "Genera una scheda 'Note AI' per questo vino in testo semplice. Usa 5-7 righe brevi, "
-            "ognuna nel formato 'Etichetta: testo', senza elenchi Markdown e senza asterischi. "
+            "ognuna nel formato 'Campo: testo', senza elenchi Markdown e senza asterischi. "
+            "Non usare mai la parola generica 'Etichetta:' come campo. Usa campi specifici come "
+            "Vino, Stile, Produttore/territorio, Annata, Abbinamenti, Finestra, Curiosita. "
             "Copri stile, produttore/territorio, annata se utile, abbinamenti, finestra indicativa "
             "di consumo e una curiosita. Contesto:\n"
             f"{json.dumps(wine_context, ensure_ascii=False)}"
@@ -1421,7 +1435,7 @@ def generate_ai_notes(wine_id: str) -> dict:
     except (URLError, TimeoutError, OSError) as exc:
         raise ValueError(f"OpenAI request failed: {exc}") from exc
 
-    ai_notes = extract_response_text(response_payload)
+    ai_notes = clean_ai_notes_text(extract_response_text(response_payload))
     if not ai_notes:
         raise ValueError("OpenAI response did not include text")
 
