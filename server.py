@@ -838,7 +838,7 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "la risposta come consulenza finanziaria certa o quotazione live. Devi essere sintetico: "
             "signal deve essere una sola parola o pochissime parole, ad esempio 'Compra', 'Evita', "
             "'Monitora', 'Troppo caro', 'Buono da bere'. reason deve essere opzionale e lunga al "
-            "massimo 12 parole. Devi considerare sempre il prezzo target inserito nella wishlist "
+            "massimo 20 parole. Devi considerare sempre il prezzo target inserito nella wishlist "
             "come vincolo pratico della decisione. Per purpose Invest valuta liquidita, reputazione "
             "del produttore, annata, prezzo target, track record e rischio di immobilizzo; se "
             "il profilo non e convincente, recommendation deve essere avoid o monitor e, se "
