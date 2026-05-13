@@ -68,6 +68,45 @@ OPENAI_MODEL_OPTIONS = [
     },
 ]
 OPENAI_MODEL_OPTION_IDS = {option["id"] for option in OPENAI_MODEL_OPTIONS}
+APP_THEME_OPTIONS = [
+    {
+        "id": "classic",
+        "label": "Classic cellar",
+        "description": "Carta calda, accenti bordeaux e look attuale.",
+        "color": "#74171b",
+    },
+    {
+        "id": "graphite",
+        "label": "Graphite",
+        "description": "Neutro, piu tecnico e compatto, con accenti rubino.",
+        "color": "#8f2431",
+    },
+    {
+        "id": "alpine",
+        "label": "Alpine",
+        "description": "Chiaro e pulito, con accenti verdi e minerali.",
+        "color": "#2f6652",
+    },
+    {
+        "id": "midnight",
+        "label": "Midnight",
+        "description": "Scuro, alto contrasto, pensato per uso serale.",
+        "color": "#a63d4a",
+    },
+    {
+        "id": "dusk",
+        "label": "Dusk",
+        "description": "Scuro piu morbido, con fondo grafite caldo e contrasto meno marcato.",
+        "color": "#8f4a58",
+    },
+    {
+        "id": "champagne",
+        "label": "Champagne",
+        "description": "Luminoso e morbido, con accenti dorati e rosa.",
+        "color": "#9f5d16",
+    },
+]
+APP_THEME_OPTION_IDS = {option["id"] for option in APP_THEME_OPTIONS}
 PUBLIC_STATIC_PATHS = {
     "/",
     "/index.html",
@@ -422,12 +461,20 @@ def get_pairing_model(conn: sqlite3.Connection) -> str:
     return model if model in OPENAI_MODEL_OPTION_IDS else OPENAI_MODEL
 
 
+def get_app_theme(conn: sqlite3.Connection) -> str:
+    theme = get_setting(conn, "app_theme", "classic")
+    return theme if theme in APP_THEME_OPTION_IDS else "classic"
+
+
 def get_app_settings() -> dict:
     with connect() as conn:
         pairing_model = get_pairing_model(conn)
+        app_theme = get_app_theme(conn)
     return {
         "pairing_model": pairing_model,
         "model_options": OPENAI_MODEL_OPTIONS,
+        "app_theme": app_theme,
+        "theme_options": APP_THEME_OPTIONS,
         "pricing_note": "Prezzi indicativi OpenAI standard per 1M token. Il costo reale dipende da input e output della richiesta.",
     }
 
@@ -436,6 +483,9 @@ def update_app_settings(payload: dict) -> dict:
     pairing_model = str(payload.get("pairing_model", "")).strip()
     if pairing_model not in OPENAI_MODEL_OPTION_IDS:
         raise ValueError("Invalid pairing model")
+    app_theme = str(payload.get("app_theme", "classic")).strip()
+    if app_theme not in APP_THEME_OPTION_IDS:
+        raise ValueError("Invalid app theme")
 
     with connect() as conn:
         conn.execute(
@@ -445,6 +495,14 @@ def update_app_settings(payload: dict) -> dict:
             ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
             """,
             (pairing_model,),
+        )
+        conn.execute(
+            """
+            INSERT INTO app_settings (key, value, updated_at)
+            VALUES ('app_theme', ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+            """,
+            (app_theme,),
         )
     return get_app_settings()
 
@@ -1779,7 +1837,9 @@ def replace_all_wishlist(items: list[dict]) -> list[dict]:
 
 
 def auth_payload(role: str) -> dict:
-    return {"authenticated": role != "anonymous", "role": role, "auth_enabled": AUTH_ENABLED}
+    with connect() as conn:
+        app_theme = get_app_theme(conn)
+    return {"authenticated": role != "anonymous", "role": role, "auth_enabled": AUTH_ENABLED, "app_theme": app_theme}
 
 
 class CellarHandler(SimpleHTTPRequestHandler):

@@ -1,3 +1,14 @@
+const THEME_OPTIONS = [
+  { id: "classic", color: "#74171b" },
+  { id: "graphite", color: "#8f2431" },
+  { id: "alpine", color: "#2f6652" },
+  { id: "midnight", color: "#a63d4a" },
+  { id: "dusk", color: "#8f4a58" },
+  { id: "champagne", color: "#9f5d16" },
+];
+const THEME_IDS = new Set(THEME_OPTIONS.map((theme) => theme.id));
+const requestedTheme = normalizeTheme(new URLSearchParams(window.location.search).get("theme"));
+
 const state = {
   wines: [],
   filter: "All",
@@ -14,6 +25,7 @@ const state = {
   role: "anonymous",
   authEnabled: false,
   settings: null,
+  theme: requestedTheme || normalizeTheme(localStorage.getItem("wine-cellar-theme")) || "classic",
 };
 
 let installPromptEvent = null;
@@ -151,6 +163,20 @@ const translations = {
     pairingModelLegend: "Model",
     pairingModelSaved: "Settings saved.",
     pairingModelTitle: "Pairing model",
+    themeClassic: "Classic cellar",
+    themeGraphite: "Graphite",
+    themeAlpine: "Alpine",
+    themeMidnight: "Midnight",
+    themeDusk: "Dusk",
+    themeChampagne: "Champagne",
+    themeClassicDescription: "Warm paper, burgundy accents and the current look.",
+    themeGraphiteDescription: "Neutral, sharper and compact, with ruby accents.",
+    themeAlpineDescription: "Clean and bright, with green and mineral accents.",
+    themeMidnightDescription: "Dark, high contrast, designed for evening use.",
+    themeDuskDescription: "Softer dark theme, with warm graphite surfaces and lower contrast.",
+    themeChampagneDescription: "Light and soft, with gold and rose accents.",
+    themeHelp: "You can also apply a theme by opening the app with ?theme=classic, graphite, alpine, midnight, dusk or champagne.",
+    themeLegend: "Theme",
     priceRequired: "Price per Unit *",
     priority: "Priority",
     priorityHigh: "High",
@@ -361,6 +387,20 @@ const translations = {
     pairingModelLegend: "Modello",
     pairingModelSaved: "Impostazioni salvate.",
     pairingModelTitle: "Modello abbinamenti",
+    themeClassic: "Classic cellar",
+    themeGraphite: "Graphite",
+    themeAlpine: "Alpine",
+    themeMidnight: "Midnight",
+    themeDusk: "Dusk",
+    themeChampagne: "Champagne",
+    themeClassicDescription: "Carta calda, accenti bordeaux e look attuale.",
+    themeGraphiteDescription: "Neutro, piu tecnico e compatto, con accenti rubino.",
+    themeAlpineDescription: "Chiaro e pulito, con accenti verdi e minerali.",
+    themeMidnightDescription: "Scuro, alto contrasto, pensato per uso serale.",
+    themeDuskDescription: "Scuro piu morbido, con fondo grafite caldo e contrasto meno marcato.",
+    themeChampagneDescription: "Luminoso e morbido, con accenti dorati e rosa.",
+    themeHelp: "Puoi anche applicare un tema aprendo l'app con ?theme=classic, graphite, alpine, midnight, dusk o champagne.",
+    themeLegend: "Tema",
     priceRequired: "Prezzo unitario *",
     priority: "Priorita",
     priorityHigh: "Alta",
@@ -498,6 +538,31 @@ const showSaleFormButton = document.querySelector("#show-sale-form-button");
 const saleList = document.querySelector("#sale-list");
 const wineNameInput = document.querySelector("#name");
 const wineNameSuggestions = document.querySelector("#wine-name-suggestions");
+const themeOptions = document.querySelector("#theme-options");
+const themeColorMeta = document.querySelector("meta[name='theme-color']");
+
+function normalizeTheme(theme) {
+  return THEME_IDS.has(theme) ? theme : "";
+}
+
+function themeLabelKey(themeId) {
+  return `theme${themeId.charAt(0).toUpperCase()}${themeId.slice(1)}`;
+}
+
+function themeDescriptionKey(themeId) {
+  return `${themeLabelKey(themeId)}Description`;
+}
+
+function applyTheme(themeId) {
+  const theme = normalizeTheme(themeId) || "classic";
+  state.theme = theme;
+  document.body.dataset.theme = theme;
+  localStorage.setItem("wine-cellar-theme", theme);
+  const option = THEME_OPTIONS.find((item) => item.id === theme);
+  if (themeColorMeta && option?.color) themeColorMeta.setAttribute("content", option.color);
+}
+
+applyTheme(state.theme);
 
 function t(key, replacements = {}) {
   const dictionary = translations[state.lang] || translations.it;
@@ -638,6 +703,7 @@ async function loadSession() {
   const session = await api("/api/session");
   state.role = session.role;
   state.authEnabled = session.auth_enabled;
+  if (!requestedTheme && session.app_theme) applyTheme(session.app_theme);
   applyPermissions();
   if (session.auth_enabled && !session.authenticated) {
     showScreen("login");
@@ -670,6 +736,25 @@ function formatModelPrice(value) {
 
 function renderSettings() {
   if (!state.settings) return;
+  const selectedTheme = normalizeTheme(state.settings.app_theme) || state.theme;
+  themeOptions.innerHTML = state.settings.theme_options
+    .map((option) => {
+      const checked = option.id === selectedTheme ? "checked" : "";
+      return `
+        <label class="theme-option" data-theme-preview="${escapeAttribute(option.id)}">
+          <input type="radio" name="app_theme" value="${escapeAttribute(option.id)}" ${checked} />
+          <span class="theme-swatch" aria-hidden="true"></span>
+          <span>
+            <strong>${escapeHtml(t(themeLabelKey(option.id)))}</strong>
+            <small>${escapeHtml(t(themeDescriptionKey(option.id)))}</small>
+          </span>
+        </label>
+      `;
+    })
+    .join("");
+  themeOptions.querySelectorAll("input[name='app_theme']").forEach((input) => {
+    input.addEventListener("change", () => applyTheme(input.value));
+  });
   pairingModelOptions.innerHTML = state.settings.model_options
     .map((option) => {
       const checked = option.id === state.settings.pairing_model ? "checked" : "";
@@ -703,8 +788,12 @@ async function saveSettings(event) {
   try {
     state.settings = await api("/api/settings", {
       method: "POST",
-      body: JSON.stringify({ pairing_model: settingsForm.elements.pairing_model.value }),
+      body: JSON.stringify({
+        pairing_model: settingsForm.elements.pairing_model.value,
+        app_theme: settingsForm.elements.app_theme.value,
+      }),
     });
+    applyTheme(state.settings.app_theme);
     renderSettings();
     alert(t("pairingModelSaved"));
   } finally {

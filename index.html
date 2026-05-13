@@ -18,7 +18,7 @@
       integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
       crossorigin="anonymous"
     />
-    <link rel="stylesheet" href="styles.css?v=20260508-pairing-real-producers" />
+    <link rel="stylesheet" href="styles.css?v=20260513-dusk-theme" />
   </head>
   <body>
     <main class="app-shell">
@@ -595,6 +595,10 @@
             <p data-i18n="pairingModelHelp">Scegli il modello OpenAI usato per la richiesta di abbinamento. Modelli più costosi possono dare risposte più accurate.</p>
           </div>
           <form class="settings-form" id="settings-form">
+            <fieldset class="theme-options" id="theme-options">
+              <legend data-i18n="themeLegend">Tema</legend>
+            </fieldset>
+            <p class="settings-note" data-i18n="themeHelp">Puoi anche applicare un tema aprendo l'app con ?theme=classic, graphite, alpine, midnight, dusk o champagne.</p>
             <fieldset class="model-options" id="pairing-model-options">
               <legend data-i18n="pairingModelLegend">Modello</legend>
             </fieldset>
@@ -623,6 +627,6 @@
       </nav>
     </main>
 
-    <script src="app.js?v=20260508-pairing-real-producers"></script>
+    <script src="app.js?v=20260513-dusk-theme"></script>
   </body>
 </html>

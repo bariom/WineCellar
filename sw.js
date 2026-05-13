@@ -1,9 +1,9 @@
-const CACHE_NAME = "winecellar-pwa-20260511-drink-confirm";
+const CACHE_NAME = "winecellar-pwa-20260513-dusk-theme";
 const APP_SHELL = [
   "/",
   "/index.html",
-  "/styles.css?v=20260508-pairing-real-producers",
-  "/app.js",
+  "/styles.css?v=20260513-dusk-theme",
+  "/app.js?v=20260513-dusk-theme",
   "/favicon.svg",
   "/pwa-icon-192.png",
   "/pwa-icon-512.png",
