@@ -751,6 +751,16 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
 
     context = {
         "wishlist_item": item,
+        "decision_constraints": {
+            "target_price": item.get("target_price"),
+            "currency": item.get("currency"),
+            "merchant": item.get("merchant"),
+            "price_rule": (
+                "Il prezzo target inserito in wishlist e un vincolo decisionale: se e alto rispetto al profilo "
+                "del vino o al potenziale, la recommendation deve essere monitor o avoid; se e attraente, "
+                "puo sostenere buy. Se manca, segnala maggiore incertezza."
+            ),
+        },
         "purpose_meaning": {
             "Drink": "vino da bere",
             "Invest": "vino da investimento",
@@ -790,11 +800,12 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "la risposta come consulenza finanziaria certa o quotazione live. Devi essere sintetico: "
             "signal deve essere una sola parola o pochissime parole, ad esempio 'Compra', 'Evita', "
             "'Monitora', 'Troppo caro', 'Buono da bere'. reason deve essere opzionale e lunga al "
-            "massimo 12 parole. Per purpose Invest valuta liquidita, reputazione "
+            "massimo 12 parole. Devi considerare sempre il prezzo target inserito nella wishlist "
+            "come vincolo pratico della decisione. Per purpose Invest valuta liquidita, reputazione "
             "del produttore, annata, prezzo target, track record e rischio di immobilizzo; se "
             "il profilo non e convincente, recommendation deve essere avoid o monitor e, se "
             "possibile, proponi una alternativa paritetica per fascia prezzo/stile. Per purpose "
-            "Drink privilegia piacere di bevuta, finestra e prezzo. Usa italiano corretto."
+            "Drink privilegia piacere di bevuta, finestra e prezzo target. Usa italiano corretto."
         ),
         "input": (
             "Contesto wishlist e cantina:\n"

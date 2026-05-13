@@ -1842,13 +1842,13 @@ body[data-theme="dusk"] .wishlist-ai-badge {
 
 .wishlist-strategy {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
   gap: 8px 10px;
   margin-top: 12px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid color-mix(in srgb, var(--wine) 16%, var(--line));
-  border-radius: 999px;
+  border-radius: 18px;
   background: color-mix(in srgb, var(--wine) 6%, var(--surface));
 }
 
@@ -1871,10 +1871,13 @@ body[data-theme="dusk"] .wishlist-ai-badge {
 }
 
 .wishlist-strategy p {
+  flex: 1 1 180px;
+  min-width: 0;
   margin: 0;
   color: var(--muted);
   font-size: 0.84rem;
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .section-title-row {
@@ -2417,6 +2420,23 @@ body[data-theme="dusk"] .wishlist-ai-badge {
 
   .wishlist-card-detail dl div:last-child dd {
     text-align: left;
+  }
+
+  .wishlist-strategy {
+    gap: 8px;
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .wishlist-strategy > span,
+  .wishlist-strategy p {
+    flex-basis: 100%;
+  }
+
+  .wishlist-strategy > span {
+    width: fit-content;
+    max-width: 100%;
+    overflow-wrap: anywhere;
   }
 
   .sale-form {
