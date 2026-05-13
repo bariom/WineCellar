@@ -258,15 +258,11 @@ const translations = {
     wishlistPurposeGift: "Gift",
     wishlistPurposeInvest: "Investment",
     wishlistStrategy: "AI Strategy",
-    wishlistStrategyActions: "Next steps",
     wishlistStrategyAlternative: "Alternative",
-    wishlistStrategyAssumption: "Market assumption",
     wishlistStrategyAvoid: "Avoid",
     wishlistStrategyBuy: "Buy",
     wishlistStrategyLoading: "Building strategy...",
     wishlistStrategyMonitor: "Monitor",
-    wishlistStrategyRationale: "Why",
-    wishlistStrategyRisks: "Risks",
     wishlistStrategyUnable: "Unable to generate strategy: {error}",
     wishlistSkipped: "Skipped",
     wineNameRequired: "Wine Name *",
@@ -499,15 +495,11 @@ const translations = {
     wishlistPurposeGift: "Regalo",
     wishlistPurposeInvest: "Investimento",
     wishlistStrategy: "Strategia AI",
-    wishlistStrategyActions: "Prossimi passi",
     wishlistStrategyAlternative: "Alternativa",
-    wishlistStrategyAssumption: "Assunzione mercato",
     wishlistStrategyAvoid: "Evita",
     wishlistStrategyBuy: "Compra",
     wishlistStrategyLoading: "Sto preparando la strategia...",
     wishlistStrategyMonitor: "Monitora",
-    wishlistStrategyRationale: "Perche",
-    wishlistStrategyRisks: "Rischi",
     wishlistStrategyUnable: "Impossibile generare la strategia: {error}",
     wishlistSkipped: "Scartato",
     wineNameRequired: "Nome vino *",
@@ -1560,38 +1552,18 @@ function wishlistStrategyLabel(recommendation) {
   );
 }
 
-function renderStrategyList(title, items) {
-  if (!Array.isArray(items) || !items.length) return "";
-  return `
-    <section>
-      <h3>${escapeHtml(title)}</h3>
-      <ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
-    </section>
-  `;
-}
-
 function renderWishlistStrategy(itemId) {
   const strategy = state.wishlistStrategies[itemId];
   if (!strategy) return "";
   if (strategy.loading) return `<div class="wishlist-strategy"><p>${escapeHtml(t("wishlistStrategyLoading"))}</p></div>`;
+  const signal = strategy.signal || wishlistStrategyLabel(strategy.recommendation);
   return `
     <div class="wishlist-strategy" data-recommendation="${escapeAttribute(strategy.recommendation || "monitor")}">
-      <div class="wishlist-strategy-header">
-        <span>${escapeHtml(wishlistStrategyLabel(strategy.recommendation))}</span>
-        ${strategy.summary ? `<strong>${escapeHtml(strategy.summary)}</strong>` : ""}
-      </div>
-      ${strategy.market_assumption ? `<p><b>${escapeHtml(t("wishlistStrategyAssumption"))}:</b> ${escapeHtml(strategy.market_assumption)}</p>` : ""}
-      ${renderStrategyList(t("wishlistStrategyRationale"), strategy.rationale)}
-      ${renderStrategyList(t("wishlistStrategyRisks"), strategy.risks)}
-      ${renderStrategyList(t("wishlistStrategyActions"), strategy.actions)}
+      <span>${escapeHtml(signal)}</span>
+      ${strategy.reason ? `<p>${escapeHtml(strategy.reason)}</p>` : ""}
       ${
         strategy.alternative
-          ? `<section>
-              <h3>${escapeHtml(t("wishlistStrategyAlternative"))}</h3>
-              <p><strong>${escapeHtml([strategy.alternative.name, strategy.alternative.producer].filter(Boolean).join(" - "))}</strong></p>
-              ${strategy.alternative.price_hint ? `<p>${escapeHtml(strategy.alternative.price_hint)}</p>` : ""}
-              ${strategy.alternative.reason ? `<p>${escapeHtml(strategy.alternative.reason)}</p>` : ""}
-            </section>`
+          ? `<p><b>${escapeHtml(t("wishlistStrategyAlternative"))}:</b> ${escapeHtml([strategy.alternative.name, strategy.alternative.producer].filter(Boolean).join(" - "))}</p>`
           : ""
       }
     </div>

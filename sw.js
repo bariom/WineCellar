@@ -1,9 +1,9 @@
-const CACHE_NAME = "winecellar-pwa-20260513-wishlist-strategy";
+const CACHE_NAME = "winecellar-pwa-20260513-short-strategy";
 const APP_SHELL = [
   "/",
   "/index.html",
-  "/styles.css?v=20260513-wishlist-strategy",
-  "/app.js?v=20260513-wishlist-strategy",
+  "/styles.css?v=20260513-short-strategy",
+  "/app.js?v=20260513-short-strategy",
   "/favicon.svg",
   "/pwa-icon-192.png",
   "/pwa-icon-512.png",

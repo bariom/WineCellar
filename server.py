@@ -693,13 +693,8 @@ def clean_wishlist_strategy_payload(payload: dict) -> dict:
     recommendation = str(payload.get("recommendation", "")).strip().lower()
     if recommendation not in {"buy", "monitor", "avoid"}:
         recommendation = "monitor"
-    summary = str(payload.get("summary", "")).strip()
-    market_assumption = str(payload.get("market_assumption", "")).strip()
-
-    def clean_text_list(value: object, limit: int) -> list[str]:
-        if not isinstance(value, list):
-            return []
-        return [str(item).strip() for item in value[:limit] if str(item).strip()]
+    signal = str(payload.get("signal", "") or payload.get("summary", "")).strip()
+    reason = str(payload.get("reason", "")).strip()
 
     alternative_payload = payload.get("alternative", {})
     alternative = None
@@ -709,17 +704,12 @@ def clean_wishlist_strategy_payload(payload: dict) -> dict:
             alternative = {
                 "name": name,
                 "producer": str(alternative_payload.get("producer", "")).strip(),
-                "reason": str(alternative_payload.get("reason", "")).strip(),
-                "price_hint": str(alternative_payload.get("price_hint", "")).strip(),
             }
 
     return {
         "recommendation": recommendation,
-        "summary": summary,
-        "market_assumption": market_assumption,
-        "rationale": clean_text_list(payload.get("rationale", []), 4),
-        "risks": clean_text_list(payload.get("risks", []), 4),
-        "actions": clean_text_list(payload.get("actions", []), 4),
+        "signal": signal[:80],
+        "reason": reason[:120],
         "alternative": alternative,
     }
 
@@ -768,12 +758,13 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
     request_payload = {
         "model": OPENAI_VALUE_MODEL,
         "instructions": (
-            "Sei un consulente privato per collezionismo vino. Devi suggerire una strategia "
-            "pratica per un vino in wishlist in base allo scopo dell'osservazione. Rispondi "
+            "Sei un consulente privato per collezionismo vino. Devi dare un resoconto operativo "
+            "estremamente breve per un vino in wishlist in base allo scopo dell'osservazione. Rispondi "
             "solo con JSON valido, senza Markdown e senza testo prima o dopo. Non presentare "
-            "la risposta come consulenza finanziaria certa o quotazione live. Se non hai dati "
-            "di mercato affidabili o aggiornati, dichiaralo chiaramente in market_assumption e "
-            "usa una raccomandazione prudente. Per purpose Invest valuta liquidita, reputazione "
+            "la risposta come consulenza finanziaria certa o quotazione live. Devi essere sintetico: "
+            "signal deve essere una sola parola o pochissime parole, ad esempio 'Compra', 'Evita', "
+            "'Monitora', 'Troppo caro', 'Buono da bere'. reason deve essere opzionale e lunga al "
+            "massimo 12 parole. Per purpose Invest valuta liquidita, reputazione "
             "del produttore, annata, prezzo target, track record e rischio di immobilizzo; se "
             "il profilo non e convincente, recommendation deve essere avoid o monitor e, se "
             "possibile, proponi una alternativa paritetica per fascia prezzo/stile. Per purpose "
@@ -783,14 +774,12 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "Contesto wishlist e cantina:\n"
             f"{json.dumps(context, ensure_ascii=False)}\n\n"
             "Restituisci solo questo oggetto JSON: "
-            "{\"recommendation\":\"buy|monitor|avoid\",\"summary\":\"decisione breve\","
-            "\"market_assumption\":\"limiti dei dati usati\","
-            "\"rationale\":[\"motivo\"],\"risks\":[\"rischio\"],\"actions\":[\"prossimo passo\"],"
-            "\"alternative\":{\"name\":\"vino alternativo\",\"producer\":\"produttore\","
-            "\"price_hint\":\"fascia prezzo simile\",\"reason\":\"perche e paritetico o migliore\"}}. "
+            "{\"recommendation\":\"buy|monitor|avoid\",\"signal\":\"1-4 parole\","
+            "\"reason\":\"massimo 12 parole\","
+            "\"alternative\":{\"name\":\"vino alternativo\",\"producer\":\"produttore\"}}. "
             "Se non hai una alternativa credibile, usa alternative null."
         ),
-        "max_output_tokens": 900,
+        "max_output_tokens": 260,
     }
     request = Request(
         OPENAI_RESPONSES_URL,
