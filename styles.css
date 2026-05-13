@@ -734,8 +734,8 @@ body[data-theme="dusk"] .drink-now-card[data-type="Red"]:hover {
 .vintage {
   color: var(--wine);
   font-family: var(--font-serif);
-  font-size: 1.04rem;
-  font-weight: 700;
+  font-size: 1.14rem;
+  font-weight: 800;
   letter-spacing: 0;
 }
 
@@ -1303,8 +1303,15 @@ body[data-theme="dusk"] .drink-now-card[data-type="Red"]:hover {
 
 .small-vintage {
   color: var(--wine);
-  font-size: 0.85rem;
-  font-weight: 800;
+  font-size: 0.98rem;
+  font-weight: 850;
+}
+
+body[data-theme="midnight"] .vintage,
+body[data-theme="dusk"] .vintage,
+body[data-theme="midnight"] .small-vintage,
+body[data-theme="dusk"] .small-vintage {
+  color: color-mix(in srgb, var(--wine) 50%, #ffd9df);
 }
 
 .insights {
