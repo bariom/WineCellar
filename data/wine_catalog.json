@@ -2984,6 +2984,38 @@
     "format": "Bottle (750ml)"
   },
   {
+    "name": "La Tunella",
+    "producer": "La Tunella",
+    "region": "Friuli-Venezia Giulia",
+    "appellation": "Friuli Colli Orientali DOC",
+    "type": "White",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Lamm N°12 Extra Brut",
+    "producer": "Sektmanufaktur Winkler",
+    "region": "Alto Adige",
+    "appellation": "VSQ",
+    "type": "Sparkling",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Anna-Katharina N°15 Rose Extra Brut",
+    "producer": "Sektmanufaktur Winkler",
+    "region": "Alto Adige",
+    "appellation": "VSQ",
+    "type": "Sparkling",
+    "format": "Bottle (750ml)"
+  },
+  {
+    "name": "Fondatore N°71 Helmuth Winkler Pas Dose",
+    "producer": "Sektmanufaktur Winkler",
+    "region": "Alto Adige",
+    "appellation": "VSQ",
+    "type": "Sparkling",
+    "format": "Bottle (750ml)"
+  },
+  {
     "name": "Ribolla Gialla Anfora",
     "producer": "Gravner",
     "region": "Friuli-Venezia Giulia",
