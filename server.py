@@ -1256,6 +1256,19 @@ def clean_ai_score_suggestions(payload: dict) -> list[dict]:
     if not isinstance(scores, list):
         raise ValueError("OpenAI response must include a scores list")
 
+    placeholder_markers = (
+        "da verific",
+        "non ho",
+        "n/d",
+        "nd",
+        "n.a.",
+        "na",
+        "unknown",
+        "sconosciuto",
+        "non disponibile",
+        "nessun",
+    )
+
     cleaned = []
     seen = set()
     for item in scores[:8]:
@@ -1266,6 +1279,13 @@ def clean_ai_score_suggestions(payload: dict) -> list[dict]:
         note = str(item.get("note", "")).strip()
         confidence = str(item.get("confidence", "")).strip()
         if not critic or not score:
+            continue
+        normalized_score = score.lower().strip(" .:-")
+        if any(marker in normalized_score for marker in placeholder_markers):
+            continue
+        if not any(char.isdigit() for char in score):
+            continue
+        if confidence and confidence.lower() == "bassa":
             continue
         key = (critic.lower(), score.lower())
         if key in seen:
@@ -1556,13 +1576,17 @@ def suggest_ai_scores(wine_id: str) -> dict:
             "Sei un assistente esperto di critica enologica. Suggerisci punteggi pubblicati "
             "per un vino specifico solo se sei ragionevolmente sicuro che riguardino esattamente "
             "quel vino e quella annata. Rispondi solo con JSON valido, senza Markdown. Non "
-            "inventare punteggi. Non usare punteggi di annate diverse. Se sei incerto, usa "
-            "confidence 'bassa' o 'media' e scrivi chiaramente 'Da verificare' nella nota. "
+            "inventare punteggi. Non usare punteggi di annate diverse. Se non conosci un punteggio "
+            "numerico reale, non inserire nessuna voce per quella testata. Non restituire mai "
+            "placeholder come 'Da verificare', 'non ho dati', 'N/D' o simili nel campo score. Se "
+            "non hai dati affidabili, restituisci {\"scores\":[]}. Se sei incerto ma hai un "
+            "punteggio numerico plausibile, usa confidence 'media' e scrivi chiaramente "
+            "'Da verificare' nella nota. "
             "Preferisci fonti/testate note come Wine Advocate, Vinous, James Suckling, Jeb Dunnuck, "
             "Decanter, Falstaff, Wine Spectator, Wine Enthusiast."
         ),
         "input": (
-            "Trova al massimo 6 possibili punteggi per questo vino. Restituisci solo questo JSON: "
+            "Trova al massimo 6 possibili punteggi numerici per questo vino. Restituisci solo questo JSON: "
             "{\"scores\":[{\"critic\":\"testata o critico\",\"score\":\"punteggio\","
             "\"note\":\"nota breve con eventuale Da verificare\",\"confidence\":\"alta|media|bassa\"}]}.\n"
             "Contesto:\n"

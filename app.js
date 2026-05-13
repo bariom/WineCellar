@@ -1820,6 +1820,15 @@ function addScoreRow(score = { critic: "", score: "", note: "" }) {
   scoresFormList.appendChild(row);
 }
 
+function isUsableScoreSuggestion(score) {
+  const value = String(score?.score || "").trim();
+  const normalized = value.toLowerCase().replace(/[ .:-]+$/g, "");
+  if (!score?.critic || !value || !/\d/.test(value)) return false;
+  return !["da verific", "non ho", "n/d", "nd", "n.a.", "na", "unknown", "sconosciuto", "non disponibile", "nessun"].some((marker) =>
+    normalized.includes(marker)
+  );
+}
+
 function collectScores() {
   return [...scoresFormList.querySelectorAll(".score-form-row")]
     .map((row) => ({
@@ -1951,7 +1960,7 @@ async function suggestAiScores() {
   suggestAiScoresButton.textContent = "...";
   try {
     const result = await api(`/api/wines/${encodeURIComponent(wine.id)}/ai-scores`, { method: "POST" });
-    const suggestions = Array.isArray(result.scores) ? result.scores : [];
+    const suggestions = (Array.isArray(result.scores) ? result.scores : []).filter(isUsableScoreSuggestion);
     if (!suggestions.length) {
       alert(t("suggestScoresEmpty"));
       return;
