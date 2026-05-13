@@ -30,6 +30,7 @@ AUTH_ENABLED = bool(ADMIN_PASSWORD and (VIEWER_PASSWORD or SHARED_VIEWER_PASSWOR
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.4-nano")
 OPENAI_VALUE_MODEL = os.environ.get("OPENAI_VALUE_MODEL", "gpt-5.4-mini")
+OPENAI_WISHLIST_STRATEGY_MODEL = os.environ.get("OPENAI_WISHLIST_STRATEGY_MODEL", "gpt-5.4")
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 SESSION_COOKIE = "wine_cellar_session"
 SESSIONS: dict[str, str] = {}
@@ -729,6 +730,12 @@ def wishlist_status_from_strategy(recommendation: str) -> str:
     }.get(recommendation, "Monitor")
 
 
+def wishlist_strategy_model(item: dict) -> str:
+    if item.get("purpose") == "Invest" or item.get("priority") == "High":
+        return OPENAI_WISHLIST_STRATEGY_MODEL
+    return OPENAI_VALUE_MODEL
+
+
 def suggest_wishlist_strategy(item_id: str) -> dict:
     with connect() as conn:
         item = get_wishlist_item(conn, item_id)
@@ -771,7 +778,7 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
         ][:12],
     }
     request_payload = {
-        "model": OPENAI_VALUE_MODEL,
+        "model": wishlist_strategy_model(item),
         "instructions": (
             "Sei un consulente privato per collezionismo vino. Devi dare un resoconto operativo "
             "estremamente breve per un vino in wishlist in base allo scopo dell'osservazione. Rispondi "
