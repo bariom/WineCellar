@@ -264,6 +264,8 @@ const translations = {
     wishlistStrategyLoading: "Building strategy...",
     wishlistStrategyMonitor: "Monitor",
     wishlistStrategyUnable: "Unable to generate strategy: {error}",
+    wishlistStatusAi: "AI",
+    wishlistStatusAiLong: "Set by AI",
     wishlistSkipped: "Skipped",
     wineNameRequired: "Wine Name *",
     autofilled: "Wine details autofilled from your cellar history.",
@@ -501,6 +503,8 @@ const translations = {
     wishlistStrategyLoading: "Sto preparando la strategia...",
     wishlistStrategyMonitor: "Monitora",
     wishlistStrategyUnable: "Impossibile generare la strategia: {error}",
+    wishlistStatusAi: "AI",
+    wishlistStatusAiLong: "Impostato da AI",
     wishlistSkipped: "Scartato",
     wineNameRequired: "Nome vino *",
     autofilled: "Dati vino completati dalla tua cronologia.",
@@ -1290,8 +1294,7 @@ function drinkNowStatus(wine) {
   }
 
   if (Number.isFinite(peakFrom) && Number.isFinite(peakTo) && peakFrom > 0 && peakTo > 0 && currentYear >= peakFrom && currentYear <= peakTo) {
-    const nearEnd = Number.isFinite(drinkTo) && drinkTo > 0 && drinkTo - currentYear <= 1;
-    return { section: nearEnd ? "dontWait" : "ideal", priority: nearEnd ? 95 : 90, reason: t("drinkNowReasonIdeal") };
+    return { section: "ideal", priority: 90, reason: t("drinkNowReasonIdeal") };
   }
 
   if (Number.isFinite(peakTo) && peakTo > 0 && currentYear > peakTo) {
@@ -1552,6 +1555,17 @@ function wishlistStrategyLabel(recommendation) {
   );
 }
 
+function isAiWishlistStatus(item) {
+  return String(item?.status_source || "").toLowerCase() === "ai";
+}
+
+function renderWishlistStatus(item) {
+  const badge = isAiWishlistStatus(item)
+    ? `<span class="wishlist-ai-badge" title="${escapeAttribute(t("wishlistStatusAiLong"))}" aria-label="${escapeAttribute(t("wishlistStatusAiLong"))}">${escapeHtml(t("wishlistStatusAi"))}</span>`
+    : "";
+  return `<span class="wishlist-status-inline">${escapeHtml(wishlistStatusLabel(item.status))}${badge}</span>`;
+}
+
 function renderWishlistStrategy(itemId) {
   const strategy = state.wishlistStrategies[itemId];
   if (!strategy) return "";
@@ -1581,7 +1595,7 @@ function renderWishlist() {
                 <div>
                   <h2>${escapeHtml(item.name)} ${item.vintage ? `<span class="small-vintage">${escapeHtml(item.vintage)}</span>` : ""}</h2>
                   <p>${escapeHtml([item.producer, item.region, item.appellation].filter(Boolean).join(" - ") || t("notSpecified"))}</p>
-                  <p class="wishlist-closed-meta">${escapeHtml(wishlistPurposeLabel(item.purpose))} - ${escapeHtml(wishlistStatusLabel(item.status))} - ${item.target_price ? formatMoney(item.target_price, item.currency) : t("notSpecified")}</p>
+                  <p class="wishlist-closed-meta">${escapeHtml(wishlistPurposeLabel(item.purpose))} - ${renderWishlistStatus(item)} - ${item.target_price ? formatMoney(item.target_price, item.currency) : t("notSpecified")}</p>
                 </div>
                 <span class="wishlist-card-side">
                   <span class="wishlist-chip ${priorityClass(item.priority)}">${escapeHtml(priorityLabel(item.priority))}</span>
@@ -1590,7 +1604,7 @@ function renderWishlist() {
               </button>
               <div class="wishlist-card-detail" hidden>
                 <dl>
-                  <div><dt>${escapeHtml(t("status"))}</dt><dd>${escapeHtml(wishlistStatusLabel(item.status))}</dd></div>
+                  <div><dt>${escapeHtml(t("status"))}</dt><dd>${renderWishlistStatus(item)}</dd></div>
                   <div><dt>${escapeHtml(t("wishlistPurpose"))}</dt><dd>${escapeHtml(wishlistPurposeLabel(item.purpose))}</dd></div>
                   <div><dt>${escapeHtml(t("targetPrice"))}</dt><dd>${item.target_price ? formatMoney(item.target_price, item.currency) : t("notSpecified")}</dd></div>
                   <div><dt>${escapeHtml(t("merchant"))}</dt><dd>${escapeHtml(item.merchant || t("notSpecified"))}</dd></div>
@@ -1919,7 +1933,12 @@ async function suggestWishlistStrategy(id) {
   renderWishlist();
   expandWishlistCard(id);
   try {
-    state.wishlistStrategies[id] = await api(`/api/wishlist/${encodeURIComponent(id)}/strategy`, { method: "POST", body: JSON.stringify({}) });
+    const result = await api(`/api/wishlist/${encodeURIComponent(id)}/strategy`, { method: "POST", body: JSON.stringify({}) });
+    state.wishlistStrategies[id] = result.strategy || result;
+    if (result.item) {
+      const index = state.wishlist.findIndex((item) => item.id === result.item.id);
+      if (index >= 0) state.wishlist[index] = result.item;
+    }
   } catch (error) {
     delete state.wishlistStrategies[id];
     renderWishlist();

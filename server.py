@@ -406,6 +406,7 @@ def init_db() -> None:
                 purpose TEXT NOT NULL DEFAULT 'Drink',
                 priority TEXT NOT NULL DEFAULT 'Medium',
                 status TEXT NOT NULL DEFAULT 'Monitor',
+                status_source TEXT NOT NULL DEFAULT 'manual',
                 notes TEXT NOT NULL DEFAULT '',
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -413,6 +414,7 @@ def init_db() -> None:
             """
         )
         ensure_column(conn, "wishlist", "purpose", "TEXT NOT NULL DEFAULT 'Drink'")
+        ensure_column(conn, "wishlist", "status_source", "TEXT NOT NULL DEFAULT 'manual'")
         seed_catalog(conn)
         count = conn.execute("SELECT COUNT(*) FROM wines").fetchone()[0]
         if count == 0:
@@ -558,7 +560,7 @@ def list_wishlist() -> list[dict]:
         rows = conn.execute(
             """
             SELECT id, name, producer, vintage, format, type, region, appellation,
-                   target_price, currency, merchant, purpose, priority, status, notes
+                   target_price, currency, merchant, purpose, priority, status, status_source, notes
             FROM wishlist
             ORDER BY
                 CASE priority WHEN 'High' THEN 1 WHEN 'Medium' THEN 2 ELSE 3 END,
@@ -573,7 +575,7 @@ def get_wishlist_item(conn: sqlite3.Connection, item_id: str) -> dict | None:
     row = conn.execute(
         """
         SELECT id, name, producer, vintage, format, type, region, appellation,
-               target_price, currency, merchant, purpose, priority, status, notes
+               target_price, currency, merchant, purpose, priority, status, status_source, notes
         FROM wishlist
         WHERE id = ?
         """,
@@ -597,6 +599,9 @@ def clean_wishlist_item(payload: dict, item_id: str | None = None) -> dict:
     status = str(payload.get("status", "Monitor")).strip()
     if status not in {"Evaluate", "Monitor", "Buy", "Skipped"}:
         raise ValueError("Unsupported wishlist status")
+    status_source = str(payload.get("status_source", "manual")).strip().lower()
+    if status_source not in {"manual", "ai"}:
+        status_source = "manual"
     return {
         "id": item_id or payload.get("id") or str(uuid.uuid4()),
         "name": str(payload.get("name", "")).strip(),
@@ -612,6 +617,7 @@ def clean_wishlist_item(payload: dict, item_id: str | None = None) -> dict:
         "purpose": purpose,
         "priority": priority,
         "status": status,
+        "status_source": status_source,
         "notes": str(payload.get("notes", "")).strip(),
     }
 
@@ -623,11 +629,11 @@ def upsert_wishlist_item(payload: dict, item_id: str | None = None) -> dict:
             """
             INSERT INTO wishlist (
                 id, name, producer, vintage, format, type, region, appellation,
-                target_price, currency, merchant, purpose, priority, status, notes
+                target_price, currency, merchant, purpose, priority, status, status_source, notes
             )
             VALUES (
                 :id, :name, :producer, :vintage, :format, :type, :region, :appellation,
-                :target_price, :currency, :merchant, :purpose, :priority, :status, :notes
+                :target_price, :currency, :merchant, :purpose, :priority, :status, :status_source, :notes
             )
             ON CONFLICT(id) DO UPDATE SET
                 name = excluded.name,
@@ -643,6 +649,7 @@ def upsert_wishlist_item(payload: dict, item_id: str | None = None) -> dict:
                 purpose = excluded.purpose,
                 priority = excluded.priority,
                 status = excluded.status,
+                status_source = excluded.status_source,
                 notes = excluded.notes,
                 updated_at = CURRENT_TIMESTAMP
             """,
@@ -712,6 +719,14 @@ def clean_wishlist_strategy_payload(payload: dict) -> dict:
         "reason": reason[:120],
         "alternative": alternative,
     }
+
+
+def wishlist_status_from_strategy(recommendation: str) -> str:
+    return {
+        "buy": "Buy",
+        "monitor": "Monitor",
+        "avoid": "Skipped",
+    }.get(recommendation, "Monitor")
 
 
 def suggest_wishlist_strategy(item_id: str) -> dict:
@@ -804,7 +819,19 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
     raw_text = extract_response_text(response_payload)
     if not raw_text:
         raise ValueError("OpenAI response did not include text")
-    return clean_wishlist_strategy_payload(parse_json_object(raw_text))
+    strategy = clean_wishlist_strategy_payload(parse_json_object(raw_text))
+    status = wishlist_status_from_strategy(strategy["recommendation"])
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE wishlist
+            SET status = ?, status_source = 'ai', updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (status, item_id),
+        )
+        updated_item = get_wishlist_item(conn, item_id)
+    return {"strategy": strategy, "item": updated_item}
 
 
 def wine_from_row(row: sqlite3.Row) -> dict:
@@ -1977,11 +2004,11 @@ def replace_all_wishlist(items: list[dict]) -> list[dict]:
                 """
                 INSERT INTO wishlist (
                     id, name, producer, vintage, format, type, region, appellation,
-                    target_price, currency, merchant, purpose, priority, status, notes
+                    target_price, currency, merchant, purpose, priority, status, status_source, notes
                 )
                 VALUES (
                     :id, :name, :producer, :vintage, :format, :type, :region, :appellation,
-                    :target_price, :currency, :merchant, :purpose, :priority, :status, :notes
+                    :target_price, :currency, :merchant, :purpose, :priority, :status, :status_source, :notes
                 )
                 """,
                 item,

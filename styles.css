@@ -1705,9 +1705,37 @@ h2 {
 }
 
 .wishlist-closed-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
   color: var(--wine) !important;
   font-size: 0.78rem !important;
   font-weight: 850;
+}
+
+.wishlist-status-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: middle;
+}
+
+.wishlist-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 2px 7px;
+  border: 1px solid color-mix(in srgb, var(--gold) 62%, transparent);
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--wine) 88%, #000);
+  background: color-mix(in srgb, var(--gold) 36%, var(--surface));
+  font-family: var(--font-sans);
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 .wishlist-card-side {
