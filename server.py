@@ -403,6 +403,7 @@ def init_db() -> None:
                 target_price REAL,
                 currency TEXT NOT NULL DEFAULT 'CHF',
                 merchant TEXT,
+                purpose TEXT NOT NULL DEFAULT 'Drink',
                 priority TEXT NOT NULL DEFAULT 'Medium',
                 status TEXT NOT NULL DEFAULT 'Monitor',
                 notes TEXT NOT NULL DEFAULT '',
@@ -411,6 +412,7 @@ def init_db() -> None:
             )
             """
         )
+        ensure_column(conn, "wishlist", "purpose", "TEXT NOT NULL DEFAULT 'Drink'")
         seed_catalog(conn)
         count = conn.execute("SELECT COUNT(*) FROM wines").fetchone()[0]
         if count == 0:
@@ -556,7 +558,7 @@ def list_wishlist() -> list[dict]:
         rows = conn.execute(
             """
             SELECT id, name, producer, vintage, format, type, region, appellation,
-                   target_price, currency, merchant, priority, status, notes
+                   target_price, currency, merchant, purpose, priority, status, notes
             FROM wishlist
             ORDER BY
                 CASE priority WHEN 'High' THEN 1 WHEN 'Medium' THEN 2 ELSE 3 END,
@@ -565,6 +567,19 @@ def list_wishlist() -> list[dict]:
             """
         ).fetchall()
     return [dict(row) for row in rows]
+
+
+def get_wishlist_item(conn: sqlite3.Connection, item_id: str) -> dict | None:
+    row = conn.execute(
+        """
+        SELECT id, name, producer, vintage, format, type, region, appellation,
+               target_price, currency, merchant, purpose, priority, status, notes
+        FROM wishlist
+        WHERE id = ?
+        """,
+        (item_id,),
+    ).fetchone()
+    return dict(row) if row else None
 
 
 def clean_wishlist_item(payload: dict, item_id: str | None = None) -> dict:
@@ -576,6 +591,9 @@ def clean_wishlist_item(payload: dict, item_id: str | None = None) -> dict:
     priority = str(payload.get("priority", "Medium")).strip()
     if priority not in {"High", "Medium", "Low"}:
         raise ValueError("Unsupported priority")
+    purpose = str(payload.get("purpose", "Drink")).strip()
+    if purpose not in {"Drink", "Invest", "Gift", "Cellar", "Compare"}:
+        raise ValueError("Unsupported wishlist purpose")
     status = str(payload.get("status", "Monitor")).strip()
     if status not in {"Evaluate", "Monitor", "Buy", "Skipped"}:
         raise ValueError("Unsupported wishlist status")
@@ -591,6 +609,7 @@ def clean_wishlist_item(payload: dict, item_id: str | None = None) -> dict:
         "target_price": clean_optional_float(payload.get("target_price")),
         "currency": currency,
         "merchant": str(payload.get("merchant", "")).strip(),
+        "purpose": purpose,
         "priority": priority,
         "status": status,
         "notes": str(payload.get("notes", "")).strip(),
@@ -604,11 +623,11 @@ def upsert_wishlist_item(payload: dict, item_id: str | None = None) -> dict:
             """
             INSERT INTO wishlist (
                 id, name, producer, vintage, format, type, region, appellation,
-                target_price, currency, merchant, priority, status, notes
+                target_price, currency, merchant, purpose, priority, status, notes
             )
             VALUES (
                 :id, :name, :producer, :vintage, :format, :type, :region, :appellation,
-                :target_price, :currency, :merchant, :priority, :status, :notes
+                :target_price, :currency, :merchant, :purpose, :priority, :status, :notes
             )
             ON CONFLICT(id) DO UPDATE SET
                 name = excluded.name,
@@ -621,6 +640,7 @@ def upsert_wishlist_item(payload: dict, item_id: str | None = None) -> dict:
                 target_price = excluded.target_price,
                 currency = excluded.currency,
                 merchant = excluded.merchant,
+                purpose = excluded.purpose,
                 priority = excluded.priority,
                 status = excluded.status,
                 notes = excluded.notes,
@@ -639,18 +659,9 @@ def delete_wishlist_item(item_id: str) -> bool:
 
 def convert_wishlist_item(item_id: str, payload: dict) -> dict:
     with connect() as conn:
-        row = conn.execute(
-            """
-            SELECT id, name, producer, vintage, format, type, region, appellation,
-                   target_price, currency, merchant, priority, status, notes
-            FROM wishlist
-            WHERE id = ?
-            """,
-            (item_id,),
-        ).fetchone()
-        if not row:
+        item = get_wishlist_item(conn, item_id)
+        if not item:
             raise LookupError("Wishlist item not found")
-        item = dict(row)
         wine_payload = {
             "name": item["name"],
             "producer": item["producer"] or "TBD",
@@ -676,6 +687,135 @@ def convert_wishlist_item(item_id: str, payload: dict) -> dict:
         conn.execute("DELETE FROM wishlist WHERE id = ?", (item_id,))
         saved = get_wine(conn, wine["id"])
     return saved
+
+
+def clean_wishlist_strategy_payload(payload: dict) -> dict:
+    recommendation = str(payload.get("recommendation", "")).strip().lower()
+    if recommendation not in {"buy", "monitor", "avoid"}:
+        recommendation = "monitor"
+    summary = str(payload.get("summary", "")).strip()
+    market_assumption = str(payload.get("market_assumption", "")).strip()
+
+    def clean_text_list(value: object, limit: int) -> list[str]:
+        if not isinstance(value, list):
+            return []
+        return [str(item).strip() for item in value[:limit] if str(item).strip()]
+
+    alternative_payload = payload.get("alternative", {})
+    alternative = None
+    if isinstance(alternative_payload, dict):
+        name = str(alternative_payload.get("name", "")).strip()
+        if name:
+            alternative = {
+                "name": name,
+                "producer": str(alternative_payload.get("producer", "")).strip(),
+                "reason": str(alternative_payload.get("reason", "")).strip(),
+                "price_hint": str(alternative_payload.get("price_hint", "")).strip(),
+            }
+
+    return {
+        "recommendation": recommendation,
+        "summary": summary,
+        "market_assumption": market_assumption,
+        "rationale": clean_text_list(payload.get("rationale", []), 4),
+        "risks": clean_text_list(payload.get("risks", []), 4),
+        "actions": clean_text_list(payload.get("actions", []), 4),
+        "alternative": alternative,
+    }
+
+
+def suggest_wishlist_strategy(item_id: str) -> dict:
+    with connect() as conn:
+        item = get_wishlist_item(conn, item_id)
+        if not item:
+            raise LookupError("Wishlist item not found")
+
+    if not OPENAI_API_KEY:
+        raise ValueError("OPENAI_API_KEY is not configured")
+
+    context = {
+        "wishlist_item": item,
+        "purpose_meaning": {
+            "Drink": "vino da bere",
+            "Invest": "vino da investimento",
+            "Gift": "vino da regalare",
+            "Cellar": "vino da mettere in cantina",
+            "Compare": "vino da confrontare con alternative simili",
+        },
+        "existing_cellar_near_matches": [
+            {
+                "name": wine["name"],
+                "producer": wine["producer"],
+                "vintage": wine["vintage"],
+                "region": wine.get("region", ""),
+                "appellation": wine.get("appellation", ""),
+                "current_value": wine.get("current_value"),
+                "price": wine.get("price"),
+                "currency": wine.get("currency"),
+                "scores": wine.get("scores", []),
+            }
+            for wine in list_wines()[:80]
+            if (
+                item.get("producer")
+                and str(item.get("producer", "")).lower() in str(wine.get("producer", "")).lower()
+            )
+            or (
+                item.get("region")
+                and str(item.get("region", "")).lower() == str(wine.get("region", "")).lower()
+            )
+        ][:12],
+    }
+    request_payload = {
+        "model": OPENAI_VALUE_MODEL,
+        "instructions": (
+            "Sei un consulente privato per collezionismo vino. Devi suggerire una strategia "
+            "pratica per un vino in wishlist in base allo scopo dell'osservazione. Rispondi "
+            "solo con JSON valido, senza Markdown e senza testo prima o dopo. Non presentare "
+            "la risposta come consulenza finanziaria certa o quotazione live. Se non hai dati "
+            "di mercato affidabili o aggiornati, dichiaralo chiaramente in market_assumption e "
+            "usa una raccomandazione prudente. Per purpose Invest valuta liquidita, reputazione "
+            "del produttore, annata, prezzo target, track record e rischio di immobilizzo; se "
+            "il profilo non e convincente, recommendation deve essere avoid o monitor e, se "
+            "possibile, proponi una alternativa paritetica per fascia prezzo/stile. Per purpose "
+            "Drink privilegia piacere di bevuta, finestra e prezzo. Usa italiano corretto."
+        ),
+        "input": (
+            "Contesto wishlist e cantina:\n"
+            f"{json.dumps(context, ensure_ascii=False)}\n\n"
+            "Restituisci solo questo oggetto JSON: "
+            "{\"recommendation\":\"buy|monitor|avoid\",\"summary\":\"decisione breve\","
+            "\"market_assumption\":\"limiti dei dati usati\","
+            "\"rationale\":[\"motivo\"],\"risks\":[\"rischio\"],\"actions\":[\"prossimo passo\"],"
+            "\"alternative\":{\"name\":\"vino alternativo\",\"producer\":\"produttore\","
+            "\"price_hint\":\"fascia prezzo simile\",\"reason\":\"perche e paritetico o migliore\"}}. "
+            "Se non hai una alternativa credibile, usa alternative null."
+        ),
+        "max_output_tokens": 900,
+    }
+    request = Request(
+        OPENAI_RESPONSES_URL,
+        data=json.dumps(request_payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json",
+            "User-Agent": "WineCellar/1.0",
+        },
+        method="POST",
+    )
+
+    try:
+        with urlopen(request, timeout=40) as response:
+            response_payload = json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        error_body = exc.read().decode("utf-8", errors="replace")
+        raise ValueError(f"OpenAI request failed: {error_body or exc.reason}") from exc
+    except (URLError, TimeoutError, OSError) as exc:
+        raise ValueError(f"OpenAI request failed: {exc}") from exc
+
+    raw_text = extract_response_text(response_payload)
+    if not raw_text:
+        raise ValueError("OpenAI response did not include text")
+    return clean_wishlist_strategy_payload(parse_json_object(raw_text))
 
 
 def wine_from_row(row: sqlite3.Row) -> dict:
@@ -1848,11 +1988,11 @@ def replace_all_wishlist(items: list[dict]) -> list[dict]:
                 """
                 INSERT INTO wishlist (
                     id, name, producer, vintage, format, type, region, appellation,
-                    target_price, currency, merchant, priority, status, notes
+                    target_price, currency, merchant, purpose, priority, status, notes
                 )
                 VALUES (
                     :id, :name, :producer, :vintage, :format, :type, :region, :appellation,
-                    :target_price, :currency, :merchant, :priority, :status, :notes
+                    :target_price, :currency, :merchant, :purpose, :priority, :status, :notes
                 )
                 """,
                 item,
@@ -1973,6 +2113,13 @@ class CellarHandler(SimpleHTTPRequestHandler):
                 item_id = unquote(path.removeprefix("/api/wishlist/").removesuffix("/convert"))
                 try:
                     self.send_json(convert_wishlist_item(item_id, self.read_json()), HTTPStatus.CREATED)
+                except LookupError as exc:
+                    self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+                return
+            if path.startswith("/api/wishlist/") and path.endswith("/strategy"):
+                item_id = unquote(path.removeprefix("/api/wishlist/").removesuffix("/strategy"))
+                try:
+                    self.send_json(suggest_wishlist_strategy(item_id))
                 except LookupError as exc:
                     self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
                 return

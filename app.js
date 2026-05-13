@@ -26,6 +26,7 @@ const state = {
   authEnabled: false,
   settings: null,
   theme: requestedTheme || normalizeTheme(localStorage.getItem("wine-cellar-theme")) || "classic",
+  wishlistStrategies: {},
 };
 
 let installPromptEvent = null;
@@ -250,6 +251,23 @@ const translations = {
     wishlistBuy: "Buy",
     wishlistEvaluate: "Evaluate",
     wishlistMonitor: "Monitor",
+    wishlistPurpose: "Purpose",
+    wishlistPurposeCellar: "Cellar",
+    wishlistPurposeCompare: "Compare",
+    wishlistPurposeDrink: "Drink",
+    wishlistPurposeGift: "Gift",
+    wishlistPurposeInvest: "Investment",
+    wishlistStrategy: "AI Strategy",
+    wishlistStrategyActions: "Next steps",
+    wishlistStrategyAlternative: "Alternative",
+    wishlistStrategyAssumption: "Market assumption",
+    wishlistStrategyAvoid: "Avoid",
+    wishlistStrategyBuy: "Buy",
+    wishlistStrategyLoading: "Building strategy...",
+    wishlistStrategyMonitor: "Monitor",
+    wishlistStrategyRationale: "Why",
+    wishlistStrategyRisks: "Risks",
+    wishlistStrategyUnable: "Unable to generate strategy: {error}",
     wishlistSkipped: "Skipped",
     wineNameRequired: "Wine Name *",
     autofilled: "Wine details autofilled from your cellar history.",
@@ -474,6 +492,23 @@ const translations = {
     wishlistBuy: "Comprare",
     wishlistEvaluate: "Valutare",
     wishlistMonitor: "Monitorare",
+    wishlistPurpose: "Scopo",
+    wishlistPurposeCellar: "Cantina",
+    wishlistPurposeCompare: "Confronto",
+    wishlistPurposeDrink: "Da bere",
+    wishlistPurposeGift: "Regalo",
+    wishlistPurposeInvest: "Investimento",
+    wishlistStrategy: "Strategia AI",
+    wishlistStrategyActions: "Prossimi passi",
+    wishlistStrategyAlternative: "Alternativa",
+    wishlistStrategyAssumption: "Assunzione mercato",
+    wishlistStrategyAvoid: "Evita",
+    wishlistStrategyBuy: "Compra",
+    wishlistStrategyLoading: "Sto preparando la strategia...",
+    wishlistStrategyMonitor: "Monitora",
+    wishlistStrategyRationale: "Perche",
+    wishlistStrategyRisks: "Rischi",
+    wishlistStrategyUnable: "Impossibile generare la strategia: {error}",
     wishlistSkipped: "Scartato",
     wineNameRequired: "Nome vino *",
     autofilled: "Dati vino completati dalla tua cronologia.",
@@ -1503,6 +1538,66 @@ function priorityClass(priority) {
   return `priority-${String(priority || "Medium").toLowerCase()}`;
 }
 
+function wishlistPurposeLabel(purpose) {
+  return t(
+    {
+      Drink: "wishlistPurposeDrink",
+      Invest: "wishlistPurposeInvest",
+      Gift: "wishlistPurposeGift",
+      Cellar: "wishlistPurposeCellar",
+      Compare: "wishlistPurposeCompare",
+    }[purpose] || "wishlistPurposeDrink",
+  );
+}
+
+function wishlistStrategyLabel(recommendation) {
+  return t(
+    {
+      buy: "wishlistStrategyBuy",
+      monitor: "wishlistStrategyMonitor",
+      avoid: "wishlistStrategyAvoid",
+    }[recommendation] || "wishlistStrategyMonitor",
+  );
+}
+
+function renderStrategyList(title, items) {
+  if (!Array.isArray(items) || !items.length) return "";
+  return `
+    <section>
+      <h3>${escapeHtml(title)}</h3>
+      <ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    </section>
+  `;
+}
+
+function renderWishlistStrategy(itemId) {
+  const strategy = state.wishlistStrategies[itemId];
+  if (!strategy) return "";
+  if (strategy.loading) return `<div class="wishlist-strategy"><p>${escapeHtml(t("wishlistStrategyLoading"))}</p></div>`;
+  return `
+    <div class="wishlist-strategy" data-recommendation="${escapeAttribute(strategy.recommendation || "monitor")}">
+      <div class="wishlist-strategy-header">
+        <span>${escapeHtml(wishlistStrategyLabel(strategy.recommendation))}</span>
+        ${strategy.summary ? `<strong>${escapeHtml(strategy.summary)}</strong>` : ""}
+      </div>
+      ${strategy.market_assumption ? `<p><b>${escapeHtml(t("wishlistStrategyAssumption"))}:</b> ${escapeHtml(strategy.market_assumption)}</p>` : ""}
+      ${renderStrategyList(t("wishlistStrategyRationale"), strategy.rationale)}
+      ${renderStrategyList(t("wishlistStrategyRisks"), strategy.risks)}
+      ${renderStrategyList(t("wishlistStrategyActions"), strategy.actions)}
+      ${
+        strategy.alternative
+          ? `<section>
+              <h3>${escapeHtml(t("wishlistStrategyAlternative"))}</h3>
+              <p><strong>${escapeHtml([strategy.alternative.name, strategy.alternative.producer].filter(Boolean).join(" - "))}</strong></p>
+              ${strategy.alternative.price_hint ? `<p>${escapeHtml(strategy.alternative.price_hint)}</p>` : ""}
+              ${strategy.alternative.reason ? `<p>${escapeHtml(strategy.alternative.reason)}</p>` : ""}
+            </section>`
+          : ""
+      }
+    </div>
+  `;
+}
+
 function renderWishlist() {
   if (!wishlistList) return;
   wishlistList.innerHTML = state.wishlist.length
@@ -1514,7 +1609,7 @@ function renderWishlist() {
                 <div>
                   <h2>${escapeHtml(item.name)} ${item.vintage ? `<span class="small-vintage">${escapeHtml(item.vintage)}</span>` : ""}</h2>
                   <p>${escapeHtml([item.producer, item.region, item.appellation].filter(Boolean).join(" - ") || t("notSpecified"))}</p>
-                  <p class="wishlist-closed-meta">${escapeHtml(wishlistStatusLabel(item.status))} - ${item.target_price ? formatMoney(item.target_price, item.currency) : t("notSpecified")}</p>
+                  <p class="wishlist-closed-meta">${escapeHtml(wishlistPurposeLabel(item.purpose))} - ${escapeHtml(wishlistStatusLabel(item.status))} - ${item.target_price ? formatMoney(item.target_price, item.currency) : t("notSpecified")}</p>
                 </div>
                 <span class="wishlist-card-side">
                   <span class="wishlist-chip ${priorityClass(item.priority)}">${escapeHtml(priorityLabel(item.priority))}</span>
@@ -1524,6 +1619,7 @@ function renderWishlist() {
               <div class="wishlist-card-detail" hidden>
                 <dl>
                   <div><dt>${escapeHtml(t("status"))}</dt><dd>${escapeHtml(wishlistStatusLabel(item.status))}</dd></div>
+                  <div><dt>${escapeHtml(t("wishlistPurpose"))}</dt><dd>${escapeHtml(wishlistPurposeLabel(item.purpose))}</dd></div>
                   <div><dt>${escapeHtml(t("targetPrice"))}</dt><dd>${item.target_price ? formatMoney(item.target_price, item.currency) : t("notSpecified")}</dd></div>
                   <div><dt>${escapeHtml(t("merchant"))}</dt><dd>${escapeHtml(item.merchant || t("notSpecified"))}</dd></div>
                   <div><dt>${escapeHtml(t("format"))}</dt><dd>${escapeHtml(formatLabel(item.format))}</dd></div>
@@ -1532,8 +1628,10 @@ function renderWishlist() {
                 </dl>
                 <div class="wishlist-card-actions">
                   <button class="btn btn-soft" data-wishlist-edit="${item.id}" type="button">${escapeHtml(t("edit"))}</button>
+                  <button class="btn btn-soft admin-only" data-wishlist-strategy="${item.id}" type="button">${escapeHtml(t("wishlistStrategy"))}</button>
                   <button class="btn btn-wine admin-only" data-wishlist-convert="${item.id}" type="button">${escapeHtml(t("newOrder"))}</button>
                 </div>
+                ${renderWishlistStrategy(item.id)}
               </div>
             </article>
           `,
@@ -1543,12 +1641,22 @@ function renderWishlist() {
   applyPermissions();
 }
 
+function expandWishlistCard(id) {
+  const card = [...wishlistList.querySelectorAll(".wishlist-card")].find((item) => item.dataset.id === id);
+  if (!card) return;
+  const detail = card.querySelector(".wishlist-card-detail");
+  const toggle = card.querySelector("[data-wishlist-toggle]");
+  if (detail) detail.hidden = false;
+  if (toggle) toggle.setAttribute("aria-expanded", "true");
+}
+
 function openWishlistForm(item = null) {
   wishlistForm.reset();
   state.selectedWishlistId = item?.id || null;
   deleteWishlistButton.hidden = !item || !isAdmin();
   const defaults = {
     currency: "CHF",
+    purpose: "Drink",
     priority: "Medium",
     status: "Monitor",
     format: "Bottle (750ml)",
@@ -1576,6 +1684,7 @@ function wishlistFormToItem() {
     target_price: data.get("target_price") === "" ? null : Number(data.get("target_price")),
     currency: data.get("currency"),
     merchant: data.get("merchant").trim(),
+    purpose: data.get("purpose"),
     priority: data.get("priority"),
     status: data.get("status"),
     notes: data.get("notes").trim(),
@@ -1831,6 +1940,21 @@ function addScoreRow(score = { critic: "", score: "", note: "" }) {
   `;
   row.querySelector(".score-remove").addEventListener("click", () => row.remove());
   scoresFormList.appendChild(row);
+}
+
+async function suggestWishlistStrategy(id) {
+  state.wishlistStrategies[id] = { loading: true };
+  renderWishlist();
+  expandWishlistCard(id);
+  try {
+    state.wishlistStrategies[id] = await api(`/api/wishlist/${encodeURIComponent(id)}/strategy`, { method: "POST", body: JSON.stringify({}) });
+  } catch (error) {
+    delete state.wishlistStrategies[id];
+    renderWishlist();
+    throw error;
+  }
+  renderWishlist();
+  expandWishlistCard(id);
 }
 
 function isUsableScoreSuggestion(score) {
@@ -2311,6 +2435,11 @@ wishlistList.addEventListener("click", (event) => {
   const convertButton = event.target.closest("[data-wishlist-convert]");
   if (convertButton) {
     convertWishlistItem(convertButton.dataset.wishlistConvert).catch((error) => alert(error.message));
+  }
+  const strategyButton = event.target.closest("[data-wishlist-strategy]");
+  if (strategyButton) {
+    strategyButton.disabled = true;
+    suggestWishlistStrategy(strategyButton.dataset.wishlistStrategy).catch((error) => alert(t("wishlistStrategyUnable", { error: error.message })));
   }
 });
 

@@ -1687,6 +1687,7 @@ h2 {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .wishlist-card h2 {
@@ -1801,6 +1802,61 @@ h2 {
   margin: 0;
   text-align: right;
   overflow-wrap: anywhere;
+}
+
+.wishlist-strategy {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--wine) 16%, var(--line));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--wine) 6%, var(--surface));
+}
+
+.wishlist-strategy-header {
+  display: grid;
+  gap: 6px;
+}
+
+.wishlist-strategy-header span {
+  width: fit-content;
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--wine);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.wishlist-strategy[data-recommendation="buy"] .wishlist-strategy-header span {
+  background: var(--sage);
+}
+
+.wishlist-strategy[data-recommendation="avoid"] .wishlist-strategy-header span {
+  background: color-mix(in srgb, var(--wine) 82%, #6f2428);
+}
+
+.wishlist-strategy p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.wishlist-strategy h3 {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.wishlist-strategy ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
 }
 
 .section-title-row {

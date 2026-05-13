@@ -21,7 +21,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20260513-timeline-semantic" />
+    <link rel="stylesheet" href="styles.css?v=20260513-wishlist-strategy" />
   </head>
   <body>
     <main class="app-shell">
@@ -235,6 +235,16 @@
           <label class="form-field">
             <span data-i18n="merchant">Merchant</span>
             <input class="form-control" name="merchant" />
+          </label>
+          <label class="form-field">
+            <span data-i18n="wishlistPurpose">Scopo</span>
+            <select class="form-select" name="purpose">
+              <option value="Drink" data-i18n="wishlistPurposeDrink">Da bere</option>
+              <option value="Invest" data-i18n="wishlistPurposeInvest">Investimento</option>
+              <option value="Gift" data-i18n="wishlistPurposeGift">Regalo</option>
+              <option value="Cellar" data-i18n="wishlistPurposeCellar">Cantina</option>
+              <option value="Compare" data-i18n="wishlistPurposeCompare">Confronto</option>
+            </select>
           </label>
           <label class="form-field">
             <span data-i18n="priority">Priority</span>
@@ -631,6 +641,6 @@
       </nav>
     </main>
 
-    <script src="app.js?v=20260513-timeline-semantic"></script>
+    <script src="app.js?v=20260513-wishlist-strategy"></script>
   </body>
 </html>
