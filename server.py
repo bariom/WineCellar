@@ -408,6 +408,7 @@ def init_db() -> None:
                 priority TEXT NOT NULL DEFAULT 'Medium',
                 status TEXT NOT NULL DEFAULT 'Monitor',
                 status_source TEXT NOT NULL DEFAULT 'manual',
+                ai_strategy TEXT NOT NULL DEFAULT '',
                 notes TEXT NOT NULL DEFAULT '',
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -416,6 +417,7 @@ def init_db() -> None:
         )
         ensure_column(conn, "wishlist", "purpose", "TEXT NOT NULL DEFAULT 'Drink'")
         ensure_column(conn, "wishlist", "status_source", "TEXT NOT NULL DEFAULT 'manual'")
+        ensure_column(conn, "wishlist", "ai_strategy", "TEXT NOT NULL DEFAULT ''")
         seed_catalog(conn)
         count = conn.execute("SELECT COUNT(*) FROM wines").fetchone()[0]
         if count == 0:
@@ -561,7 +563,7 @@ def list_wishlist() -> list[dict]:
         rows = conn.execute(
             """
             SELECT id, name, producer, vintage, format, type, region, appellation,
-                   target_price, currency, merchant, purpose, priority, status, status_source, notes
+                   target_price, currency, merchant, purpose, priority, status, status_source, ai_strategy, notes
             FROM wishlist
             ORDER BY
                 CASE priority WHEN 'High' THEN 1 WHEN 'Medium' THEN 2 ELSE 3 END,
@@ -576,7 +578,7 @@ def get_wishlist_item(conn: sqlite3.Connection, item_id: str) -> dict | None:
     row = conn.execute(
         """
         SELECT id, name, producer, vintage, format, type, region, appellation,
-               target_price, currency, merchant, purpose, priority, status, status_source, notes
+               target_price, currency, merchant, purpose, priority, status, status_source, ai_strategy, notes
         FROM wishlist
         WHERE id = ?
         """,
@@ -619,6 +621,7 @@ def clean_wishlist_item(payload: dict, item_id: str | None = None) -> dict:
         "priority": priority,
         "status": status,
         "status_source": status_source,
+        "ai_strategy": str(payload.get("ai_strategy", "")).strip() if status_source == "ai" else "",
         "notes": str(payload.get("notes", "")).strip(),
     }
 
@@ -630,11 +633,11 @@ def upsert_wishlist_item(payload: dict, item_id: str | None = None) -> dict:
             """
             INSERT INTO wishlist (
                 id, name, producer, vintage, format, type, region, appellation,
-                target_price, currency, merchant, purpose, priority, status, status_source, notes
+                target_price, currency, merchant, purpose, priority, status, status_source, ai_strategy, notes
             )
             VALUES (
                 :id, :name, :producer, :vintage, :format, :type, :region, :appellation,
-                :target_price, :currency, :merchant, :purpose, :priority, :status, :status_source, :notes
+                :target_price, :currency, :merchant, :purpose, :priority, :status, :status_source, :ai_strategy, :notes
             )
             ON CONFLICT(id) DO UPDATE SET
                 name = excluded.name,
@@ -651,6 +654,7 @@ def upsert_wishlist_item(payload: dict, item_id: str | None = None) -> dict:
                 priority = excluded.priority,
                 status = excluded.status,
                 status_source = excluded.status_source,
+                ai_strategy = excluded.ai_strategy,
                 notes = excluded.notes,
                 updated_at = CURRENT_TIMESTAMP
             """,
@@ -828,14 +832,15 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
         raise ValueError("OpenAI response did not include text")
     strategy = clean_wishlist_strategy_payload(parse_json_object(raw_text))
     status = wishlist_status_from_strategy(strategy["recommendation"])
+    strategy_json = json.dumps(strategy, ensure_ascii=False, separators=(",", ":"))
     with connect() as conn:
         conn.execute(
             """
             UPDATE wishlist
-            SET status = ?, status_source = 'ai', updated_at = CURRENT_TIMESTAMP
+            SET status = ?, status_source = 'ai', ai_strategy = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
             """,
-            (status, item_id),
+            (status, strategy_json, item_id),
         )
         updated_item = get_wishlist_item(conn, item_id)
     return {"strategy": strategy, "item": updated_item}
@@ -2011,11 +2016,11 @@ def replace_all_wishlist(items: list[dict]) -> list[dict]:
                 """
                 INSERT INTO wishlist (
                     id, name, producer, vintage, format, type, region, appellation,
-                    target_price, currency, merchant, purpose, priority, status, status_source, notes
+                    target_price, currency, merchant, purpose, priority, status, status_source, ai_strategy, notes
                 )
                 VALUES (
                     :id, :name, :producer, :vintage, :format, :type, :region, :appellation,
-                    :target_price, :currency, :merchant, :purpose, :priority, :status, :status_source, :notes
+                    :target_price, :currency, :merchant, :purpose, :priority, :status, :status_source, :ai_strategy, :notes
                 )
                 """,
                 item,

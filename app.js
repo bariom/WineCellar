@@ -1566,8 +1566,18 @@ function renderWishlistStatus(item) {
   return `<span class="wishlist-status-inline">${escapeHtml(wishlistStatusLabel(item.status))}${badge}</span>`;
 }
 
-function renderWishlistStrategy(itemId) {
-  const strategy = state.wishlistStrategies[itemId];
+function persistedWishlistStrategy(item) {
+  if (!item?.ai_strategy) return null;
+  if (typeof item.ai_strategy === "object") return item.ai_strategy;
+  try {
+    return JSON.parse(item.ai_strategy);
+  } catch {
+    return null;
+  }
+}
+
+function renderWishlistStrategy(item) {
+  const strategy = state.wishlistStrategies[item.id] || persistedWishlistStrategy(item);
   if (!strategy) return "";
   if (strategy.loading) return `<div class="wishlist-strategy"><p>${escapeHtml(t("wishlistStrategyLoading"))}</p></div>`;
   const signal = strategy.signal || wishlistStrategyLabel(strategy.recommendation);
@@ -1617,7 +1627,7 @@ function renderWishlist() {
                   <button class="btn btn-soft admin-only" data-wishlist-strategy="${item.id}" type="button">${escapeHtml(t("wishlistStrategy"))}</button>
                   <button class="btn btn-wine admin-only" data-wishlist-convert="${item.id}" type="button">${escapeHtml(t("newOrder"))}</button>
                 </div>
-                ${renderWishlistStrategy(item.id)}
+                ${renderWishlistStrategy(item)}
               </div>
             </article>
           `,
