@@ -1,9 +1,9 @@
-const CACHE_NAME = "winecellar-pwa-20260513-red-card-accent";
+const CACHE_NAME = "winecellar-pwa-20260513-card-lift-hover";
 const APP_SHELL = [
   "/",
   "/index.html",
-  "/styles.css?v=20260513-red-card-accent",
-  "/app.js?v=20260513-red-card-accent",
+  "/styles.css?v=20260513-card-lift-hover",
+  "/app.js?v=20260513-card-lift-hover",
   "/favicon.svg",
   "/pwa-icon-192.png",
   "/pwa-icon-512.png",

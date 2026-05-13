@@ -576,7 +576,9 @@ h2 {
     var(--paper);
   box-shadow: var(--cellar-shadow);
   text-align: left;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  transform: translateY(0);
+  will-change: transform, box-shadow;
+  transition: border-color 0.22s ease, box-shadow 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .drink-now-card {
@@ -584,13 +586,6 @@ h2 {
   background:
     linear-gradient(145deg, color-mix(in srgb, var(--paper) 94%, #fff 6%) 0%, var(--panel-strong) 100%),
     var(--paper);
-}
-
-.wine-card:hover,
-.drink-now-card:hover {
-  border-color: color-mix(in srgb, var(--wine) 28%, var(--line));
-  box-shadow: var(--cellar-shadow-hover);
-  transform: translateY(-2px);
 }
 
 .wine-card:focus-visible,
@@ -870,6 +865,8 @@ body[data-theme="dusk"] .drink-now-card[data-type="Red"]:hover {
   border-radius: 12px;
   background: linear-gradient(180deg, var(--paper) 0%, var(--panel) 100%);
   box-shadow: var(--soft-shadow);
+  transform: translateY(0);
+  transition: border-color 0.22s ease, box-shadow 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .timeline-card::before {
@@ -1342,6 +1339,8 @@ body[data-theme="dusk"] .drink-now-card[data-type="Red"]:hover {
   padding: 18px;
   background: var(--wine);
   color: #fff;
+  transform: translateY(0);
+  transition: box-shadow 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .shared-value {
@@ -1371,6 +1370,8 @@ body[data-theme="dusk"] .drink-now-card[data-type="Red"]:hover {
   padding: 14px;
   background: linear-gradient(180deg, var(--paper) 0%, var(--panel) 100%);
   box-shadow: var(--soft-shadow);
+  transform: translateY(0);
+  transition: border-color 0.22s ease, box-shadow 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .metric-card strong {
@@ -1686,6 +1687,25 @@ body[data-theme="dusk"] .drink-now-card[data-type="Red"]:hover {
   background: linear-gradient(180deg, var(--paper) 0%, var(--panel) 100%);
   box-shadow: var(--soft-shadow);
   text-align: left;
+  transform: translateY(0);
+  transition: border-color 0.22s ease, box-shadow 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .wine-card:hover,
+  .drink-now-card:hover,
+  .timeline-card:hover,
+  .metric-card:hover,
+  .wishlist-card:hover {
+    border-color: color-mix(in srgb, var(--wine) 28%, var(--line));
+    box-shadow: var(--cellar-shadow-hover);
+    transform: translateY(-3px);
+  }
+
+  .value-card:hover {
+    box-shadow: 0 18px 36px rgba(48, 35, 24, 0.18);
+    transform: translateY(-3px);
+  }
 }
 
 .wishlist-card-header {
