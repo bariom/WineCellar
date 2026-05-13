@@ -228,6 +228,22 @@ body[data-theme="dusk"] .search-input::placeholder {
   color: #a99f97;
 }
 
+body[data-theme="midnight"] .topbar .btn-soft,
+body[data-theme="dusk"] .topbar .btn-soft {
+  border-color: color-mix(in srgb, var(--line) 72%, #f4efe9);
+  color: color-mix(in srgb, var(--ink) 86%, #f4efe9);
+  background: color-mix(in srgb, var(--surface) 54%, transparent);
+}
+
+body[data-theme="midnight"] .topbar .btn-soft:hover,
+body[data-theme="midnight"] .topbar .btn-soft:focus-visible,
+body[data-theme="dusk"] .topbar .btn-soft:hover,
+body[data-theme="dusk"] .topbar .btn-soft:focus-visible {
+  border-color: var(--wine);
+  color: #fff;
+  background: var(--wine);
+}
+
 .screen {
   display: none;
   height: 100%;
@@ -771,15 +787,15 @@ h2 {
 }
 
 .drink-young {
-  background: color-mix(in srgb, var(--sage) 58%, #d8d0bd);
+  background: color-mix(in srgb, var(--gold) 88%, #f4d27a);
 }
 
 .drink-peak {
-  background: color-mix(in srgb, var(--gold) 68%, #d8d0bd);
+  background: color-mix(in srgb, var(--sage) 82%, #d8d0bd);
 }
 
 .drink-decline {
-  background: color-mix(in srgb, var(--wine) 54%, #8d706d);
+  background: color-mix(in srgb, var(--wine) 76%, #9c5f61);
 }
 
 .drink-arrival-marker {
@@ -1873,7 +1889,7 @@ h2 {
 
 .score-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) max-content;
   align-items: center;
   gap: 16px;
   padding: 12px;
@@ -1895,19 +1911,20 @@ h2 {
 }
 
 .score-value-pill {
-  display: grid;
-  place-items: center;
-  width: 64px;
-  min-height: 48px;
-  padding: 7px 8px;
-  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 999px;
   color: #fff;
   background: var(--wine);
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   font-weight: 900;
-  line-height: 1.05;
+  line-height: 1;
   text-align: center;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
   box-shadow: 0 7px 18px rgba(122, 30, 37, 0.14);
 }
 
