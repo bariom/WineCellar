@@ -1,9 +1,9 @@
-const CACHE_NAME = "winecellar-pwa-20260513-wishlist-strategy-wrap";
+const CACHE_NAME = "winecellar-pwa-20260513-red-card-accent";
 const APP_SHELL = [
   "/",
   "/index.html",
-  "/styles.css?v=20260513-wishlist-strategy-wrap",
-  "/app.js?v=20260513-wishlist-strategy-wrap",
+  "/styles.css?v=20260513-red-card-accent",
+  "/app.js?v=20260513-red-card-accent",
   "/favicon.svg",
   "/pwa-icon-192.png",
   "/pwa-icon-512.png",

@@ -599,6 +599,30 @@ h2 {
   outline-offset: 2px;
 }
 
+.wine-card[data-type="Red"],
+.drink-now-card[data-type="Red"] {
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--wine) 84%, transparent), var(--cellar-shadow);
+}
+
+.wine-card[data-type="Red"]:hover,
+.drink-now-card[data-type="Red"]:hover {
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--wine) 84%, transparent), var(--cellar-shadow-hover);
+}
+
+body[data-theme="midnight"] .wine-card[data-type="Red"],
+body[data-theme="midnight"] .drink-now-card[data-type="Red"],
+body[data-theme="dusk"] .wine-card[data-type="Red"],
+body[data-theme="dusk"] .drink-now-card[data-type="Red"] {
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--wine) 72%, #e06b72), var(--cellar-shadow);
+}
+
+body[data-theme="midnight"] .wine-card[data-type="Red"]:hover,
+body[data-theme="midnight"] .drink-now-card[data-type="Red"]:hover,
+body[data-theme="dusk"] .wine-card[data-type="Red"]:hover,
+body[data-theme="dusk"] .drink-now-card[data-type="Red"]:hover {
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--wine) 72%, #e06b72), var(--cellar-shadow-hover);
+}
+
 .wine-card[data-type="White"],
 .wine-card[data-type="Sparkling"],
 .drink-now-card[data-type="White"],
