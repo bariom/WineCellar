@@ -1008,6 +1008,8 @@ function renderDrinkWindow(wine) {
   const peakPct = Math.max(((peakTo - peakFrom) / totalSpan) * 100, 8);
   const declinePct = Math.max(100 - youngPct - peakPct, 8);
   const markerPct = Math.min(Math.max(((currentYear - startYear) / totalSpan) * 100, 0), 100);
+  const arrivalYear = Number.parseInt(String(wine.expected_delivery || "").slice(0, 4), 10);
+  const arrivalPct = Number.isFinite(arrivalYear) ? Math.min(Math.max(((arrivalYear - startYear) / totalSpan) * 100, 0), 100) : null;
 
   document.querySelector("#drink-window-start-year").textContent = `${startYear}`;
   document.querySelector("#drink-window-peak-years").textContent = `${peakFrom}-${peakTo}`;
@@ -1018,6 +1020,14 @@ function renderDrinkWindow(wine) {
   const marker = document.querySelector("#drink-current-marker");
   marker.style.left = `${markerPct}%`;
   marker.title = `${t("drinkWindowYear")}: ${currentYear}`;
+  const arrivalMarker = document.querySelector("#drink-arrival-marker");
+  if (arrivalMarker) {
+    arrivalMarker.hidden = arrivalPct === null;
+    if (arrivalPct !== null) {
+      arrivalMarker.style.left = `${arrivalPct}%`;
+      arrivalMarker.title = `${state.lang === "it" ? "Arrivo" : "Arrival"}: ${arrivalYear}`;
+    }
+  }
   notes.textContent = wine.drink_window_notes ? `${t("drinkWindowEstimate")}: ${wine.drink_window_notes}` : t("drinkWindowEstimate");
 }
 
@@ -1036,8 +1046,10 @@ function drinkWindowChartData(wine) {
   const declinePct = Math.max(100 - youngPct - peakPct, 8);
   const currentYear = new Date().getFullYear();
   const markerPct = Math.min(Math.max(((currentYear - startYear) / totalSpan) * 100, 0), 100);
+  const arrivalYear = Number.parseInt(String(wine.expected_delivery || "").slice(0, 4), 10);
+  const arrivalPct = Number.isFinite(arrivalYear) ? Math.min(Math.max(((arrivalYear - startYear) / totalSpan) * 100, 0), 100) : null;
 
-  return { startYear, peakFrom, peakTo, endYear, youngPct, peakPct, declinePct, markerPct, currentYear };
+  return { startYear, peakFrom, peakTo, endYear, youngPct, peakPct, declinePct, markerPct, currentYear, arrivalPct, arrivalYear };
 }
 
 function renderMiniDrinkWindow(wine) {
@@ -1055,6 +1067,7 @@ function renderMiniDrinkWindow(wine) {
         <span class="drink-segment drink-young" style="flex-basis: ${data.youngPct}%"></span>
         <span class="drink-segment drink-peak" style="flex-basis: ${data.peakPct}%"></span>
         <span class="drink-segment drink-decline" style="flex-basis: ${data.declinePct}%"></span>
+        ${data.arrivalPct === null ? "" : `<span class="drink-arrival-marker" style="left: ${data.arrivalPct}%" title="${escapeAttribute(`${state.lang === "it" ? "Arrivo" : "Arrival"}: ${data.arrivalYear}`)}"></span>`}
         <span class="drink-current-marker" style="left: ${data.markerPct}%"></span>
       </div>
     </div>

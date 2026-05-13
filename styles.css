@@ -2,17 +2,22 @@
   --wine: #7a1e25;
   --wine-dark: #551217;
   --ink: #1f1b18;
-  --muted: #746f68;
-  --line: #ded3c4;
-  --paper: #fffaf4;
-  --panel: #f7f1e8;
-  --panel-strong: #f0e6d8;
-  --surface: rgba(255, 250, 244, 0.78);
-  --surface-soft: rgba(255, 250, 244, 0.68);
-  --surface-strong: rgba(240, 230, 216, 0.72);
-  --sage: #426f56;
-  --gold: #c58a19;
-  --rose: #ad5968;
+  --muted: #625b52;
+  --muted-strong: #463f38;
+  --line: #e4d8c8;
+  --paper: #fffaf3;
+  --panel: #f8f1e6;
+  --panel-strong: #eee1cf;
+  --surface: rgba(255, 250, 243, 0.84);
+  --surface-soft: rgba(255, 250, 243, 0.72);
+  --surface-strong: rgba(238, 225, 207, 0.78);
+  --sage: #6f8c78;
+  --gold: #b99a55;
+  --rose: #a9757c;
+  --cellar-shadow: 0 18px 42px rgba(48, 35, 24, 0.12);
+  --cellar-shadow-hover: 0 22px 54px rgba(48, 35, 24, 0.17);
+  --font-serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --shadow: 0 24px 70px rgba(42, 31, 23, 0.15);
   --soft-shadow: 0 10px 28px rgba(42, 31, 23, 0.08);
 }
@@ -34,7 +39,7 @@ body {
   background:
     radial-gradient(circle at 50% -16%, rgba(122, 30, 37, 0.08), transparent 38%),
     #efede8;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
 }
 
 body[data-theme="graphite"] {
@@ -151,7 +156,7 @@ body[data-theme="champagne"] {
   position: relative;
   height: 100vh;
   min-height: 100vh;
-  max-width: 540px;
+  max-width: 680px;
   margin: 0 auto;
   overflow: hidden;
   background: var(--paper);
@@ -272,9 +277,9 @@ body[data-theme="dusk"] .search-input::placeholder {
 .form-header {
   display: flex;
   align-items: center;
-  min-height: 64px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--line);
+  min-height: 76px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
 }
 
 .topbar {
@@ -285,6 +290,7 @@ body[data-theme="dusk"] .search-input::placeholder {
 .topbar > .d-flex {
   min-width: 0;
   flex-wrap: wrap;
+  gap: 8px !important;
   justify-content: flex-end;
 }
 
@@ -296,15 +302,16 @@ h1,
 h2,
 .wine-title,
 .timeline-card strong {
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 500;
+  font-family: var(--font-serif);
+  font-weight: 600;
 }
 
 h1 {
   margin: 0;
   color: var(--ink);
-  font-size: 1.65rem;
-  line-height: 1.1;
+  font-size: 2.05rem;
+  line-height: 0.98;
+  letter-spacing: 0;
 }
 
 h2 {
@@ -323,8 +330,8 @@ h2 {
   --bs-btn-active-color: #fff;
   --bs-btn-active-bg: var(--wine-dark);
   border-radius: 999px;
-  min-height: 40px;
-  box-shadow: 0 8px 18px rgba(122, 30, 37, 0.16);
+  min-height: 42px;
+  box-shadow: 0 12px 22px rgba(122, 30, 37, 0.16);
   font-weight: 800;
 }
 
@@ -349,21 +356,23 @@ h2 {
 }
 
 .btn-soft {
-  min-height: 36px;
+  min-height: 38px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  color: var(--ink);
-  background: var(--surface);
-  font-size: 0.78rem;
-  font-weight: 800;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset;
+  color: var(--muted-strong);
+  background: transparent;
+  font-size: 0.76rem;
+  font-weight: 750;
+  box-shadow: none;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
 }
 
 .btn-soft:hover,
 .btn-soft:focus-visible {
-  border-color: rgba(122, 30, 37, 0.28);
-  color: var(--wine);
-  background: var(--paper);
+  border-color: color-mix(in srgb, var(--wine) 34%, var(--line));
+  color: #fff;
+  background: var(--wine);
+  transform: translateY(-1px);
 }
 
 .icon-button input {
@@ -378,21 +387,32 @@ h2 {
   top: 0;
   z-index: 2;
   display: grid;
-  gap: 10px;
-  margin: 0 -18px 12px;
-  padding: 10px 18px;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  gap: 12px;
+  margin: 0 -18px 18px;
+  padding: 14px 18px;
+  border-top: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 74%, transparent);
   background: color-mix(in srgb, var(--paper) 94%, transparent);
   backdrop-filter: blur(14px);
 }
 
 .search-input {
-  min-height: 42px;
+  min-height: 50px;
   border-color: var(--line);
   border-radius: 999px;
-  padding-inline: 16px;
-  background: var(--paper);
+  padding-inline: 46px 18px;
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23746f68' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  background-position: 18px 50%;
+  background-repeat: no-repeat;
+  box-shadow: 0 10px 26px rgba(48, 35, 24, 0.06);
+  font-size: 0.95rem;
+  font-weight: 450;
+}
+
+.search-input::placeholder {
+  color: color-mix(in srgb, var(--muted) 72%, transparent);
+  font-weight: 400;
 }
 
 .filter-toggle {
@@ -521,34 +541,40 @@ h2 {
 
 .content-list {
   display: grid;
-  gap: 12px;
+  gap: 18px;
 }
 
 .wine-card,
 .drink-now-card {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 10px 16px;
+  gap: 14px 22px;
   width: 100%;
-  padding: 16px 15px 15px 18px;
-  border: 1px solid var(--line);
-  border-left: 4px solid var(--wine);
-  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  border-left: 0;
+  border-radius: 18px;
   color: inherit;
-  background: linear-gradient(180deg, var(--paper) 0%, var(--panel) 100%);
-  box-shadow: var(--soft-shadow);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--paper) 96%, #fff 4%) 0%, var(--panel) 100%),
+    var(--paper);
+  box-shadow: var(--cellar-shadow);
   text-align: left;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
 
 .drink-now-card {
   cursor: pointer;
-  background: linear-gradient(180deg, var(--paper) 0%, var(--panel-strong) 100%);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--paper) 94%, #fff 6%) 0%, var(--panel-strong) 100%),
+    var(--paper);
 }
 
 .wine-card:hover,
 .drink-now-card:hover {
-  border-color: rgba(122, 30, 37, 0.24);
-  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--wine) 28%, var(--line));
+  box-shadow: var(--cellar-shadow-hover);
+  transform: translateY(-2px);
 }
 
 .wine-card:focus-visible,
@@ -561,26 +587,41 @@ h2 {
 .wine-card[data-type="Sparkling"],
 .drink-now-card[data-type="White"],
 .drink-now-card[data-type="Sparkling"] {
-  border-left-color: var(--gold);
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--gold) 78%, transparent), var(--cellar-shadow);
+}
+
+.wine-card[data-type="White"]:hover,
+.wine-card[data-type="Sparkling"]:hover,
+.drink-now-card[data-type="White"]:hover,
+.drink-now-card[data-type="Sparkling"]:hover {
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--gold) 78%, transparent), var(--cellar-shadow-hover);
 }
 
 .wine-card[data-type="Rose"],
 .wine-card[data-type="Dessert"],
 .drink-now-card[data-type="Rose"],
 .drink-now-card[data-type="Dessert"] {
-  border-left-color: var(--rose);
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--rose) 78%, transparent), var(--cellar-shadow);
+}
+
+.wine-card[data-type="Rose"]:hover,
+.wine-card[data-type="Dessert"]:hover,
+.drink-now-card[data-type="Rose"]:hover,
+.drink-now-card[data-type="Dessert"]:hover {
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--rose) 78%, transparent), var(--cellar-shadow-hover);
 }
 
 .wine-title {
   margin: 0;
   color: var(--ink);
-  font-size: 1.18rem;
-  line-height: 1.18;
+  font-size: 1.48rem;
+  line-height: 1.05;
+  letter-spacing: 0;
 }
 
 .wine-meta,
 .timeline-card p {
-  margin: 4px 0 0;
+  margin: 7px 0 0;
   color: var(--muted);
   line-height: 1.45;
 }
@@ -596,10 +637,11 @@ h2 {
 .wine-card-details {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 10px;
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 0.9rem;
+  gap: 6px 14px;
+  margin-top: 12px;
+  color: color-mix(in srgb, var(--muted) 88%, var(--ink));
+  font-size: 0.82rem;
+  font-weight: 600;
   line-height: 1.25;
 }
 
@@ -610,22 +652,22 @@ h2 {
 .score-summary {
   display: inline-flex;
   max-width: 100%;
-  margin: 8px 0 0;
-  padding: 4px 9px;
+  margin: 12px 0 0;
+  padding: 5px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(122, 30, 37, 0.12);
-  color: var(--wine);
-  background: rgba(122, 30, 37, 0.06);
+  border: 1px solid color-mix(in srgb, var(--wine) 14%, var(--line));
+  color: color-mix(in srgb, var(--wine) 84%, var(--ink));
+  background: color-mix(in srgb, var(--wine) 7%, transparent);
   font-size: 0.78rem;
-  font-weight: 850;
+  font-weight: 750;
   line-height: 1.25;
 }
 
 .mini-drink-window {
   display: grid;
-  gap: 5px;
+  gap: 7px;
   max-width: 360px;
-  margin-top: 10px;
+  margin-top: 16px;
 }
 
 .mini-drink-window-years {
@@ -633,29 +675,31 @@ h2 {
   justify-content: space-between;
   gap: 8px;
   color: var(--muted);
-  font-size: 0.68rem;
-  font-weight: 800;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .mini-drink-window-bar {
   position: relative;
   display: flex;
-  height: 9px;
-  overflow: hidden;
+  height: 6px;
+  overflow: visible;
   border-radius: 999px;
-  border: 1px solid rgba(39, 39, 42, 0.08);
-  background: var(--panel-strong);
+  border: 0;
+  background: color-mix(in srgb, var(--line) 42%, transparent);
 }
 
 .mini-drink-window-bar .drink-current-marker {
-  top: -2px;
-  bottom: -2px;
-  width: 2px;
+  top: -4px;
+  bottom: -4px;
+  width: 1px;
 }
 
 .vintage {
   color: var(--wine);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-serif);
+  font-size: 1.04rem;
   font-weight: 700;
   letter-spacing: 0;
 }
@@ -671,26 +715,29 @@ h2 {
 
 .status-pill {
   border-radius: 999px;
-  padding: 4px 9px;
-  color: #fff;
-  background: var(--sage);
-  font-size: 0.72rem;
+  padding: 5px 10px;
+  color: color-mix(in srgb, var(--sage) 42%, var(--ink));
+  background: color-mix(in srgb, var(--sage) 18%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--sage) 24%, transparent);
+  font-size: 0.7rem;
   font-weight: 800;
 }
 
 .status-pill.Ordered {
-  color: #5c4f43;
-  background: #d9cfbf;
+  color: color-mix(in srgb, var(--gold) 50%, var(--ink));
+  background: color-mix(in srgb, var(--gold) 18%, var(--surface));
+  border-color: color-mix(in srgb, var(--gold) 28%, transparent);
 }
 
 .status-pill.Shipped {
-  color: #755012;
-  background: #e5bd65;
+  color: color-mix(in srgb, var(--wine) 42%, var(--ink));
+  background: color-mix(in srgb, var(--wine) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--wine) 22%, transparent);
 }
 
 .price {
   color: var(--ink);
-  font-weight: 850;
+  font-weight: 750;
 }
 
 .price-stack {
@@ -713,6 +760,38 @@ h2 {
   font-size: 0.64rem;
   font-weight: 850;
   text-transform: uppercase;
+}
+
+.drink-segment:first-child {
+  border-radius: 999px 0 0 999px;
+}
+
+.drink-decline {
+  border-radius: 0 999px 999px 0;
+}
+
+.drink-young {
+  background: color-mix(in srgb, var(--sage) 58%, #d8d0bd);
+}
+
+.drink-peak {
+  background: color-mix(in srgb, var(--gold) 68%, #d8d0bd);
+}
+
+.drink-decline {
+  background: color-mix(in srgb, var(--wine) 54%, #8d706d);
+}
+
+.drink-arrival-marker {
+  position: absolute;
+  top: -7px;
+  width: 9px;
+  height: 9px;
+  border: 1px solid color-mix(in srgb, var(--paper) 80%, #fff);
+  border-radius: 50%;
+  background: var(--ink);
+  transform: translateX(-50%);
+  box-shadow: 0 3px 8px rgba(31, 27, 24, 0.22);
 }
 
 .timeline {
@@ -1508,10 +1587,10 @@ h2 {
 
 .drink-window-chart {
   display: grid;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+  border-radius: 16px;
   background: var(--surface-soft);
 }
 
@@ -1528,10 +1607,10 @@ h2 {
 .drink-window-bar {
   position: relative;
   display: flex;
-  height: 20px;
-  overflow: hidden;
+  height: 8px;
+  overflow: visible;
   border-radius: 999px;
-  border: 1px solid rgba(39, 39, 42, 0.09);
+  border: 0;
   background: var(--panel-strong);
 }
 
@@ -1539,27 +1618,15 @@ h2 {
   min-width: 8%;
 }
 
-.drink-young {
-  background: #e0bd47;
-}
-
-.drink-peak {
-  background: #4e9460;
-}
-
-.drink-decline {
-  background: #b44d4b;
-}
-
 .drink-current-marker {
   position: absolute;
-  top: -3px;
-  bottom: -3px;
-  width: 3px;
+  top: -6px;
+  bottom: -6px;
+  width: 2px;
   border-radius: 999px;
-  background: #1d232b;
+  background: var(--ink);
   transform: translateX(-50%);
-  box-shadow: 0 0 0 2px rgba(255, 250, 244, 0.9), 0 2px 8px rgba(29, 35, 43, 0.25);
+  box-shadow: 0 0 0 2px var(--paper), 0 2px 8px rgba(29, 35, 43, 0.25);
 }
 
 .wishlist-form {
@@ -2027,29 +2094,43 @@ h2 {
   z-index: 5;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  max-width: 540px;
-  min-height: calc(70px + env(safe-area-inset-bottom));
+  max-width: 680px;
+  min-height: calc(78px + env(safe-area-inset-bottom));
   margin: 0 auto;
-  padding: 6px 7px env(safe-area-inset-bottom);
-  border-top: 1px solid var(--line);
+  padding: 10px 14px calc(8px + env(safe-area-inset-bottom));
+  border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
   background: color-mix(in srgb, var(--paper) 94%, transparent);
   backdrop-filter: blur(16px);
   box-shadow: 0 -12px 26px rgba(42, 31, 23, 0.08);
 }
 
 .nav-item {
+  position: relative;
   display: grid;
   place-items: center;
   min-width: 0;
-  padding: 5px 4px;
+  padding: 12px 4px 8px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 0;
   color: var(--muted);
   background: transparent;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
+  font-weight: 650;
   line-height: 1.05;
   text-align: center;
   transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+.nav-item::before {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  width: 0;
+  height: 1px;
+  background: var(--wine);
+  content: "";
+  transform: translateX(-50%);
+  transition: width 0.18s ease;
 }
 
 .nav-item span {
@@ -2060,8 +2141,12 @@ h2 {
 
 .nav-item.active {
   color: var(--wine);
-  background: rgba(122, 30, 37, 0.09);
+  background: transparent;
   font-weight: 800;
+}
+
+.nav-item.active::before {
+  width: 28px;
 }
 
 .nav-item:focus-visible {
@@ -2089,7 +2174,7 @@ h2 {
   }
 
   .app-shell {
-    width: min(540px, 100%);
+    width: min(680px, 100%);
     height: min(920px, calc(100vh - 48px));
     min-height: 0;
     border: 1px solid #e4ded4;

@@ -1,9 +1,9 @@
-const CACHE_NAME = "winecellar-pwa-20260513-dusk-theme";
+const CACHE_NAME = "winecellar-pwa-20260513-premium-ui";
 const APP_SHELL = [
   "/",
   "/index.html",
-  "/styles.css?v=20260513-dusk-theme",
-  "/app.js?v=20260513-dusk-theme",
+  "/styles.css?v=20260513-premium-ui",
+  "/app.js?v=20260513-premium-ui",
   "/favicon.svg",
   "/pwa-icon-192.png",
   "/pwa-icon-512.png",
