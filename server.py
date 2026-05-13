@@ -69,6 +69,33 @@ OPENAI_MODEL_OPTIONS = [
     },
 ]
 OPENAI_MODEL_OPTION_IDS = {option["id"] for option in OPENAI_MODEL_OPTIONS}
+AI_MODEL_SETTINGS = [
+    {
+        "key": "pairing_model",
+        "default": OPENAI_MODEL,
+        "recommended": "gpt-5.4-mini",
+    },
+    {
+        "key": "ai_notes_model",
+        "default": OPENAI_MODEL,
+        "recommended": "gpt-5.4-mini",
+    },
+    {
+        "key": "drink_window_model",
+        "default": OPENAI_MODEL,
+        "recommended": "gpt-5.4",
+    },
+    {
+        "key": "ai_value_model",
+        "default": OPENAI_VALUE_MODEL,
+        "recommended": "gpt-5.4-mini",
+    },
+    {
+        "key": "wishlist_strategy_model",
+        "default": OPENAI_WISHLIST_STRATEGY_MODEL,
+        "recommended": "gpt-5.4",
+    },
+]
 APP_THEME_OPTIONS = [
     {
         "id": "classic",
@@ -464,8 +491,12 @@ def get_setting(conn: sqlite3.Connection, key: str, default: str) -> str:
 
 
 def get_pairing_model(conn: sqlite3.Connection) -> str:
-    model = get_setting(conn, "pairing_model", OPENAI_MODEL)
-    return model if model in OPENAI_MODEL_OPTION_IDS else OPENAI_MODEL
+    return get_ai_model_setting(conn, "pairing_model", OPENAI_MODEL)
+
+
+def get_ai_model_setting(conn: sqlite3.Connection, key: str, default: str) -> str:
+    model = get_setting(conn, key, default)
+    return model if model in OPENAI_MODEL_OPTION_IDS else default
 
 
 def get_app_theme(conn: sqlite3.Connection) -> str:
@@ -475,10 +506,14 @@ def get_app_theme(conn: sqlite3.Connection) -> str:
 
 def get_app_settings() -> dict:
     with connect() as conn:
-        pairing_model = get_pairing_model(conn)
         app_theme = get_app_theme(conn)
+        ai_models = {
+            spec["key"]: get_ai_model_setting(conn, spec["key"], spec["default"])
+            for spec in AI_MODEL_SETTINGS
+        }
     return {
-        "pairing_model": pairing_model,
+        "ai_models": ai_models,
+        "ai_model_settings": AI_MODEL_SETTINGS,
         "model_options": OPENAI_MODEL_OPTIONS,
         "app_theme": app_theme,
         "theme_options": APP_THEME_OPTIONS,
@@ -487,22 +522,26 @@ def get_app_settings() -> dict:
 
 
 def update_app_settings(payload: dict) -> dict:
-    pairing_model = str(payload.get("pairing_model", "")).strip()
-    if pairing_model not in OPENAI_MODEL_OPTION_IDS:
-        raise ValueError("Invalid pairing model")
     app_theme = str(payload.get("app_theme", "classic")).strip()
     if app_theme not in APP_THEME_OPTION_IDS:
         raise ValueError("Invalid app theme")
 
     with connect() as conn:
-        conn.execute(
-            """
-            INSERT INTO app_settings (key, value, updated_at)
-            VALUES ('pairing_model', ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
-            """,
-            (pairing_model,),
-        )
+        ai_models: dict[str, str] = {}
+        for spec in AI_MODEL_SETTINGS:
+            model = str(payload.get(spec["key"], get_ai_model_setting(conn, spec["key"], spec["default"]))).strip()
+            if model not in OPENAI_MODEL_OPTION_IDS:
+                raise ValueError(f"Invalid model for {spec['key']}")
+            ai_models[spec["key"]] = model
+        for key, model in ai_models.items():
+            conn.execute(
+                """
+                INSERT INTO app_settings (key, value, updated_at)
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+                """,
+                (key, model),
+            )
         conn.execute(
             """
             INSERT INTO app_settings (key, value, updated_at)
@@ -734,10 +773,8 @@ def wishlist_status_from_strategy(recommendation: str) -> str:
     }.get(recommendation, "Monitor")
 
 
-def wishlist_strategy_model(item: dict) -> str:
-    if item.get("purpose") == "Invest" or item.get("priority") == "High":
-        return OPENAI_WISHLIST_STRATEGY_MODEL
-    return OPENAI_VALUE_MODEL
+def get_wishlist_strategy_model(conn: sqlite3.Connection) -> str:
+    return get_ai_model_setting(conn, "wishlist_strategy_model", OPENAI_WISHLIST_STRATEGY_MODEL)
 
 
 def suggest_wishlist_strategy(item_id: str) -> dict:
@@ -745,6 +782,7 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
         item = get_wishlist_item(conn, item_id)
         if not item:
             raise LookupError("Wishlist item not found")
+        strategy_model = get_wishlist_strategy_model(conn)
 
     if not OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY is not configured")
@@ -792,7 +830,7 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
         ][:12],
     }
     request_payload = {
-        "model": wishlist_strategy_model(item),
+        "model": strategy_model,
         "instructions": (
             "Sei un consulente privato per collezionismo vino. Devi dare un resoconto operativo "
             "estremamente breve per un vino in wishlist in base allo scopo dell'osservazione. Rispondi "
@@ -1662,6 +1700,7 @@ def generate_ai_notes(wine_id: str) -> dict:
         wine = get_wine(conn, wine_id)
         if not wine:
             raise LookupError("Wine not found")
+        notes_model = get_ai_model_setting(conn, "ai_notes_model", OPENAI_MODEL)
 
     if not OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY is not configured")
@@ -1677,7 +1716,7 @@ def generate_ai_notes(wine_id: str) -> dict:
         "scores": wine.get("scores", []),
     }
     request_payload = {
-        "model": OPENAI_MODEL,
+        "model": notes_model,
         "instructions": (
             "Sei un assistente esperto di vino. Scrivi note brevi, utili e interessanti "
             "per un collezionista privato. Rispondi in italiano. Non inventare dati specifici "
@@ -1830,6 +1869,7 @@ def generate_drink_window(wine_id: str) -> dict:
         wine = get_wine(conn, wine_id)
         if not wine:
             raise LookupError("Wine not found")
+        drink_window_model = get_ai_model_setting(conn, "drink_window_model", OPENAI_MODEL)
 
     if not OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY is not configured")
@@ -1846,7 +1886,7 @@ def generate_drink_window(wine_id: str) -> dict:
         "ai_notes": wine.get("ai_notes", ""),
     }
     request_payload = {
-        "model": OPENAI_MODEL,
+        "model": drink_window_model,
         "instructions": (
             "Sei un assistente esperto di vino. Stima una finestra di degustazione indicativa "
             "per un collezionista privato. Rispondi solo con JSON valido, senza Markdown, senza "
@@ -1931,6 +1971,7 @@ def generate_ai_value(wine_id: str) -> dict:
         wine = get_wine(conn, wine_id)
         if not wine:
             raise LookupError("Wine not found")
+        ai_value_model = get_ai_model_setting(conn, "ai_value_model", OPENAI_VALUE_MODEL)
 
     if not OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY is not configured")
@@ -1950,7 +1991,7 @@ def generate_ai_value(wine_id: str) -> dict:
         "drink_window_notes": wine.get("drink_window_notes", ""),
     }
     request_payload = {
-        "model": OPENAI_VALUE_MODEL,
+        "model": ai_value_model,
         "instructions": (
             "Sei un assistente esperto di valutazioni di vino. Stima un valore attuale unitario "
             "indicativo per un collezionista privato. Rispondi solo con JSON valido, senza Markdown "

@@ -1043,11 +1043,24 @@ body[data-theme="dusk"] .drink-now-card[data-type="Red"]:hover {
   gap: 10px;
 }
 
+.settings-model-groups {
+  display: grid;
+  gap: 14px;
+}
+
 .model-options,
 .theme-options {
   margin: 0;
   padding: 0;
   border: 0;
+}
+
+.model-setting-group {
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 76%, var(--paper));
 }
 
 .model-options legend,
@@ -1148,6 +1161,13 @@ body[data-theme="dusk"] .drink-now-card[data-type="Red"]:hover {
   font-size: 0.8rem;
   font-style: normal;
   line-height: 1.3;
+}
+
+.settings-recommendation {
+  margin: -2px 0 2px;
+  color: var(--wine) !important;
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .drink-now-section h2 {

@@ -1,9 +1,9 @@
-const CACHE_NAME = "winecellar-pwa-20260513-card-lift-hover";
+const CACHE_NAME = "winecellar-pwa-20260513-ai-model-settings";
 const APP_SHELL = [
   "/",
   "/index.html",
-  "/styles.css?v=20260513-card-lift-hover",
-  "/app.js?v=20260513-card-lift-hover",
+  "/styles.css?v=20260513-ai-model-settings",
+  "/app.js?v=20260513-ai-model-settings",
   "/favicon.svg",
   "/pwa-icon-192.png",
   "/pwa-icon-512.png",

@@ -21,7 +21,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20260513-card-lift-hover" />
+    <link rel="stylesheet" href="styles.css?v=20260513-ai-model-settings" />
   </head>
   <body>
     <main class="app-shell">
@@ -605,17 +605,15 @@
         </header>
         <section class="settings-panel">
           <div>
-            <h2 data-i18n="pairingModelTitle">Modello abbinamenti</h2>
-            <p data-i18n="pairingModelHelp">Scegli il modello OpenAI usato per la richiesta di abbinamento. Modelli più costosi possono dare risposte più accurate.</p>
+            <h2 data-i18n="aiModelsTitle">Modelli AI</h2>
+            <p data-i18n="aiModelsHelp">Scegli il modello OpenAI per ciascuna funzione AI. Le raccomandazioni aiutano a bilanciare qualità, velocità e costo.</p>
           </div>
           <form class="settings-form" id="settings-form">
             <fieldset class="theme-options" id="theme-options">
               <legend data-i18n="themeLegend">Tema</legend>
             </fieldset>
             <p class="settings-note" data-i18n="themeHelp">Puoi anche applicare un tema aprendo l'app con ?theme=classic, graphite, alpine, midnight, dusk o champagne.</p>
-            <fieldset class="model-options" id="pairing-model-options">
-              <legend data-i18n="pairingModelLegend">Modello</legend>
-            </fieldset>
+            <div class="settings-model-groups" id="ai-model-settings"></div>
             <p class="settings-note" id="settings-pricing-note"></p>
             <button class="btn btn-wine save-button" type="submit" data-i18n="saveSettings">Salva impostazioni</button>
           </form>
@@ -641,6 +639,6 @@
       </nav>
     </main>
 
-    <script src="app.js?v=20260513-card-lift-hover"></script>
+    <script src="app.js?v=20260513-ai-model-settings"></script>
   </body>
 </html>

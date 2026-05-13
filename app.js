@@ -37,6 +37,8 @@ const translations = {
     addScore: "Add Score",
     addWine: "+ Add Wine",
     aiNotes: "AI Notes",
+    aiModelsHelp: "Choose the OpenAI model for each AI feature. Recommendations help balance quality, speed, and cost.",
+    aiModelsTitle: "AI models",
     all: "All",
     appellation: "Appellation",
     assigned: "Assigned",
@@ -164,6 +166,17 @@ const translations = {
     pairingModelLegend: "Model",
     pairingModelSaved: "Settings saved.",
     pairingModelTitle: "Pairing model",
+    settingsFunctionAiNotes: "AI notes",
+    settingsFunctionAiNotesHelp: "Generates the short descriptive note on the wine detail page.",
+    settingsFunctionAiValue: "Value estimate",
+    settingsFunctionAiValueHelp: "Estimates the current bottle value and the short pricing note.",
+    settingsFunctionDrinkWindow: "Drinking window",
+    settingsFunctionDrinkWindowHelp: "Estimates the drinking window, peak years, and supporting note.",
+    settingsFunctionPairing: "Pairing",
+    settingsFunctionPairingHelp: "Suggests cellar and market bottles for a dish.",
+    settingsFunctionWishlistStrategy: "Wishlist strategy",
+    settingsFunctionWishlistStrategyHelp: "Generates the short buy, monitor, or avoid suggestion for wishlist items.",
+    settingsRecommended: "Recommended: {model}",
     themeClassic: "Classic cellar",
     themeGraphite: "Graphite",
     themeAlpine: "Alpine",
@@ -276,6 +289,8 @@ const translations = {
     addScore: "Aggiungi punteggio",
     addWine: "+ Aggiungi vino",
     aiNotes: "Note AI",
+    aiModelsHelp: "Scegli il modello OpenAI per ciascuna funzione AI. Le raccomandazioni aiutano a bilanciare qualita, velocita e costo.",
+    aiModelsTitle: "Modelli AI",
     all: "Tutti",
     appellation: "Denominazione",
     assigned: "Assegnato",
@@ -403,6 +418,17 @@ const translations = {
     pairingModelLegend: "Modello",
     pairingModelSaved: "Impostazioni salvate.",
     pairingModelTitle: "Modello abbinamenti",
+    settingsFunctionAiNotes: "Note AI",
+    settingsFunctionAiNotesHelp: "Genera la nota descrittiva breve nella pagina dettaglio del vino.",
+    settingsFunctionAiValue: "Stima valore",
+    settingsFunctionAiValueHelp: "Stima il valore attuale della bottiglia e la nota sintetica di valutazione.",
+    settingsFunctionDrinkWindow: "Finestra degustazione",
+    settingsFunctionDrinkWindowHelp: "Stima finestra di bevuta, anni ideali e nota di supporto.",
+    settingsFunctionPairing: "Abbinamento",
+    settingsFunctionPairingHelp: "Suggerisce bottiglie dalla cantina e dal mercato per un piatto.",
+    settingsFunctionWishlistStrategy: "Strategia wishlist",
+    settingsFunctionWishlistStrategyHelp: "Genera il suggerimento breve compra, monitora o evita per i vini in wishlist.",
+    settingsRecommended: "Consigliato: {model}",
     themeClassic: "Classic cellar",
     themeGraphite: "Graphite",
     themeAlpine: "Alpine",
@@ -544,7 +570,7 @@ const drinkNowPairingPanel = document.querySelector("#drink-now-pairing-panel");
 const pairingForm = document.querySelector("#pairing-form");
 const pairingResult = document.querySelector("#pairing-result");
 const settingsForm = document.querySelector("#settings-form");
-const pairingModelOptions = document.querySelector("#pairing-model-options");
+const aiModelSettings = document.querySelector("#ai-model-settings");
 const settingsPricingNote = document.querySelector("#settings-pricing-note");
 const regionList = document.querySelector("#region-list");
 const colorList = document.querySelector("#color-list");
@@ -765,6 +791,30 @@ function formatModelPrice(value) {
   return `$${Number(value).toFixed(2)}/1M`;
 }
 
+function aiSettingTitle(key) {
+  return t(
+    {
+      pairing_model: "settingsFunctionPairing",
+      ai_notes_model: "settingsFunctionAiNotes",
+      drink_window_model: "settingsFunctionDrinkWindow",
+      ai_value_model: "settingsFunctionAiValue",
+      wishlist_strategy_model: "settingsFunctionWishlistStrategy",
+    }[key] || "pairingModelTitle",
+  );
+}
+
+function aiSettingHelp(key) {
+  return t(
+    {
+      pairing_model: "settingsFunctionPairingHelp",
+      ai_notes_model: "settingsFunctionAiNotesHelp",
+      drink_window_model: "settingsFunctionDrinkWindowHelp",
+      ai_value_model: "settingsFunctionAiValueHelp",
+      wishlist_strategy_model: "settingsFunctionWishlistStrategyHelp",
+    }[key] || "pairingModelHelp",
+  );
+}
+
 function renderSettings() {
   if (!state.settings) return;
   const selectedTheme = normalizeTheme(state.settings.app_theme) || state.theme;
@@ -786,18 +836,31 @@ function renderSettings() {
   themeOptions.querySelectorAll("input[name='app_theme']").forEach((input) => {
     input.addEventListener("change", () => applyTheme(input.value));
   });
-  pairingModelOptions.innerHTML = state.settings.model_options
-    .map((option) => {
-      const checked = option.id === state.settings.pairing_model ? "checked" : "";
+  aiModelSettings.innerHTML = state.settings.ai_model_settings
+    .map((setting) => {
+      const selectedModel = state.settings.ai_models?.[setting.key] || setting.default;
+      const recommended = state.settings.model_options.find((option) => option.id === setting.recommended);
       return `
-        <label class="model-option">
-          <input type="radio" name="pairing_model" value="${escapeAttribute(option.id)}" ${checked} />
-          <span>
-            <strong>${escapeHtml(option.label)}</strong>
-            <small>${escapeHtml(option.description)}</small>
-            <em>${escapeHtml(formatModelPrice(option.input_per_million))} input · ${escapeHtml(formatModelPrice(option.output_per_million))} output · ~${escapeHtml(String(option.relative_cost))}x nano</em>
-          </span>
-        </label>
+        <fieldset class="model-options model-setting-group">
+          <legend>${escapeHtml(aiSettingTitle(setting.key))}</legend>
+          <p class="settings-note">${escapeHtml(aiSettingHelp(setting.key))}</p>
+          ${recommended ? `<p class="settings-recommendation">${escapeHtml(t("settingsRecommended", { model: recommended.label }))}</p>` : ""}
+          ${state.settings.model_options
+            .map((option) => {
+              const checked = option.id === selectedModel ? "checked" : "";
+              return `
+                <label class="model-option">
+                  <input type="radio" name="${escapeAttribute(setting.key)}" value="${escapeAttribute(option.id)}" ${checked} />
+                  <span>
+                    <strong>${escapeHtml(option.label)}</strong>
+                    <small>${escapeHtml(option.description)}</small>
+                    <em>${escapeHtml(formatModelPrice(option.input_per_million))} input · ${escapeHtml(formatModelPrice(option.output_per_million))} output · ~${escapeHtml(String(option.relative_cost))}x nano</em>
+                  </span>
+                </label>
+              `;
+            })
+            .join("")}
+        </fieldset>
       `;
     })
     .join("");
@@ -817,10 +880,13 @@ async function saveSettings(event) {
   submitButton.disabled = true;
   submitButton.textContent = "...";
   try {
+    const aiModelPayload = Object.fromEntries(
+      (state.settings?.ai_model_settings || []).map((setting) => [setting.key, settingsForm.elements[setting.key].value]),
+    );
     state.settings = await api("/api/settings", {
       method: "POST",
       body: JSON.stringify({
-        pairing_model: settingsForm.elements.pairing_model.value,
+        ...aiModelPayload,
         app_theme: settingsForm.elements.app_theme.value,
       }),
     });
@@ -1664,6 +1730,10 @@ function openWishlistForm(item = null) {
     if (field) field.value = value ?? "";
   });
   wishlistForm.hidden = false;
+  requestAnimationFrame(() => {
+    wishlistForm.scrollIntoView({ behavior: "smooth", block: "start" });
+    wishlistNameInput?.focus({ preventScroll: true });
+  });
 }
 
 function wishlistFormToItem() {
