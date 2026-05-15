@@ -195,6 +195,18 @@ body[data-theme="midnight"] .sale-card {
   background: linear-gradient(180deg, #211f25 0%, var(--panel) 100%);
 }
 
+body[data-theme="midnight"] .value-card {
+  background: linear-gradient(180deg, #9e3340 0%, var(--wine-dark) 100%);
+}
+
+body[data-theme="midnight"] .shared-value {
+  background: linear-gradient(180deg, #4f8566 0%, #31583f 100%);
+}
+
+body[data-theme="midnight"] .total-value {
+  background: linear-gradient(180deg, #5e6453 0%, #3b4035 100%);
+}
+
 body[data-theme="midnight"] .btn-soft,
 body[data-theme="midnight"] .search-input,
 body[data-theme="midnight"] .form-control,
