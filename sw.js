@@ -1,9 +1,9 @@
-const CACHE_NAME = "winecellar-pwa-20260513-vintage-contrast";
+const CACHE_NAME = "winecellar-pwa-20260515-vintage-text-input";
 const APP_SHELL = [
   "/",
   "/index.html",
-  "/styles.css?v=20260513-vintage-contrast",
-  "/app.js?v=20260513-vintage-contrast",
+  "/styles.css?v=20260515-vintage-text-input",
+  "/app.js?v=20260515-vintage-text-input",
   "/favicon.svg",
   "/pwa-icon-192.png",
   "/pwa-icon-512.png",
