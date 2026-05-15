@@ -1775,6 +1775,16 @@ body[data-theme="dusk"] .small-vintage {
   transition: border-color 0.22s ease, box-shadow 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.wishlist-card[data-highlight="buy"] {
+  border-color: color-mix(in srgb, var(--sage) 58%, var(--line));
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--sage) 18%, transparent);
+}
+
+.wishlist-card[data-highlight="avoid"] {
+  border-color: color-mix(in srgb, var(--wine) 54%, var(--line));
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--wine) 18%, transparent);
+}
+
 @media (hover: hover) and (pointer: fine) {
   .wine-card:hover,
   .drink-now-card:hover,
@@ -1849,6 +1859,18 @@ body[data-theme="dusk"] .small-vintage {
   vertical-align: middle;
 }
 
+.wishlist-status-inline[data-recommendation="buy"] {
+  color: var(--sage);
+}
+
+.wishlist-status-inline[data-recommendation="avoid"] {
+  color: color-mix(in srgb, var(--wine) 92%, #5e1016);
+}
+
+.wishlist-status-inline[data-recommendation="monitor"] {
+  color: var(--muted);
+}
+
 .wishlist-ai-badge {
   display: inline-flex;
   align-items: center;
@@ -1872,6 +1894,24 @@ body[data-theme="dusk"] .wishlist-ai-badge {
   color: #fff8e8;
   background: color-mix(in srgb, var(--gold) 42%, var(--wine));
   box-shadow: 0 0 0 1px color-mix(in srgb, #000 18%, transparent);
+}
+
+.wishlist-ai-badge[data-recommendation="buy"] {
+  border-color: color-mix(in srgb, var(--sage) 72%, transparent);
+  color: #fff;
+  background: var(--sage);
+}
+
+.wishlist-ai-badge[data-recommendation="avoid"] {
+  border-color: color-mix(in srgb, var(--wine) 78%, transparent);
+  color: #fff;
+  background: color-mix(in srgb, var(--wine) 88%, #5f1016);
+}
+
+.wishlist-ai-badge[data-recommendation="monitor"] {
+  border-color: color-mix(in srgb, var(--line) 80%, transparent);
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface) 82%, var(--paper));
 }
 
 .wishlist-card-side {

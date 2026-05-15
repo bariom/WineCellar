@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import base64
 import sqlite3
 import time
 import uuid
@@ -15,6 +16,10 @@ from http.cookies import SimpleCookie
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from urllib.parse import unquote, urlparse
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature, encode_dss_signature
 
 
 ROOT = Path(__file__).resolve().parent
@@ -34,6 +39,7 @@ OPENAI_WISHLIST_STRATEGY_MODEL = os.environ.get("OPENAI_WISHLIST_STRATEGY_MODEL"
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 SESSION_COOKIE = "wine_cellar_session"
 SESSIONS: dict[str, str] = {}
+WEBAUTHN_CHALLENGES: dict[str, dict] = {}
 OPENAI_MODEL_OPTIONS = [
     {
         "id": "gpt-5.4-nano",
@@ -373,6 +379,18 @@ def init_db() -> None:
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS passkey_credentials (
+                credential_id TEXT PRIMARY KEY,
+                role TEXT NOT NULL,
+                public_key_cose BLOB NOT NULL,
+                sign_count INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                last_used_at TEXT
             )
             """
         )
@@ -2404,10 +2422,257 @@ def replace_all_wishlist(items: list[dict]) -> list[dict]:
     return list_wishlist()
 
 
+def b64url_encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).decode("ascii").rstrip("=")
+
+
+def b64url_decode(value: str) -> bytes:
+    padding_len = (-len(value)) % 4
+    return base64.urlsafe_b64decode((value + ("=" * padding_len)).encode("ascii"))
+
+
+class CborReader:
+    def __init__(self, data: bytes):
+        self.data = data
+        self.index = 0
+
+    def read(self, length: int) -> bytes:
+        if self.index + length > len(self.data):
+            raise ValueError("CBOR payload is truncated")
+        value = self.data[self.index:self.index + length]
+        self.index += length
+        return value
+
+    def read_uint(self, info: int) -> int:
+        if info < 24:
+            return info
+        if info == 24:
+            return self.read(1)[0]
+        if info == 25:
+            return int.from_bytes(self.read(2), "big")
+        if info == 26:
+            return int.from_bytes(self.read(4), "big")
+        if info == 27:
+            return int.from_bytes(self.read(8), "big")
+        raise ValueError("Unsupported CBOR integer length")
+
+    def decode(self):
+        initial = self.read(1)[0]
+        major = initial >> 5
+        info = initial & 0x1F
+        if major == 0:
+            return self.read_uint(info)
+        if major == 1:
+            return -1 - self.read_uint(info)
+        if major == 2:
+            return self.read(self.read_uint(info))
+        if major == 3:
+            return self.read(self.read_uint(info)).decode("utf-8")
+        if major == 4:
+            return [self.decode() for _ in range(self.read_uint(info))]
+        if major == 5:
+            return {self.decode(): self.decode() for _ in range(self.read_uint(info))}
+        if major == 7:
+            if info == 20:
+                return False
+            if info == 21:
+                return True
+            if info == 22:
+                return None
+        raise ValueError("Unsupported CBOR value")
+
+
+def cbor_decode(data: bytes):
+    reader = CborReader(data)
+    value = reader.decode()
+    if reader.index != len(data):
+        raise ValueError("CBOR payload has trailing data")
+    return value
+
+
+def webauthn_rp_id(headers) -> str:
+    host = headers.get("X-Forwarded-Host") or headers.get("Host") or "localhost"
+    return host.split(":", 1)[0]
+
+
+def webauthn_origin(headers) -> str:
+    proto = headers.get("X-Forwarded-Proto") or ("http" if webauthn_rp_id(headers) in {"localhost", "127.0.0.1"} else "https")
+    host = headers.get("X-Forwarded-Host") or headers.get("Host") or "localhost"
+    return f"{proto}://{host}"
+
+
+def make_challenge(kind: str, role: str = "") -> str:
+    challenge = b64url_encode(os.urandom(32))
+    WEBAUTHN_CHALLENGES[challenge] = {"kind": kind, "role": role, "expires_at": time.time() + 300}
+    return challenge
+
+
+def consume_challenge(challenge: str, kind: str) -> dict:
+    record = WEBAUTHN_CHALLENGES.pop(challenge, None)
+    if not record or record.get("kind") != kind or record.get("expires_at", 0) < time.time():
+        raise ValueError("Invalid or expired passkey challenge")
+    return record
+
+
+def parse_client_data(encoded: str, expected_type: str, expected_origin: str) -> dict:
+    raw = b64url_decode(encoded)
+    data = json.loads(raw.decode("utf-8"))
+    if data.get("type") != expected_type:
+        raise ValueError("Invalid passkey response type")
+    if data.get("origin") != expected_origin:
+        raise ValueError("Invalid passkey origin")
+    consume_challenge(data.get("challenge", ""), expected_type)
+    return data
+
+
+def parse_authenticator_data(auth_data: bytes, rp_id: str, require_attested: bool = False) -> dict:
+    if len(auth_data) < 37:
+        raise ValueError("Invalid authenticator data")
+    expected_hash = hashlib.sha256(rp_id.encode("utf-8")).digest()
+    if auth_data[:32] != expected_hash:
+        raise ValueError("Invalid passkey relying party")
+    flags = auth_data[32]
+    if not flags & 0x01:
+        raise ValueError("Passkey user presence is required")
+    sign_count = int.from_bytes(auth_data[33:37], "big")
+    result = {"flags": flags, "sign_count": sign_count}
+    if require_attested:
+        if not flags & 0x40:
+            raise ValueError("Passkey attestation data is missing")
+        offset = 37 + 16
+        credential_len = int.from_bytes(auth_data[offset:offset + 2], "big")
+        offset += 2
+        credential_id = auth_data[offset:offset + credential_len]
+        offset += credential_len
+        public_key_cose = auth_data[offset:]
+        cbor_decode(public_key_cose)
+        result.update({"credential_id": credential_id, "public_key_cose": public_key_cose})
+    return result
+
+
+def cose_public_key(cose: bytes):
+    key = cbor_decode(cose)
+    if key.get(1) == 2 and key.get(3) == -7 and key.get(-1) == 1:
+        x = int.from_bytes(key[-2], "big")
+        y = int.from_bytes(key[-3], "big")
+        return ec.EllipticCurvePublicNumbers(x, y, ec.SECP256R1()).public_key()
+    if key.get(1) == 3 and key.get(3) == -257:
+        n = int.from_bytes(key[-1], "big")
+        e = int.from_bytes(key[-2], "big")
+        return rsa.RSAPublicNumbers(e, n).public_key()
+    raise ValueError("Unsupported passkey public key")
+
+
+def verify_webauthn_signature(cose: bytes, signature: bytes, signed_data: bytes) -> None:
+    public_key = cose_public_key(cose)
+    if isinstance(public_key, ec.EllipticCurvePublicKey):
+        try:
+            r, s = decode_dss_signature(signature)
+            public_key.verify(encode_dss_signature(r, s), signed_data, ec.ECDSA(hashes.SHA256()))
+        except (ValueError, InvalidSignature) as exc:
+            raise ValueError("Invalid passkey signature") from exc
+        return
+    public_key.verify(signature, signed_data, padding.PKCS1v15(), hashes.SHA256())
+
+
+def list_passkey_credentials(role: str | None = None) -> list[dict]:
+    with connect() as conn:
+        if role:
+            rows = conn.execute("SELECT credential_id, role FROM passkey_credentials WHERE role = ?", (role,)).fetchall()
+        else:
+            rows = conn.execute("SELECT credential_id, role FROM passkey_credentials").fetchall()
+    return [dict(row) for row in rows]
+
+
+def passkey_register_options(role: str, headers) -> dict:
+    rp_id = webauthn_rp_id(headers)
+    challenge = make_challenge("webauthn.create", role)
+    existing = list_passkey_credentials(role)
+    return {
+        "challenge": challenge,
+        "rp": {"name": "Wine Cellar", "id": rp_id},
+        "user": {"id": b64url_encode(role.encode("utf-8")), "name": role, "displayName": role},
+        "pubKeyCredParams": [{"type": "public-key", "alg": -7}, {"type": "public-key", "alg": -257}],
+        "timeout": 60000,
+        "attestation": "none",
+        "authenticatorSelection": {"residentKey": "preferred", "userVerification": "required"},
+        "excludeCredentials": [{"type": "public-key", "id": item["credential_id"]} for item in existing],
+    }
+
+
+def verify_passkey_registration(payload: dict, role: str, headers) -> dict:
+    client_data_json = payload.get("response", {}).get("clientDataJSON", "")
+    attestation_object = payload.get("response", {}).get("attestationObject", "")
+    parse_client_data(client_data_json, "webauthn.create", webauthn_origin(headers))
+    attestation = cbor_decode(b64url_decode(attestation_object))
+    auth = parse_authenticator_data(attestation.get("authData", b""), webauthn_rp_id(headers), require_attested=True)
+    credential_id = b64url_encode(auth["credential_id"])
+    with connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO passkey_credentials (credential_id, role, public_key_cose, sign_count)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(credential_id) DO UPDATE SET role = excluded.role, public_key_cose = excluded.public_key_cose,
+                sign_count = excluded.sign_count
+            """,
+            (credential_id, role, auth["public_key_cose"], auth["sign_count"]),
+        )
+    return {"registered": True}
+
+
+def passkey_login_options(headers) -> dict:
+    challenge = make_challenge("webauthn.get")
+    credentials = list_passkey_credentials()
+    return {
+        "challenge": challenge,
+        "rpId": webauthn_rp_id(headers),
+        "timeout": 60000,
+        "userVerification": "required",
+        "allowCredentials": [{"type": "public-key", "id": item["credential_id"]} for item in credentials],
+    }
+
+
+def verify_passkey_login(payload: dict, headers) -> str:
+    credential_id = payload.get("rawId") or payload.get("id")
+    if not credential_id:
+        raise ValueError("Missing passkey credential")
+    response = payload.get("response", {})
+    client_data_json = response.get("clientDataJSON", "")
+    authenticator_data = b64url_decode(response.get("authenticatorData", ""))
+    signature = b64url_decode(response.get("signature", ""))
+    parse_client_data(client_data_json, "webauthn.get", webauthn_origin(headers))
+    auth = parse_authenticator_data(authenticator_data, webauthn_rp_id(headers))
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT credential_id, role, public_key_cose, sign_count FROM passkey_credentials WHERE credential_id = ?",
+            (credential_id,),
+        ).fetchone()
+        if not row:
+            raise LookupError("Passkey not found")
+        signed_data = authenticator_data + hashlib.sha256(b64url_decode(client_data_json)).digest()
+        verify_webauthn_signature(row["public_key_cose"], signature, signed_data)
+        if auth["sign_count"] and row["sign_count"] and auth["sign_count"] <= row["sign_count"]:
+            raise ValueError("Passkey sign counter is invalid")
+        conn.execute(
+            "UPDATE passkey_credentials SET sign_count = ?, last_used_at = CURRENT_TIMESTAMP WHERE credential_id = ?",
+            (auth["sign_count"], credential_id),
+        )
+        return row["role"]
+
+
 def auth_payload(role: str) -> dict:
     with connect() as conn:
         app_theme = get_app_theme(conn)
-    return {"authenticated": role != "anonymous", "role": role, "auth_enabled": AUTH_ENABLED, "app_theme": app_theme}
+    passkey_supported = AUTH_ENABLED
+    return {
+        "authenticated": role != "anonymous",
+        "role": role,
+        "auth_enabled": AUTH_ENABLED,
+        "app_theme": app_theme,
+        "passkeys_enabled": passkey_supported,
+        "passkey_available": bool(list_passkey_credentials()),
+        "passkey_registered": bool(role != "anonymous" and list_passkey_credentials(role)),
+    }
 
 
 class CellarHandler(SimpleHTTPRequestHandler):
@@ -2507,8 +2772,28 @@ class CellarHandler(SimpleHTTPRequestHandler):
             if path == "/api/login":
                 self.login()
                 return
+            if path == "/api/passkeys/login/options":
+                self.send_json(passkey_login_options(self.headers))
+                return
+            if path == "/api/passkeys/login/verify":
+                try:
+                    role = verify_passkey_login(self.read_json(), self.headers)
+                    self.start_session(role)
+                except LookupError as exc:
+                    self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+                return
             if path == "/api/logout":
                 self.logout()
+                return
+            if path == "/api/passkeys/register/options":
+                if not self.require_authenticated():
+                    return
+                self.send_json(passkey_register_options(self.current_role(), self.headers))
+                return
+            if path == "/api/passkeys/register/verify":
+                if not self.require_authenticated():
+                    return
+                self.send_json(verify_passkey_registration(self.read_json(), self.current_role(), self.headers))
                 return
             if path == "/api/wishlist":
                 if not self.require_authenticated():
@@ -2729,6 +3014,9 @@ class CellarHandler(SimpleHTTPRequestHandler):
             self.send_json({"error": "Invalid password"}, HTTPStatus.UNAUTHORIZED)
             return
 
+        self.start_session(role)
+
+    def start_session(self, role: str) -> None:
         session_id = token_urlsafe(32)
         SESSIONS[session_id] = role
         body = json.dumps(auth_payload(role)).encode("utf-8")

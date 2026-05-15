@@ -26,6 +26,9 @@ const state = {
   search: "",
   role: "anonymous",
   authEnabled: false,
+  passkeysEnabled: false,
+  passkeyAvailable: false,
+  passkeyRegistered: false,
   settings: null,
   theme: requestedTheme || normalizeTheme(localStorage.getItem("wine-cellar-theme")) || "classic",
   wishlistStrategies: {},
@@ -163,6 +166,10 @@ const translations = {
     ownerName: "Owner name",
     ownership: "Ownership",
     password: "Password",
+    passkeyLogin: "Use passkey",
+    passkeyRegister: "Enable passkey",
+    passkeyRegistered: "Passkey enabled.",
+    passkeyUnavailable: "Passkeys are not available in this browser or connection.",
     pairing: "Pairing",
     pairingCellarMatches: "From your cellar",
     pairingDish: "Dish or food",
@@ -439,6 +446,10 @@ const translations = {
     ownerName: "Nome proprietario",
     ownership: "Proprietà",
     password: "Password",
+    passkeyLogin: "Usa passkey",
+    passkeyRegister: "Attiva passkey",
+    passkeyRegistered: "Passkey attivata.",
+    passkeyUnavailable: "Le passkey non sono disponibili in questo browser o connessione.",
     pairing: "Abbinamento",
     pairingCellarMatches: "Dalla tua cantina",
     pairingDish: "Piatto o pietanza",
@@ -650,6 +661,8 @@ const scoresFormList = document.querySelector("#scores-form-list");
 const bottomNav = document.querySelector(".bottom-nav");
 const installAppButton = document.querySelector("#install-app-button");
 const languageButton = document.querySelector("#language-button");
+const passkeyLoginButton = document.querySelector("#passkey-login-button");
+const passkeyRegisterButton = document.querySelector("#passkey-register-button");
 const saleForm = document.querySelector("#sale-form");
 const showSaleFormButton = document.querySelector("#show-sale-form-button");
 const saleList = document.querySelector("#sale-list");
@@ -733,6 +746,7 @@ function applyTranslations() {
     renderSales(state.selectedWineId);
     renderMovements(state.selectedWineId);
   }
+  applyPermissions();
 }
 
 function statusLabel(status) {
@@ -798,6 +812,10 @@ function isAuthenticated() {
   return !state.authEnabled || state.role !== "anonymous";
 }
 
+function browserSupportsPasskeys() {
+  return window.isSecureContext && "PublicKeyCredential" in window && navigator.credentials;
+}
+
 function applyPermissions() {
   document.body.dataset.role = state.role;
   document.querySelectorAll(".admin-only").forEach((element) => {
@@ -819,6 +837,10 @@ function applyPermissions() {
     });
   }
   if (!isAdmin()) showDrinkNowTab("list");
+  const showPasskeys = state.passkeysEnabled && browserSupportsPasskeys();
+  passkeyLoginButton.hidden = !showPasskeys || !state.passkeyAvailable || isAuthenticated();
+  passkeyRegisterButton.hidden = !showPasskeys || !isAuthenticated();
+  passkeyRegisterButton.textContent = state.passkeyRegistered ? t("passkeyRegistered") : t("passkeyRegister");
   updateFilterCount();
 }
 
@@ -826,6 +848,9 @@ async function loadSession() {
   const session = await api("/api/session");
   state.role = session.role;
   state.authEnabled = session.auth_enabled;
+  state.passkeysEnabled = Boolean(session.passkeys_enabled);
+  state.passkeyAvailable = Boolean(session.passkey_available);
+  state.passkeyRegistered = Boolean(session.passkey_registered);
   if (!requestedTheme && session.app_theme) applyTheme(session.app_theme);
   applyPermissions();
   if (session.auth_enabled && !session.authenticated) {
@@ -1827,10 +1852,12 @@ function isAiWishlistStatus(item) {
 }
 
 function renderWishlistStatus(item) {
+  const strategy = persistedWishlistStrategy(item);
+  const recommendation = strategy?.recommendation || "";
   const badge = isAiWishlistStatus(item)
-    ? `<span class="wishlist-ai-badge" title="${escapeAttribute(t("wishlistStatusAiLong"))}" aria-label="${escapeAttribute(t("wishlistStatusAiLong"))}">${escapeHtml(t("wishlistStatusAi"))}</span>`
+    ? `<span class="wishlist-ai-badge" data-recommendation="${escapeAttribute(recommendation || "monitor")}" title="${escapeAttribute(t("wishlistStatusAiLong"))}" aria-label="${escapeAttribute(t("wishlistStatusAiLong"))}">${escapeHtml(t("wishlistStatusAi"))}</span>`
     : "";
-  return `<span class="wishlist-status-inline">${escapeHtml(wishlistStatusLabel(item.status))}${badge}</span>`;
+  return `<span class="wishlist-status-inline" data-recommendation="${escapeAttribute(recommendation || "manual")}">${escapeHtml(wishlistStatusLabel(item.status))}${badge}</span>`;
 }
 
 function persistedWishlistStrategy(item) {
@@ -1865,9 +1892,12 @@ function renderWishlist() {
   if (!wishlistList) return;
   wishlistList.innerHTML = state.wishlist.length
     ? state.wishlist
-        .map(
-          (item) => `
-            <article class="wishlist-card" data-id="${item.id}">
+        .map((item) => {
+          const strategy = persistedWishlistStrategy(item);
+          const recommendation = strategy?.recommendation || "";
+          const highlight = isAiWishlistStatus(item) && ["buy", "avoid"].includes(recommendation) ? recommendation : "";
+          return `
+            <article class="wishlist-card" data-id="${item.id}" data-recommendation="${escapeAttribute(recommendation || "manual")}" data-highlight="${escapeAttribute(highlight)}">
               <button class="wishlist-card-header" data-wishlist-toggle="${item.id}" type="button" aria-expanded="false">
                 <div>
                   <h2>${escapeHtml(item.name)} ${item.vintage ? `<span class="small-vintage">${escapeHtml(item.vintage)}</span>` : ""}</h2>
@@ -1897,8 +1927,8 @@ function renderWishlist() {
                 ${renderWishlistStrategy(item)}
               </div>
             </article>
-          `,
-        )
+          `;
+        })
         .join("")
     : `<p class="empty-state">${t("emptyWishlist")}</p>`;
   applyPermissions();
@@ -2554,6 +2584,91 @@ function escapeAttribute(value) {
   return escapeHtml(value).replaceAll("`", "&#096;");
 }
 
+function base64urlToBuffer(value) {
+  const padded = `${value}${"=".repeat((4 - (value.length % 4)) % 4)}`.replaceAll("-", "+").replaceAll("_", "/");
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes.buffer;
+}
+
+function bufferToBase64url(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+}
+
+function publicKeyCredentialToJson(credential) {
+  const response = credential.response;
+  const payload = {
+    id: credential.id,
+    rawId: bufferToBase64url(credential.rawId),
+    type: credential.type,
+    response: {
+      clientDataJSON: bufferToBase64url(response.clientDataJSON),
+    },
+  };
+  if (response.attestationObject) payload.response.attestationObject = bufferToBase64url(response.attestationObject);
+  if (response.authenticatorData) payload.response.authenticatorData = bufferToBase64url(response.authenticatorData);
+  if (response.signature) payload.response.signature = bufferToBase64url(response.signature);
+  if (response.userHandle) payload.response.userHandle = bufferToBase64url(response.userHandle);
+  return payload;
+}
+
+function preparePasskeyCreationOptions(options) {
+  return {
+    ...options,
+    challenge: base64urlToBuffer(options.challenge),
+    user: { ...options.user, id: base64urlToBuffer(options.user.id) },
+    excludeCredentials: (options.excludeCredentials || []).map((credential) => ({ ...credential, id: base64urlToBuffer(credential.id) })),
+  };
+}
+
+function preparePasskeyRequestOptions(options) {
+  return {
+    ...options,
+    challenge: base64urlToBuffer(options.challenge),
+    allowCredentials: (options.allowCredentials || []).map((credential) => ({ ...credential, id: base64urlToBuffer(credential.id) })),
+  };
+}
+
+async function registerPasskey() {
+  if (!browserSupportsPasskeys()) {
+    alert(t("passkeyUnavailable"));
+    return;
+  }
+  const options = await api("/api/passkeys/register/options", { method: "POST", body: JSON.stringify({}) });
+  const credential = await navigator.credentials.create({ publicKey: preparePasskeyCreationOptions(options) });
+  await api("/api/passkeys/register/verify", { method: "POST", body: JSON.stringify(publicKeyCredentialToJson(credential)) });
+  state.passkeyRegistered = true;
+  state.passkeyAvailable = true;
+  applyPermissions();
+  alert(t("passkeyRegistered"));
+}
+
+async function loginWithPasskey() {
+  if (!browserSupportsPasskeys()) {
+    alert(t("passkeyUnavailable"));
+    return;
+  }
+  loginError.hidden = true;
+  const options = await api("/api/passkeys/login/options", { method: "POST", body: JSON.stringify({}) });
+  const credential = await navigator.credentials.get({ publicKey: preparePasskeyRequestOptions(options) });
+  const session = await api("/api/passkeys/login/verify", { method: "POST", body: JSON.stringify(publicKeyCredentialToJson(credential)) });
+  state.role = session.role;
+  state.authEnabled = session.auth_enabled;
+  state.passkeysEnabled = Boolean(session.passkeys_enabled);
+  state.passkeyAvailable = Boolean(session.passkey_available);
+  state.passkeyRegistered = Boolean(session.passkey_registered);
+  loginForm.reset();
+  applyPermissions();
+  await loadWines();
+  showScreen("cellar");
+}
+
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   loginError.hidden = true;
@@ -2564,6 +2679,9 @@ loginForm.addEventListener("submit", async (event) => {
     });
     state.role = session.role;
     state.authEnabled = session.auth_enabled;
+    state.passkeysEnabled = Boolean(session.passkeys_enabled);
+    state.passkeyAvailable = Boolean(session.passkey_available);
+    state.passkeyRegistered = Boolean(session.passkey_registered);
     loginForm.reset();
     applyPermissions();
     await loadWines();
@@ -2572,6 +2690,17 @@ loginForm.addEventListener("submit", async (event) => {
     loginError.textContent = t("invalidLogin");
     loginError.hidden = false;
   }
+});
+
+passkeyLoginButton.addEventListener("click", () => {
+  loginWithPasskey().catch((error) => {
+    loginError.textContent = error.message || t("invalidLogin");
+    loginError.hidden = false;
+  });
+});
+
+passkeyRegisterButton.addEventListener("click", () => {
+  registerPasskey().catch((error) => alert(error.message || t("passkeyUnavailable")));
 });
 
 document.querySelector("#new-wine-button").addEventListener("click", () => openForm());
@@ -2607,6 +2736,7 @@ document.querySelector("#logout-button").addEventListener("click", async () => {
   state.role = state.authEnabled ? "anonymous" : "admin";
   state.wines = [];
   state.wishlist = [];
+  state.passkeyRegistered = false;
   applyPermissions();
   if (state.authEnabled) showScreen("login");
   else {
