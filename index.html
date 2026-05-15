@@ -78,6 +78,12 @@
               <button class="status-chip" data-owner-filter="Mine" type="button" data-i18n="onlyMine">Only Mine</button>
               <button class="status-chip" data-owner-filter="Shared" type="button" data-i18n="shared">Shared</button>
             </div>
+            <div class="filter-row" aria-label="Filtra per quantita">
+              <span data-i18n="quantityFilter">Quantity:</span>
+              <button class="status-chip active" data-quantity-filter="Available" type="button" data-i18n="quantityAvailable">Available</button>
+              <button class="status-chip" data-quantity-filter="Empty" type="button" data-i18n="quantityEmpty">Empty</button>
+              <button class="status-chip" data-quantity-filter="All" type="button" data-i18n="all">All</button>
+            </div>
             <label class="sort-control">
               <span data-i18n="sortBy">Ordina per</span>
               <select class="form-select" id="cellar-sort">
@@ -144,6 +150,7 @@
             <button class="insight-tab active" data-insight-tab="mine" type="button" data-i18n="myShare">My Share</button>
             <button class="insight-tab" data-insight-tab="shared" type="button" data-i18n="sharedPositions">Shared Positions</button>
             <button class="insight-tab" data-insight-tab="total" type="button" data-i18n="totalPositions">Total Positions</button>
+            <button class="insight-tab" data-insight-tab="movements" type="button" data-i18n="movementStats">Movements</button>
           </div>
           <section class="insight-panel active" id="insight-mine">
             <h2 data-i18n="cellarValue">Cellar Value</h2>
@@ -195,6 +202,18 @@
             <div class="region-list" id="gross-region-list"></div>
             <h2 data-i18n="topColors">Top Colors</h2>
             <div class="region-list" id="gross-color-list"></div>
+          </section>
+          <section class="insight-panel" id="insight-movements">
+            <h2 data-i18n="movementStats">Movements</h2>
+            <div class="row g-3 mt-1">
+              <div class="col-6"><article class="metric-card"><strong id="movement-consumed-bottles">0</strong><span data-i18n="consumedBottles">Bottles Drunk</span></article></div>
+              <div class="col-6"><article class="metric-card"><strong id="movement-sold-bottles">0</strong><span data-i18n="soldBottles">Bottles Sold</span></article></div>
+              <div class="col-6"><article class="metric-card"><strong id="movement-consumed-value">CHF 0</strong><span data-i18n="consumedValue">Consumed Value</span></article></div>
+              <div class="col-6"><article class="metric-card"><strong id="movement-sold-revenue">CHF 0</strong><span data-i18n="soldRevenue">Sale Revenue</span></article></div>
+              <div class="col-12"><article class="metric-card"><strong id="movement-realized-gain-loss">CHF 0</strong><span data-i18n="realizedGainLoss">Realized P/L</span></article></div>
+            </div>
+            <h2 data-i18n="topConsumedRegions">Top Drunk Regions</h2>
+            <div class="region-list" id="movement-consumed-region-list"></div>
           </section>
           <p class="rates-note" id="rates-note"></p>
         </div>
@@ -467,6 +486,12 @@
             </form>
             <div class="sale-list" id="sale-list"></div>
           </section>
+          <section class="movements-panel">
+            <div class="section-title-row">
+              <h2 data-i18n="movementHistory">Bottle Movements</h2>
+            </div>
+            <div class="movement-list" id="movement-list"></div>
+          </section>
         </article>
       </section>
 
@@ -599,6 +624,13 @@
         </form>
       </section>
 
+      <section class="screen" id="screen-history" aria-labelledby="history-title">
+        <header class="simple-header">
+          <h1 id="history-title" data-i18n="movementHistory">Bottle Movements</h1>
+        </header>
+        <div class="movement-list history-list" id="history-list"></div>
+      </section>
+
       <section class="screen admin-only" id="screen-settings" aria-labelledby="settings-title">
         <header class="simple-header">
           <h1 id="settings-title" data-i18n="adminSettings">Admin</h1>
@@ -635,6 +667,9 @@
         </button>
         <button class="nav-item" data-screen="wishlist" type="button">
           <span aria-hidden="true" data-i18n="wishlist">Wishlist</span>
+        </button>
+        <button class="nav-item" data-screen="history" type="button">
+          <span aria-hidden="true" data-i18n="historyNav">Storico</span>
         </button>
       </nav>
     </main>

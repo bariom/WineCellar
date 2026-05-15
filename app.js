@@ -13,6 +13,7 @@ const state = {
   wines: [],
   filter: "All",
   ownerFilter: "All",
+  quantityFilter: "Available",
   sort: "delivery-desc",
   insightFilter: null,
   selectedWineId: null,
@@ -21,6 +22,7 @@ const state = {
   lang: localStorage.getItem("wine-cellar-language") || "it",
   catalog: [],
   wishlist: [],
+  movements: [],
   search: "",
   role: "anonymous",
   authEnabled: false,
@@ -71,6 +73,8 @@ const translations = {
     currentValue: "Current Value",
     currentValuePerUnit: "Current Value per Unit",
     convertedRates: "Converted to CHF using {source} from {date}.",
+    consumedBottles: "Bottles Drunk",
+    consumedValue: "Consumed Value",
     currency: "Currency",
     delete: "Delete",
     delivered: "Delivered",
@@ -100,6 +104,7 @@ const translations = {
     drinkNowWindow: "Window",
     drinkPeak: "Ideal",
     drinkConfirm: "Mark one bottle of {wine} as drunk?",
+    drinkNotePrompt: "Optional note for this bottle",
     drinkWindow: "Drinking Window",
     drinkWindowEstimate: "AI estimate",
     drinkWindowMissing: "No drinking window generated.",
@@ -131,6 +136,7 @@ const translations = {
     generateDrinkWindowConfirm: "Replace the current drinking window?",
     generateDrinkWindowUnable: "Unable to generate drinking window: {error}",
     import: "Import",
+    historyNav: "History",
     installApp: "Install",
     importInvalid: "The selected file does not contain a valid cellar.",
     insights: "Insights",
@@ -206,6 +212,9 @@ const translations = {
     priorityMedium: "Medium",
     producerRequired: "Producer *",
     quantity: "Quantity",
+    quantityAvailable: "Available",
+    quantityEmpty: "Empty",
+    quantityFilter: "Quantity:",
     quantityRequired: "Quantity *",
     region: "Region",
     remove: "Remove",
@@ -216,11 +225,27 @@ const translations = {
     saveWishlistItem: "Save",
     saveUnable: "Unable to save order: {error}",
     salePrice: "Sale Price",
+    realizedGainLoss: "Realized P/L",
     sales: "Sales",
     soldTo: "Sold to {buyer}",
+    soldBottles: "Bottles Sold",
+    soldRevenue: "Sale Revenue",
     saleProfit: "Profit",
     saleLoss: "Loss",
     noSales: "No sales recorded.",
+    movementDrink: "Drunk",
+    movementEmpty: "No bottle movements recorded.",
+    movementCancel: "Cancel",
+    movementCancelConfirm: "Cancel this movement and restore the bottle quantity?",
+    movementEdit: "Edit",
+    movementEditNotePrompt: "Note",
+    movementEditQuantityPrompt: "Quantity",
+    movementHistory: "Bottle Movements",
+    movementStats: "Movements",
+    movementSale: "Sold",
+    movementAdjustment: "Adjustment",
+    movementArrival: "Arrival",
+    movementUnable: "Unable to update movement: {error}",
     notes: "Notes",
     resultsCount: "{count} {bottles}",
     saleUnable: "Unable to save sale: {error}",
@@ -241,6 +266,7 @@ const translations = {
     timelineNav: "Timeline En Primeur",
     targetPrice: "Target Price",
     topRegions: "Top Regions",
+    topConsumedRegions: "Top Drunk Regions",
     topColors: "Top Colors",
     sharedPositions: "Shared Positions",
     shared: "Shared",
@@ -323,6 +349,8 @@ const translations = {
     currentValue: "Valore attuale",
     currentValuePerUnit: "Valore attuale unitario",
     convertedRates: "Convertito in CHF con {source} del {date}.",
+    consumedBottles: "Bottiglie bevute",
+    consumedValue: "Valore consumato",
     currency: "Valuta",
     delete: "Elimina",
     delivered: "In cantina",
@@ -352,6 +380,7 @@ const translations = {
     drinkNowWindow: "Finestra",
     drinkPeak: "Ideale",
     drinkConfirm: "Segnare una bottiglia di {wine} come bevuta?",
+    drinkNotePrompt: "Nota opzionale per questa bottiglia",
     drinkWindow: "Finestra degustazione",
     drinkWindowEstimate: "Stima AI",
     drinkWindowMissing: "Nessuna finestra di degustazione generata.",
@@ -383,6 +412,7 @@ const translations = {
     generateDrinkWindowConfirm: "Sostituire la finestra di degustazione attuale?",
     generateDrinkWindowUnable: "Impossibile generare la finestra di degustazione: {error}",
     import: "Importa",
+    historyNav: "Storico",
     installApp: "Installa",
     importInvalid: "Il file selezionato non contiene una cantina valida.",
     insights: "Statistiche",
@@ -458,6 +488,9 @@ const translations = {
     priorityMedium: "Media",
     producerRequired: "Produttore *",
     quantity: "Quantità",
+    quantityAvailable: "Disponibili",
+    quantityEmpty: "Finite",
+    quantityFilter: "Quantità:",
     quantityRequired: "Quantità *",
     region: "Regione",
     remove: "Rimuovi",
@@ -468,11 +501,27 @@ const translations = {
     saveWishlistItem: "Salva",
     saveUnable: "Impossibile salvare l'ordine: {error}",
     salePrice: "Prezzo vendita",
+    realizedGainLoss: "Utile/perdita realizzata",
     sales: "Vendite",
     soldTo: "Venduto a {buyer}",
+    soldBottles: "Bottiglie vendute",
+    soldRevenue: "Ricavi vendita",
     saleProfit: "Utile",
     saleLoss: "Perdita",
     noSales: "Nessuna vendita registrata.",
+    movementDrink: "Bevuta",
+    movementEmpty: "Nessun movimento bottiglie registrato.",
+    movementCancel: "Annulla",
+    movementCancelConfirm: "Annullare questo movimento e ripristinare la quantità?",
+    movementEdit: "Modifica",
+    movementEditNotePrompt: "Nota",
+    movementEditQuantityPrompt: "Quantità",
+    movementHistory: "Movimenti bottiglie",
+    movementStats: "Movimenti",
+    movementSale: "Vendita",
+    movementAdjustment: "Rettifica",
+    movementArrival: "Arrivo",
+    movementUnable: "Impossibile aggiornare il movimento: {error}",
     notes: "Note",
     resultsCount: "{count} {bottles}",
     saleUnable: "Impossibile salvare la vendita: {error}",
@@ -493,6 +542,7 @@ const translations = {
     timelineNav: "Timeline En Primeur",
     targetPrice: "Prezzo obiettivo",
     topRegions: "Regioni principali",
+    topConsumedRegions: "Regioni piu bevute",
     topColors: "Colori principali",
     sharedPositions: "Posizioni condivise",
     shared: "Condivisi",
@@ -553,6 +603,7 @@ const screens = {
   drinkNow: document.querySelector("#screen-drink-now"),
   insights: document.querySelector("#screen-insights"),
   wishlist: document.querySelector("#screen-wishlist"),
+  history: document.querySelector("#screen-history"),
   settings: document.querySelector("#screen-settings"),
   detail: document.querySelector("#screen-detail"),
   form: document.querySelector("#screen-form"),
@@ -586,6 +637,7 @@ const sharedRegionList = document.querySelector("#shared-region-list");
 const sharedColorList = document.querySelector("#shared-color-list");
 const grossRegionList = document.querySelector("#gross-region-list");
 const grossColorList = document.querySelector("#gross-color-list");
+const movementConsumedRegionList = document.querySelector("#movement-consumed-region-list");
 const form = document.querySelector("#wine-form");
 const deleteButton = document.querySelector("#delete-button");
 const drinkButton = document.querySelector("#drink-bottle-button");
@@ -601,6 +653,8 @@ const languageButton = document.querySelector("#language-button");
 const saleForm = document.querySelector("#sale-form");
 const showSaleFormButton = document.querySelector("#show-sale-form-button");
 const saleList = document.querySelector("#sale-list");
+const movementList = document.querySelector("#movement-list");
+const historyList = document.querySelector("#history-list");
 const wineNameInput = document.querySelector("#name");
 const wineNameSuggestions = document.querySelector("#wine-name-suggestions");
 const themeOptions = document.querySelector("#theme-options");
@@ -670,11 +724,15 @@ function applyTranslations() {
   if (currentScreen === "drinkNow") renderDrinkNow();
   if (currentScreen === "insights") renderInsights();
   if (currentScreen === "wishlist") renderWishlist();
+  if (currentScreen === "history") renderHistory();
   if (currentScreen === "detail") openDetail(state.wines.find((wine) => wine.id === state.selectedWineId));
   if (currentScreen === "form") {
     document.querySelector("#form-title").textContent = form.elements.id.value ? t("edit") : t("newOrder");
   }
-  if (currentScreen === "detail") renderSales(state.selectedWineId);
+  if (currentScreen === "detail") {
+    renderSales(state.selectedWineId);
+    renderMovements(state.selectedWineId);
+  }
 }
 
 function statusLabel(status) {
@@ -779,10 +837,11 @@ async function loadSession() {
 }
 
 async function loadWines() {
-  const [wines, catalog, wishlist] = await Promise.all([api("/api/wines"), api("/api/wine-catalog"), api("/api/wishlist")]);
+  const [wines, catalog, wishlist, movements] = await Promise.all([api("/api/wines"), api("/api/wine-catalog"), api("/api/wishlist"), api("/api/movements")]);
   state.wines = wines;
   state.catalog = catalog;
   state.wishlist = wishlist;
+  state.movements = movements;
   renderWineSuggestions();
   renderCellar();
   renderWishlist();
@@ -986,6 +1045,17 @@ function formatDate(dateValue) {
   );
 }
 
+function formatDateTime(dateValue) {
+  if (!dateValue) return "TBD";
+  return new Intl.DateTimeFormat(state.lang === "it" ? "it-IT" : "en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(dateValue));
+}
+
 function deliveryYear(wine) {
   if (!wine.expected_delivery) return "TBD";
   return new Date(wine.expected_delivery).getFullYear().toString();
@@ -997,6 +1067,26 @@ function formatNumber(value) {
 
 function personalQuantity(wine) {
   return Number(wine.quantity || 0) * Number(wine.owner_share_pct ?? 100) / 100;
+}
+
+function updateWineInState(wine) {
+  const index = state.wines.findIndex((item) => item.id === wine.id);
+  if (index >= 0) state.wines[index] = wine;
+  else state.wines.unshift(wine);
+}
+
+async function refreshAfterInventoryChange(wine) {
+  updateWineInState(wine);
+  state.movements = await api("/api/movements");
+  renderWineSuggestions();
+  renderCellar();
+  renderDrinkNow();
+  renderHistory();
+  await renderInsights();
+  if (state.selectedWineId === wine.id) {
+    renderSales(wine.id);
+    renderMovements(wine.id);
+  }
 }
 
 function isSharedWine(wine) {
@@ -1033,6 +1123,13 @@ function matchesInsightFilter(wine) {
   return true;
 }
 
+function matchesQuantityFilter(wine) {
+  const quantity = Number(wine.quantity || 0);
+  if (state.quantityFilter === "All") return true;
+  if (state.quantityFilter === "Empty") return quantity <= 0;
+  return quantity > 0;
+}
+
 function compareText(a, b) {
   return String(a || "").localeCompare(String(b || ""), state.lang === "it" ? "it" : "en", { sensitivity: "base", numeric: true });
 }
@@ -1051,7 +1148,7 @@ function sortWines(wines) {
 }
 
 function updateFilterCount() {
-  const activeFilters = [state.filter !== "All", state.ownerFilter !== "All", Boolean(state.insightFilter)].filter(Boolean).length;
+  const activeFilters = [state.filter !== "All", state.ownerFilter !== "All", state.quantityFilter !== "Available", Boolean(state.insightFilter)].filter(Boolean).length;
   filterCount.textContent = activeFilters ? String(activeFilters) : "";
   filterCount.hidden = activeFilters === 0;
   activeInsightFilter.hidden = !state.insightFilter;
@@ -1083,6 +1180,7 @@ function showScreen(name) {
   if (name === "drinkNow") renderDrinkNow();
   if (name === "insights") renderInsights();
   if (name === "wishlist") renderWishlist();
+  if (name === "history") renderHistory();
   if (name === "settings" && state.settings) renderSettings();
 }
 
@@ -1230,6 +1328,7 @@ function openDetail(wine) {
   renderOwnerList(wine);
   renderScoreList(wine);
   renderSales(wine.id);
+  renderMovements(wine.id);
 
   showScreen("detail");
 }
@@ -1261,6 +1360,92 @@ async function renderSales(wineId) {
       : `<p class="empty-state compact">${t("noSales")}</p>`;
   } catch (error) {
     saleList.innerHTML = `<p class="empty-state compact">${escapeHtml(error.message)}</p>`;
+  }
+}
+
+function movementLabel(type) {
+  return (
+    {
+      drink: "movementDrink",
+      sale: "movementSale",
+      adjustment: "movementAdjustment",
+      arrival: "movementArrival",
+    }[type] || "movementAdjustment"
+  );
+}
+
+function movementWineTitle(movement) {
+  return [movement.wine_name, movement.wine_producer, movement.wine_vintage].filter(Boolean).join(" - ");
+}
+
+function movementNoteText(movement) {
+  if (movement.movement_type === "drink" && ["Bottle marked as drunk", "Bevuta 1"].includes(movement.note)) {
+    return t("drankOne");
+  }
+  if (movement.movement_type === "sale") {
+    if (String(movement.note || "").startsWith("sale:")) {
+      return t("soldTo", { buyer: movement.note.slice(5) });
+    }
+    if (String(movement.note || "").startsWith("Sold to ")) {
+      return t("soldTo", { buyer: movement.note.slice(8) });
+    }
+  }
+  return movement.note || "";
+}
+
+function renderMovementRows(movements, { includeWine = false } = {}) {
+  if (!movements.length) return `<p class="empty-state compact">${t("movementEmpty")}</p>`;
+  return movements
+    .map((movement) => {
+      const quantity = Number(movement.quantity || 0);
+      const value = movement.value ? `<span>${escapeHtml(formatMoney(movement.value, movement.currency || "CHF"))}</span>` : "";
+      const actions = isAdmin()
+        ? `
+          <div class="movement-actions">
+            <button class="btn btn-soft" data-movement-edit="${escapeAttribute(movement.id)}" type="button">${escapeHtml(t("movementEdit"))}</button>
+            <button class="btn btn-soft" data-movement-delete="${escapeAttribute(movement.id)}" type="button">${escapeHtml(t("movementCancel"))}</button>
+          </div>
+        `
+        : "";
+      const title = includeWine ? movementWineTitle(movement) : t(movementLabel(movement.movement_type));
+      const subtitle = includeWine ? t(movementLabel(movement.movement_type)) : "";
+      const note = movementNoteText(movement);
+      return `
+        <div class="movement-row" data-id="${escapeAttribute(movement.id)}" data-wine-id="${escapeAttribute(movement.wine_id)}" data-movement="${escapeAttribute(movement.movement_type)}">
+          <div>
+            <strong>${escapeHtml(title)}</strong>
+            ${subtitle ? `<span>${escapeHtml(subtitle)}</span>` : ""}
+            <span>${escapeHtml(formatDateTime(movement.occurred_at))}</span>
+            ${note ? `<span>${escapeHtml(note)}</span>` : ""}
+            ${actions}
+          </div>
+          <div class="movement-numbers">
+            <strong>${quantity > 0 ? "+" : ""}${escapeHtml(formatNumber(quantity))}</strong>
+            ${value}
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+async function renderMovements(wineId) {
+  if (!wineId || !movementList) return;
+  try {
+    const movements = await api(`/api/wines/${encodeURIComponent(wineId)}/movements`);
+    movementList.innerHTML = renderMovementRows(movements);
+  } catch (error) {
+    movementList.innerHTML = `<p class="empty-state compact">${escapeHtml(error.message)}</p>`;
+  }
+}
+
+async function renderHistory() {
+  if (!historyList) return;
+  try {
+    state.movements = await api("/api/movements");
+    historyList.innerHTML = renderMovementRows(state.movements, { includeWine: true });
+  } catch (error) {
+    historyList.innerHTML = `<p class="empty-state compact">${escapeHtml(error.message)}</p>`;
   }
 }
 
@@ -1316,6 +1501,7 @@ function renderCellar() {
       const shared = isSharedWine(wine);
       return state.ownerFilter === "Shared" ? shared : !shared;
     })
+    .filter(matchesQuantityFilter)
     .filter((wine) => {
       if (!query) return true;
       return [wine.name, wine.producer, wine.region, wine.appellation, wine.vintage]
@@ -1896,6 +2082,13 @@ async function renderInsights() {
     sharedColorList.innerHTML = renderInsightRows(summary.shared_colors, "type", "shared");
     grossRegionList.innerHTML = renderInsightRows(summary.gross_regions, "region", "total");
     grossColorList.innerHTML = renderInsightRows(summary.gross_colors, "type", "total");
+    const movements = summary.movements || {};
+    document.querySelector("#movement-consumed-bottles").textContent = formatNumber(movements.consumed_bottles);
+    document.querySelector("#movement-sold-bottles").textContent = formatNumber(movements.sold_bottles);
+    document.querySelector("#movement-consumed-value").textContent = formatMoney(movements.consumed_value, summary.reference_currency);
+    document.querySelector("#movement-sold-revenue").textContent = formatMoney(movements.sold_revenue, summary.reference_currency);
+    document.querySelector("#movement-realized-gain-loss").textContent = formatMoney(movements.realized_gain_loss, summary.reference_currency);
+    movementConsumedRegionList.innerHTML = renderInsightRows(movements.consumed_regions || [], "region", "movements");
 
     const sourceLabel = summary.rates.cached ? t("cachedRates") : t("latestRates");
     document.querySelector("#rates-note").textContent = t("convertedRates", {
@@ -1928,12 +2121,14 @@ function applyInsightListFilter(field, value, scope) {
   state.insightFilter = { field, value, scope };
   state.filter = "All";
   state.ownerFilter = "All";
+  state.quantityFilter = "Available";
   state.sort = "delivery-desc";
   cellarSearch.value = "";
   cellarSort.value = state.sort;
   state.search = "";
   document.querySelectorAll("[data-filter]").forEach((item) => item.classList.toggle("active", item.dataset.filter === "All"));
   document.querySelectorAll("[data-owner-filter]").forEach((item) => item.classList.toggle("active", item.dataset.ownerFilter === "All"));
+  document.querySelectorAll("[data-quantity-filter]").forEach((item) => item.classList.toggle("active", item.dataset.quantityFilter === "Available"));
   updateFilterCount();
   renderCellar();
   showScreen("cellar");
@@ -2134,25 +2329,66 @@ async function drinkBottle() {
   const wine = state.wines.find((item) => item.id === state.selectedWineId);
   if (!wine || Number(wine.quantity) <= 0) return;
   if (!confirm(t("drinkConfirm", { wine: wine.name }))) return;
+  const note = prompt(t("drinkNotePrompt"), "");
+  if (note === null) return;
 
   drinkButton.disabled = true;
   try {
-    const saved = await markBottleDrunk(wine.id);
+    const saved = await markBottleDrunk(wine.id, note);
     openDetail(saved);
   } finally {
     drinkButton.disabled = false;
   }
 }
 
-async function markBottleDrunk(wineId) {
-  const saved = await api(`/api/wines/${encodeURIComponent(wineId)}/drink`, { method: "POST" });
-  const index = state.wines.findIndex((item) => item.id === saved.id);
-  if (index >= 0) state.wines[index] = saved;
-  renderWineSuggestions();
-  renderCellar();
-  renderDrinkNow();
-  await renderInsights();
+async function markBottleDrunk(wineId, note = "") {
+  const saved = await api(`/api/wines/${encodeURIComponent(wineId)}/drink`, {
+    method: "POST",
+    body: JSON.stringify({ note: note.trim() }),
+  });
+  await refreshAfterInventoryChange(saved);
   return saved;
+}
+
+function movementById(id) {
+  return state.movements.find((movement) => movement.id === id);
+}
+
+async function editMovement(id) {
+  const existing = movementById(id) || (await api("/api/movements")).find((movement) => movement.id === id);
+  if (!existing) return;
+  const currentQuantity = Math.abs(Number(existing.quantity || 0));
+  const quantityInput = prompt(t("movementEditQuantityPrompt"), String(currentQuantity));
+  if (quantityInput === null) return;
+  const quantity = Number.parseInt(quantityInput, 10);
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    alert(t("movementUnable", { error: "Invalid quantity" }));
+    return;
+  }
+  const note = prompt(t("movementEditNotePrompt"), existing.note || "");
+  if (note === null) return;
+
+  try {
+    const result = await api(`/api/movements/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify({ quantity, note }),
+    });
+    await refreshAfterInventoryChange(result.wine);
+    if (state.selectedWineId === result.wine.id) openDetail(result.wine);
+  } catch (error) {
+    alert(t("movementUnable", { error: error.message }));
+  }
+}
+
+async function cancelMovement(id) {
+  if (!confirm(t("movementCancelConfirm"))) return;
+  try {
+    const result = await api(`/api/movements/${encodeURIComponent(id)}`, { method: "DELETE" });
+    await refreshAfterInventoryChange(result.wine);
+    if (state.selectedWineId === result.wine.id) openDetail(result.wine);
+  } catch (error) {
+    alert(t("movementUnable", { error: error.message }));
+  }
 }
 
 async function generateAiNotes() {
@@ -2263,13 +2499,9 @@ async function saveSale(event) {
       method: "POST",
       body: JSON.stringify(payload),
     });
-    const index = state.wines.findIndex((item) => item.id === result.wine.id);
-    if (index >= 0) state.wines[index] = result.wine;
     saleForm.hidden = true;
     saleForm.reset();
-    renderWineSuggestions();
-    renderCellar();
-    await renderInsights();
+    await refreshAfterInventoryChange(result.wine);
     openDetail(result.wine);
   } catch (error) {
     alert(t("saleUnable", { error: error.message }));
@@ -2296,9 +2528,11 @@ function importData(file) {
       const result = await api("/api/import", { method: "POST", body: JSON.stringify(parsed) });
       state.wines = Array.isArray(result) ? result : result.wines;
       state.wishlist = Array.isArray(result) ? state.wishlist : result.wishlist || [];
+      state.movements = Array.isArray(result) ? [] : result.movements || [];
       renderWineSuggestions();
       renderCellar();
       renderWishlist();
+      renderHistory();
       showScreen("cellar");
     } catch {
       alert(t("importInvalid"));
@@ -2542,8 +2776,10 @@ drinkNowList.addEventListener("click", (event) => {
   if (drinkButton) {
     const wine = state.wines.find((item) => item.id === drinkButton.dataset.drinkNowDrink);
     if (!wine || !confirm(t("drinkConfirm", { wine: wine.name }))) return;
+    const note = prompt(t("drinkNotePrompt"), "");
+    if (note === null) return;
     drinkButton.disabled = true;
-    markBottleDrunk(drinkButton.dataset.drinkNowDrink).catch((error) => {
+    markBottleDrunk(drinkButton.dataset.drinkNowDrink, note).catch((error) => {
       drinkButton.disabled = false;
       alert(t("unableBottleCount", { error: error.message }));
     });
@@ -2569,6 +2805,27 @@ pairingResult.addEventListener("click", (event) => {
   openDetail(state.wines.find((wine) => wine.id === match.dataset.pairingWine));
 });
 
+function handleMovementListClick(event) {
+  const editButton = event.target.closest("[data-movement-edit]");
+  if (editButton) {
+    editMovement(editButton.dataset.movementEdit);
+    return;
+  }
+  const deleteButton = event.target.closest("[data-movement-delete]");
+  if (deleteButton) {
+    cancelMovement(deleteButton.dataset.movementDelete);
+    return;
+  }
+  const row = event.target.closest("[data-wine-id]");
+  if (row && row.dataset.wineId) {
+    const wine = state.wines.find((item) => item.id === row.dataset.wineId);
+    if (wine) openDetail(wine);
+  }
+}
+
+movementList?.addEventListener("click", handleMovementListClick);
+historyList?.addEventListener("click", handleMovementListClick);
+
 document.querySelectorAll(".nav-item").forEach((button) => {
   button.addEventListener("click", () => showScreen(button.dataset.screen));
 });
@@ -2586,6 +2843,15 @@ document.querySelectorAll("[data-owner-filter]").forEach((button) => {
   button.addEventListener("click", () => {
     state.ownerFilter = button.dataset.ownerFilter;
     document.querySelectorAll("[data-owner-filter]").forEach((item) => item.classList.toggle("active", item === button));
+    updateFilterCount();
+    renderCellar();
+  });
+});
+
+document.querySelectorAll("[data-quantity-filter]").forEach((button) => {
+  button.addEventListener("click", () => {
+    state.quantityFilter = button.dataset.quantityFilter;
+    document.querySelectorAll("[data-quantity-filter]").forEach((item) => item.classList.toggle("active", item === button));
     updateFilterCount();
     renderCellar();
   });

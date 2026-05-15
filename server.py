@@ -306,6 +306,7 @@ def load_catalog_wines() -> tuple[int, list[dict]]:
 def connect() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
@@ -388,6 +389,45 @@ def init_db() -> None:
                 unit_cost REAL NOT NULL,
                 profit_loss REAL NOT NULL,
                 FOREIGN KEY (wine_id) REFERENCES wines(id) ON DELETE CASCADE
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS wine_movements (
+                id TEXT PRIMARY KEY,
+                wine_id TEXT NOT NULL,
+                movement_type TEXT NOT NULL,
+                quantity INTEGER NOT NULL,
+                note TEXT NOT NULL DEFAULT '',
+                related_id TEXT,
+                value REAL,
+                currency TEXT,
+                occurred_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (wine_id) REFERENCES wines(id) ON DELETE CASCADE
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_wine_movements_wine_id_occurred_at
+            ON wine_movements (wine_id, occurred_at DESC)
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO wine_movements (
+                id, wine_id, movement_type, quantity, note, related_id, value, currency, occurred_at
+            )
+            SELECT lower(hex(randomblob(16))), s.wine_id, 'sale', -s.quantity,
+                   'sale:' || s.buyer, s.id, s.sale_price * s.quantity, s.currency, s.sold_at
+            FROM sales s
+            JOIN wines w ON w.id = s.wine_id
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM wine_movements m
+                WHERE m.related_id = s.id AND m.movement_type = 'sale'
             )
             """
         )
@@ -595,6 +635,48 @@ def list_sales(wine_id: str, role: str = "admin") -> list[dict]:
             (wine_id,),
         ).fetchall()
     return [dict(row) for row in rows]
+
+
+def list_movements(wine_id: str, role: str = "admin") -> list[dict]:
+    with connect() as conn:
+        wine = get_wine(conn, wine_id)
+        if not wine:
+            raise LookupError("Wine not found")
+        if role == "shared_viewer" and not is_shared_position(wine):
+            raise LookupError("Wine not found")
+        rows = conn.execute(
+            """
+            SELECT id, wine_id, movement_type, quantity, note, related_id, value, currency, occurred_at
+            FROM wine_movements
+            WHERE wine_id = ?
+            ORDER BY occurred_at DESC, created_at DESC, rowid DESC
+            """,
+            (wine_id,),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def list_all_movements() -> list[dict]:
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT m.id, m.wine_id, m.movement_type, m.quantity, m.note, m.related_id,
+                   m.value, m.currency, m.occurred_at,
+                   w.name AS wine_name, w.producer AS wine_producer, w.vintage AS wine_vintage
+            FROM wine_movements m
+            JOIN wines w ON w.id = m.wine_id
+            ORDER BY m.occurred_at DESC, m.created_at DESC, m.rowid DESC
+            """
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def visible_movements(role: str) -> list[dict]:
+    movements = list_all_movements()
+    if role == "shared_viewer":
+        visible_ids = {wine["id"] for wine in visible_wines(role)}
+        return [movement for movement in movements if movement["wine_id"] in visible_ids]
+    return movements
 
 
 def list_wishlist() -> list[dict]:
@@ -1068,6 +1150,52 @@ def get_summary(role: str = "admin") -> dict:
         shared_regions[region] = shared_regions.get(region, 0) + int(wine["quantity"] or 0)
         shared_colors[color] = shared_colors.get(color, 0) + int(wine["quantity"] or 0)
 
+    wine_by_id = {wine["id"]: wine for wine in wines}
+    visible_ids = set(wine_by_id)
+    consumed_bottles = 0
+    sold_bottles = 0
+    consumed_value_chf = 0.0
+    sold_revenue_chf = 0.0
+    realized_gain_loss_chf = 0.0
+    consumed_regions: dict[str, int] = {}
+    if visible_ids:
+        placeholders = ",".join("?" for _ in visible_ids)
+        with connect() as conn:
+            movement_rows = conn.execute(
+                f"""
+                SELECT wine_id, movement_type, quantity
+                FROM wine_movements
+                WHERE wine_id IN ({placeholders})
+                  AND movement_type IN ('drink', 'sale')
+                """,
+                tuple(visible_ids),
+            ).fetchall()
+            sale_rows = conn.execute(
+                f"""
+                SELECT wine_id, quantity, sale_price, currency, profit_loss
+                FROM sales
+                WHERE wine_id IN ({placeholders})
+                """,
+                tuple(visible_ids),
+            ).fetchall()
+
+        for row in movement_rows:
+            quantity = abs(int(row["quantity"] or 0))
+            wine = wine_by_id.get(row["wine_id"])
+            if not wine or quantity <= 0:
+                continue
+            if row["movement_type"] == "drink":
+                consumed_bottles += quantity
+                consumed_value_chf += convert_to_chf(float(wine["price"] or 0) * quantity, wine["currency"], rates)
+                region = wine["region"] or "Unspecified"
+                consumed_regions[region] = consumed_regions.get(region, 0) + quantity
+            elif row["movement_type"] == "sale":
+                sold_bottles += quantity
+
+        for row in sale_rows:
+            sold_revenue_chf += convert_to_chf(float(row["sale_price"] or 0) * int(row["quantity"] or 0), row["currency"], rates)
+            realized_gain_loss_chf += convert_to_chf(float(row["profit_loss"] or 0), row["currency"], rates)
+
     return {
         "reference_currency": REFERENCE_CURRENCY,
         "total_invested": round(total_chf, 2),
@@ -1109,6 +1237,17 @@ def get_summary(role: str = "admin") -> dict:
             {"type": color, "bottles": bottles}
             for color, bottles in sorted(gross_colors.items(), key=lambda item: item[1], reverse=True)
         ],
+        "movements": {
+            "consumed_bottles": consumed_bottles,
+            "sold_bottles": sold_bottles,
+            "consumed_value": round(consumed_value_chf, 2),
+            "sold_revenue": round(sold_revenue_chf, 2),
+            "realized_gain_loss": round(realized_gain_loss_chf, 2),
+            "consumed_regions": [
+                {"region": region, "bottles": bottles}
+                for region, bottles in sorted(consumed_regions.items(), key=lambda item: item[1], reverse=True)[:5]
+            ],
+        },
         "rates": rates,
     }
 
@@ -1161,6 +1300,44 @@ def clean_wine(payload: dict, wine_id: str | None = None) -> dict:
         "drink_window_notes": str(payload.get("drink_window_notes", "")).strip(),
         "ai_value_notes": str(payload.get("ai_value_notes", "")).strip(),
     }
+
+
+def clean_movement(payload: dict) -> dict:
+    movement_type = str(payload.get("movement_type", "")).strip()
+    if movement_type not in {"drink", "sale", "adjustment", "arrival"}:
+        raise ValueError(f"Unsupported movement type: {movement_type}")
+    wine_id = str(payload.get("wine_id", "")).strip()
+    if not wine_id:
+        raise ValueError("Movement wine_id is required")
+    currency = str(payload.get("currency") or "").strip().upper() or None
+    if currency and currency not in SUPPORTED_CURRENCIES:
+        raise ValueError(f"Unsupported currency: {currency}")
+    occurred_at = str(payload.get("occurred_at", "")).strip()
+    return {
+        "id": str(payload.get("id") or uuid.uuid4()),
+        "wine_id": wine_id,
+        "movement_type": movement_type,
+        "quantity": int(payload.get("quantity") or 0),
+        "note": str(payload.get("note", "")).strip(),
+        "related_id": str(payload.get("related_id") or "").strip() or None,
+        "value": clean_optional_float(payload.get("value")),
+        "currency": currency,
+        "occurred_at": occurred_at,
+    }
+
+
+def clean_movement_update(payload: dict, existing: dict) -> dict:
+    raw_quantity = payload.get("quantity", existing["quantity"])
+    quantity = int(raw_quantity or 0)
+    if existing["movement_type"] in {"drink", "sale"}:
+        quantity = -abs(quantity)
+    elif existing["movement_type"] == "arrival":
+        quantity = abs(quantity)
+    if quantity == 0:
+        raise ValueError("Movement quantity cannot be zero")
+
+    note = str(payload.get("note", existing.get("note", ""))).strip()
+    return {"quantity": quantity, "note": note}
 
 
 def clean_owners(raw_owners: object) -> list[dict]:
@@ -1370,7 +1547,113 @@ def delete_wine(wine_id: str) -> bool:
         return cursor.rowcount > 0
 
 
-def drink_bottle(wine_id: str) -> dict:
+def add_movement(
+    conn: sqlite3.Connection,
+    wine_id: str,
+    movement_type: str,
+    quantity: int,
+    note: str = "",
+    related_id: str | None = None,
+    value: float | None = None,
+    currency: str | None = None,
+) -> str:
+    movement_id = str(uuid.uuid4())
+    conn.execute(
+        """
+        INSERT INTO wine_movements (id, wine_id, movement_type, quantity, note, related_id, value, currency)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (movement_id, wine_id, movement_type, quantity, note, related_id, value, currency),
+    )
+    return movement_id
+
+
+def get_movement(conn: sqlite3.Connection, movement_id: str) -> dict | None:
+    row = conn.execute(
+        """
+        SELECT id, wine_id, movement_type, quantity, note, related_id, value, currency, occurred_at
+        FROM wine_movements
+        WHERE id = ?
+        """,
+        (movement_id,),
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def ensure_movement_visible(conn: sqlite3.Connection, movement: dict | None, role: str) -> dict:
+    if not movement:
+        raise LookupError("Movement not found")
+    wine = get_wine(conn, movement["wine_id"])
+    if not wine or (role == "shared_viewer" and not is_shared_position(wine)):
+        raise LookupError("Movement not found")
+    return wine
+
+
+def apply_quantity_delta(conn: sqlite3.Connection, wine_id: str, delta: int) -> dict:
+    wine = get_wine(conn, wine_id)
+    if not wine:
+        raise LookupError("Wine not found")
+    new_quantity = int(wine["quantity"] or 0) + int(delta)
+    if new_quantity < 0:
+        raise ValueError("Movement would make bottle quantity negative")
+    conn.execute(
+        "UPDATE wines SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (new_quantity, wine_id),
+    )
+    updated = get_wine(conn, wine_id)
+    if not updated:
+        raise LookupError("Wine not found")
+    return updated
+
+
+def update_movement(movement_id: str, payload: dict) -> dict:
+    with connect() as conn:
+        existing = get_movement(conn, movement_id)
+        ensure_movement_visible(conn, existing, "admin")
+        data = clean_movement_update(payload, existing)
+        delta = data["quantity"] - int(existing["quantity"] or 0)
+        updated_wine = apply_quantity_delta(conn, existing["wine_id"], delta)
+
+        value = existing.get("value")
+        if existing["movement_type"] == "sale" and existing.get("related_id"):
+            sale = conn.execute(
+                "SELECT sale_price, unit_cost FROM sales WHERE id = ?",
+                (existing["related_id"],),
+            ).fetchone()
+            if sale:
+                sold_quantity = abs(data["quantity"])
+                value = float(sale["sale_price"] or 0) * sold_quantity
+                profit_loss = (float(sale["sale_price"] or 0) - float(sale["unit_cost"] or 0)) * sold_quantity
+                conn.execute(
+                    "UPDATE sales SET quantity = ?, profit_loss = ? WHERE id = ?",
+                    (sold_quantity, profit_loss, existing["related_id"]),
+                )
+
+        conn.execute(
+            """
+            UPDATE wine_movements
+            SET quantity = ?, note = ?, value = ?
+            WHERE id = ?
+            """,
+            (data["quantity"], data["note"], value, movement_id),
+        )
+        movement = get_movement(conn, movement_id)
+    return {"movement": movement, "wine": updated_wine}
+
+
+def delete_movement(movement_id: str) -> dict:
+    with connect() as conn:
+        movement = get_movement(conn, movement_id)
+        ensure_movement_visible(conn, movement, "admin")
+        updated_wine = apply_quantity_delta(conn, movement["wine_id"], -int(movement["quantity"] or 0))
+        if movement["movement_type"] == "sale" and movement.get("related_id"):
+            conn.execute("DELETE FROM sales WHERE id = ?", (movement["related_id"],))
+        conn.execute("DELETE FROM wine_movements WHERE id = ?", (movement_id,))
+    return {"wine": updated_wine}
+
+
+def drink_bottle(wine_id: str, payload: dict | None = None) -> dict:
+    note = str((payload or {}).get("note", "")).strip() or "Bevuta 1"
     with connect() as conn:
         wine = get_wine(conn, wine_id)
         if not wine:
@@ -1384,6 +1667,7 @@ def drink_bottle(wine_id: str) -> dict:
             "UPDATE wines SET quantity = quantity - 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
             (wine_id,),
         )
+        add_movement(conn, wine_id, "drink", -1, note)
         updated = get_wine(conn, wine_id)
     return updated
 
@@ -1437,6 +1721,16 @@ def sell_bottles(wine_id: str, payload: dict) -> dict:
         conn.execute(
             "UPDATE wines SET quantity = quantity - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
             (quantity, wine_id),
+        )
+        add_movement(
+            conn,
+            wine_id,
+            "sale",
+            -quantity,
+            f"sale:{buyer}",
+            sale_id,
+            sale_price * quantity,
+            currency,
         )
         updated = get_wine(conn, wine_id)
 
@@ -2059,6 +2353,36 @@ def replace_all_wines(wines: list[dict]) -> list[dict]:
     return list_wines()
 
 
+def replace_all_movements(movements: list[dict]) -> list[dict]:
+    cleaned = [clean_movement(movement) for movement in movements]
+    with connect() as conn:
+        conn.execute("DELETE FROM wine_movements")
+        for movement in cleaned:
+            if not get_wine(conn, movement["wine_id"]):
+                continue
+            if movement["occurred_at"]:
+                conn.execute(
+                    """
+                    INSERT INTO wine_movements (
+                        id, wine_id, movement_type, quantity, note, related_id, value, currency, occurred_at
+                    )
+                    VALUES (
+                        :id, :wine_id, :movement_type, :quantity, :note, :related_id, :value, :currency, :occurred_at
+                    )
+                    """,
+                    movement,
+                )
+            else:
+                conn.execute(
+                    """
+                    INSERT INTO wine_movements (id, wine_id, movement_type, quantity, note, related_id, value, currency)
+                    VALUES (:id, :wine_id, :movement_type, :quantity, :note, :related_id, :value, :currency)
+                    """,
+                    movement,
+                )
+    return list_all_movements()
+
+
 def replace_all_wishlist(items: list[dict]) -> list[dict]:
     cleaned = [clean_wishlist_item(item) for item in items]
     with connect() as conn:
@@ -2138,10 +2462,13 @@ class CellarHandler(SimpleHTTPRequestHandler):
         if path == "/api/wishlist":
             self.send_json(list_wishlist())
             return
+        if path == "/api/movements":
+            self.send_json(visible_movements(self.current_role()))
+            return
         if path == "/api/export":
             if not self.require_admin():
                 return
-            self.send_json({"wines": list_wines(), "wishlist": list_wishlist()})
+            self.send_json({"wines": list_wines(), "wishlist": list_wishlist(), "movements": list_all_movements()})
             return
         if path == "/api/rates":
             try:
@@ -2153,6 +2480,13 @@ class CellarHandler(SimpleHTTPRequestHandler):
             wine_id = unquote(path.removeprefix("/api/wines/").removesuffix("/sales"))
             try:
                 self.send_json(list_sales(wine_id, self.current_role()))
+            except LookupError as exc:
+                self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+            return
+        if path.startswith("/api/wines/") and path.endswith("/movements"):
+            wine_id = unquote(path.removeprefix("/api/wines/").removesuffix("/movements"))
+            try:
+                self.send_json(list_movements(wine_id, self.current_role()))
             except LookupError as exc:
                 self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
             return
@@ -2234,7 +2568,7 @@ class CellarHandler(SimpleHTTPRequestHandler):
             if path.startswith("/api/wines/") and path.endswith("/drink"):
                 wine_id = unquote(path.removeprefix("/api/wines/").removesuffix("/drink"))
                 try:
-                    self.send_json(drink_bottle(wine_id))
+                    self.send_json(drink_bottle(wine_id, self.read_json()))
                 except LookupError as exc:
                     self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
                 return
@@ -2256,13 +2590,18 @@ class CellarHandler(SimpleHTTPRequestHandler):
                 if not isinstance(payload, dict) or not isinstance(payload.get("wines"), list):
                     raise ValueError("Import payload must include a wines list")
                 wines = replace_all_wines(payload["wines"])
+                movements = []
+                if "movements" in payload:
+                    if not isinstance(payload["movements"], list):
+                        raise ValueError("Import movements payload must be a list")
+                    movements = replace_all_movements(payload["movements"])
                 if "wishlist" in payload:
                     if not isinstance(payload["wishlist"], list):
                         raise ValueError("Import wishlist payload must be a list")
                     wishlist = replace_all_wishlist(payload["wishlist"])
                 else:
                     wishlist = list_wishlist()
-                self.send_json({"wines": wines, "wishlist": wishlist})
+                self.send_json({"wines": wines, "wishlist": wishlist, "movements": movements})
                 return
             self.send_error(HTTPStatus.NOT_FOUND)
         except ValueError as exc:
@@ -2270,6 +2609,17 @@ class CellarHandler(SimpleHTTPRequestHandler):
 
     def do_PUT(self) -> None:
         path = urlparse(self.path).path
+        if path.startswith("/api/movements/"):
+            if not self.require_admin():
+                return
+            movement_id = unquote(path.removeprefix("/api/movements/"))
+            try:
+                self.send_json(update_movement(movement_id, self.read_json()))
+            except LookupError as exc:
+                self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+            except ValueError as exc:
+                self.send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+            return
         if path.startswith("/api/wishlist/"):
             if not self.require_authenticated():
                 return
@@ -2292,6 +2642,17 @@ class CellarHandler(SimpleHTTPRequestHandler):
 
     def do_DELETE(self) -> None:
         path = urlparse(self.path).path
+        if path.startswith("/api/movements/"):
+            if not self.require_admin():
+                return
+            movement_id = unquote(path.removeprefix("/api/movements/"))
+            try:
+                self.send_json(delete_movement(movement_id))
+            except LookupError as exc:
+                self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+            except ValueError as exc:
+                self.send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+            return
         if path.startswith("/api/wishlist/"):
             if not self.require_admin():
                 return

@@ -223,6 +223,8 @@ body[data-theme="midnight"] .owner-list,
 body[data-theme="midnight"] .score-list,
 body[data-theme="midnight"] .sale-form,
 body[data-theme="midnight"] .sale-list,
+body[data-theme="midnight"] .movement-list,
+body[data-theme="midnight"] .history-list,
 body[data-theme="midnight"] .wishlist-card-detail,
 body[data-theme="midnight"] .wishlist-card-detail dl {
   color: var(--ink);
@@ -1675,7 +1677,8 @@ body[data-theme="dusk"] .small-vintage {
 .notes-panel,
 .ai-notes-panel,
 .drink-window-panel,
-.sales-panel {
+.sales-panel,
+.movements-panel {
   display: grid;
   gap: 10px;
 }
@@ -1685,7 +1688,8 @@ body[data-theme="dusk"] .small-vintage {
 .notes-panel h2,
 .ai-notes-panel h2,
 .drink-window-panel h2,
-.sales-panel h2 {
+.sales-panel h2,
+.movements-panel h2 {
   margin: 0;
   font-size: 1.15rem;
 }
@@ -2039,6 +2043,13 @@ body[data-theme="dusk"] .wishlist-ai-badge {
   background: var(--surface-soft);
 }
 
+.movement-list {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
 .sale-row {
   display: flex;
   justify-content: space-between;
@@ -2047,23 +2058,57 @@ body[data-theme="dusk"] .wishlist-ai-badge {
   border-bottom: 1px solid rgba(223, 210, 192, 0.75);
 }
 
-.sale-row:last-child {
+.movement-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px;
+  border-bottom: 1px solid rgba(223, 210, 192, 0.75);
+}
+
+.sale-row:last-child,
+.movement-row:last-child {
   border-bottom: 0;
 }
 
 .sale-row div,
-.sale-numbers {
+.sale-numbers,
+.movement-row div,
+.movement-numbers {
   display: grid;
   gap: 3px;
 }
 
-.sale-row span {
+.sale-row span,
+.movement-row span {
   color: var(--muted);
   font-size: 0.82rem;
 }
 
-.sale-numbers {
+.sale-numbers,
+.movement-numbers {
   text-align: right;
+}
+
+.movement-row[data-movement="drink"] .movement-numbers strong,
+.movement-row[data-movement="sale"] .movement-numbers strong {
+  color: var(--wine);
+}
+
+.movement-actions {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.movement-actions .btn {
+  padding: 6px 10px;
+  font-size: 0.78rem;
+}
+
+.history-list {
+  margin-top: 18px;
 }
 
 .profit {
@@ -2311,7 +2356,7 @@ body[data-theme="dusk"] .wishlist-ai-badge {
   left: 0;
   z-index: 5;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   max-width: 680px;
   min-height: calc(78px + env(safe-area-inset-bottom));
   margin: 0 auto;
