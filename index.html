@@ -47,7 +47,6 @@
           <div class="d-flex gap-2 align-items-center">
             <button class="btn btn-soft icon-button" id="install-app-button" type="button" data-i18n="installApp" hidden>Install</button>
             <button class="btn btn-soft icon-button" id="language-button" type="button" aria-label="Language">IT</button>
-            <button class="btn btn-soft icon-button" id="passkey-register-button" type="button" data-i18n="passkeyRegister" hidden>Passkey</button>
             <button class="btn btn-soft icon-button admin-only" id="settings-button" type="button" data-i18n="adminSettings">Admin</button>
             <button class="btn btn-soft icon-button" id="logout-button" type="button" data-i18n="logout">Logout</button>
             <button class="btn btn-soft icon-button admin-only" id="export-button" type="button" aria-label="Export data" data-i18n="export">Export</button>
@@ -638,6 +637,11 @@
           <h1 id="settings-title" data-i18n="adminSettings">Admin</h1>
         </header>
         <section class="settings-panel">
+          <div>
+            <h2 data-i18n="passkeyTitle">Passkey</h2>
+            <p data-i18n="passkeyHelp">Use Face ID, Touch ID, fingerprint, or device unlock for login.</p>
+            <button class="btn btn-soft save-button" id="passkey-register-button" type="button" data-i18n="passkeyRegister" hidden>Enable passkey</button>
+          </div>
           <div>
             <h2 data-i18n="aiModelsTitle">Modelli AI</h2>
             <p data-i18n="aiModelsHelp">Scegli il modello OpenAI per ciascuna funzione AI. Le raccomandazioni aiutano a bilanciare qualità, velocità e costo.</p>
