@@ -27,6 +27,7 @@ const state = {
   settings: null,
   theme: requestedTheme || normalizeTheme(localStorage.getItem("wine-cellar-theme")) || "classic",
   wishlistStrategies: {},
+  drinkNowCollapsed: {},
 };
 
 let installPromptEvent = null;
@@ -1427,10 +1428,17 @@ function renderDrinkNow() {
     .map((section) => {
       const items = recommendations.filter((item) => item.status.section === section);
       if (!items.length) return "";
+      const collapsed = Boolean(state.drinkNowCollapsed[section]);
+      const sectionContentId = `drink-now-section-${section}`;
       return `
-        <section class="drink-now-section">
-          <h2>${escapeHtml(sectionLabels[section])} <span>${escapeHtml(formatNumber(items.length))}</span></h2>
-          <div class="content-list">
+        <section class="drink-now-section" data-drink-now-section="${escapeAttribute(section)}">
+          <h2>
+            <button class="drink-now-section-toggle" data-drink-now-toggle="${escapeAttribute(section)}" type="button" aria-expanded="${collapsed ? "false" : "true"}" aria-controls="${escapeAttribute(sectionContentId)}">
+              <span>${escapeHtml(sectionLabels[section])}</span>
+              <span class="drink-now-section-count">${escapeHtml(formatNumber(items.length))}</span>
+            </button>
+          </h2>
+          <div class="content-list" id="${escapeAttribute(sectionContentId)}" ${collapsed ? "hidden" : ""}>
             ${items
               .map(({ wine, status }) => {
                 const drinkAction = isAdmin()
@@ -2515,6 +2523,14 @@ wishlistList.addEventListener("click", (event) => {
 });
 
 drinkNowList.addEventListener("click", (event) => {
+  const sectionToggle = event.target.closest("[data-drink-now-toggle]");
+  if (sectionToggle) {
+    const section = sectionToggle.dataset.drinkNowToggle;
+    state.drinkNowCollapsed[section] = !state.drinkNowCollapsed[section];
+    renderDrinkNow();
+    return;
+  }
+
   const drinkButton = event.target.closest("[data-drink-now-drink]");
   if (drinkButton) {
     const wine = state.wines.find((item) => item.id === drinkButton.dataset.drinkNowDrink);

@@ -1186,14 +1186,52 @@ body[data-theme="dusk"] .drink-now-card[data-type="Red"]:hover {
 }
 
 .drink-now-section h2 {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 8px;
+  margin: 8px 0 10px;
 }
 
-.drink-now-section h2 span {
+.drink-now-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  font: inherit;
+  text-align: left;
+}
+
+.drink-now-section-toggle::after {
+  width: 9px;
+  height: 9px;
+  margin-left: auto;
+  border-right: 2px solid var(--wine);
+  border-bottom: 2px solid var(--wine);
+  content: "";
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.18s ease;
+}
+
+.drink-now-section-toggle[aria-expanded="false"]::after {
+  transform: rotate(-45deg);
+}
+
+.drink-now-section-toggle:hover,
+.drink-now-section-toggle:focus-visible {
+  border-color: color-mix(in srgb, var(--wine) 34%, var(--line));
+  background: var(--panel);
+}
+
+.drink-now-section-count {
+  display: inline-grid;
+  min-width: 28px;
+  height: 24px;
+  border-radius: 999px;
+  place-items: center;
+  background: var(--panel-strong);
   color: var(--muted);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 0.82rem;
