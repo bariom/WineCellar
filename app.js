@@ -27,7 +27,14 @@ const state = {
   settings: null,
   theme: requestedTheme || normalizeTheme(localStorage.getItem("wine-cellar-theme")) || "classic",
   wishlistStrategies: {},
-  drinkNowCollapsed: {},
+  drinkNowCollapsed: {
+    dontWait: true,
+    ideal: true,
+    pastIdeal: true,
+    ready: true,
+    unknown: true,
+    wait: true,
+  },
 };
 
 let installPromptEvent = null;
