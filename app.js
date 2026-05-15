@@ -26,6 +26,7 @@ const state = {
   search: "",
   role: "anonymous",
   authEnabled: false,
+  appLockSuppressed: false,
   passkeysEnabled: false,
   passkeyAvailable: false,
   passkeyRegistered: false,
@@ -814,6 +815,37 @@ function isSharedViewer() {
 
 function isAuthenticated() {
   return !state.authEnabled || state.role !== "anonymous";
+}
+
+function clearAuthenticatedState() {
+  state.role = state.authEnabled ? "anonymous" : "admin";
+  state.wines = [];
+  state.wishlist = [];
+  state.movements = [];
+  state.settings = null;
+  state.selectedWineId = null;
+  state.selectedWishlistId = null;
+  state.wishlistStrategies = {};
+  state.passkeyRegistered = false;
+}
+
+function sendLogoutBeacon() {
+  const body = new Blob(["{}"], { type: "application/json" });
+  if (navigator.sendBeacon && navigator.sendBeacon("/api/logout", body)) return;
+  fetch("/api/logout", {
+    method: "POST",
+    body: "{}",
+    headers: { "Content-Type": "application/json" },
+    keepalive: true,
+  }).catch(() => {});
+}
+
+function lockApplication() {
+  if (!state.authEnabled || !isAuthenticated() || state.appLockSuppressed) return;
+  sendLogoutBeacon();
+  clearAuthenticatedState();
+  applyPermissions();
+  showScreen("login");
 }
 
 function browserSupportsPasskeys() {
@@ -2644,13 +2676,18 @@ async function registerPasskey() {
     alert(t("passkeyUnavailable"));
     return;
   }
-  const options = await api("/api/passkeys/register/options", { method: "POST", body: JSON.stringify({}) });
-  const credential = await navigator.credentials.create({ publicKey: preparePasskeyCreationOptions(options) });
-  await api("/api/passkeys/register/verify", { method: "POST", body: JSON.stringify(publicKeyCredentialToJson(credential)) });
-  state.passkeyRegistered = true;
-  state.passkeyAvailable = true;
-  applyPermissions();
-  alert(t("passkeyRegistered"));
+  state.appLockSuppressed = true;
+  try {
+    const options = await api("/api/passkeys/register/options", { method: "POST", body: JSON.stringify({}) });
+    const credential = await navigator.credentials.create({ publicKey: preparePasskeyCreationOptions(options) });
+    await api("/api/passkeys/register/verify", { method: "POST", body: JSON.stringify(publicKeyCredentialToJson(credential)) });
+    state.passkeyRegistered = true;
+    state.passkeyAvailable = true;
+    applyPermissions();
+    alert(t("passkeyRegistered"));
+  } finally {
+    state.appLockSuppressed = false;
+  }
 }
 
 async function loginWithPasskey() {
@@ -2659,18 +2696,23 @@ async function loginWithPasskey() {
     return;
   }
   loginError.hidden = true;
-  const options = await api("/api/passkeys/login/options", { method: "POST", body: JSON.stringify({}) });
-  const credential = await navigator.credentials.get({ publicKey: preparePasskeyRequestOptions(options) });
-  const session = await api("/api/passkeys/login/verify", { method: "POST", body: JSON.stringify(publicKeyCredentialToJson(credential)) });
-  state.role = session.role;
-  state.authEnabled = session.auth_enabled;
-  state.passkeysEnabled = Boolean(session.passkeys_enabled);
-  state.passkeyAvailable = Boolean(session.passkey_available);
-  state.passkeyRegistered = Boolean(session.passkey_registered);
-  loginForm.reset();
-  applyPermissions();
-  await loadWines();
-  showScreen("cellar");
+  state.appLockSuppressed = true;
+  try {
+    const options = await api("/api/passkeys/login/options", { method: "POST", body: JSON.stringify({}) });
+    const credential = await navigator.credentials.get({ publicKey: preparePasskeyRequestOptions(options) });
+    const session = await api("/api/passkeys/login/verify", { method: "POST", body: JSON.stringify(publicKeyCredentialToJson(credential)) });
+    state.role = session.role;
+    state.authEnabled = session.auth_enabled;
+    state.passkeysEnabled = Boolean(session.passkeys_enabled);
+    state.passkeyAvailable = Boolean(session.passkey_available);
+    state.passkeyRegistered = Boolean(session.passkey_registered);
+    loginForm.reset();
+    applyPermissions();
+    await loadWines();
+    showScreen("cellar");
+  } finally {
+    state.appLockSuppressed = false;
+  }
 }
 
 loginForm.addEventListener("submit", async (event) => {
@@ -2737,10 +2779,7 @@ document.querySelector("#settings-button").addEventListener("click", () => {
 });
 document.querySelector("#logout-button").addEventListener("click", async () => {
   await api("/api/logout", { method: "POST" });
-  state.role = state.authEnabled ? "anonymous" : "admin";
-  state.wines = [];
-  state.wishlist = [];
-  state.passkeyRegistered = false;
+  clearAuthenticatedState();
   applyPermissions();
   if (state.authEnabled) showScreen("login");
   else {
@@ -2748,6 +2787,15 @@ document.querySelector("#logout-button").addEventListener("click", async () => {
     showScreen("cellar");
   }
 });
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") lockApplication();
+});
+
+window.addEventListener("pagehide", () => {
+  lockApplication();
+});
+
 settingsForm.addEventListener("submit", (event) => {
   saveSettings(event).catch((error) => alert(error.message));
 });
