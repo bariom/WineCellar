@@ -2043,6 +2043,19 @@ body[data-theme="dusk"] .wishlist-ai-badge {
   background: color-mix(in srgb, var(--wine) 82%, #6f2428);
 }
 
+.wishlist-strategy[data-signal-tone="positive"] > span {
+  background: var(--sage);
+}
+
+.wishlist-strategy[data-signal-tone="positive"] {
+  border-color: color-mix(in srgb, var(--sage) 34%, var(--line));
+  background: color-mix(in srgb, var(--sage) 10%, var(--surface));
+}
+
+.wishlist-strategy[data-signal-tone="negative"] > span {
+  background: color-mix(in srgb, var(--wine) 82%, #6f2428);
+}
+
 .wishlist-strategy p {
   flex: 1 1 180px;
   min-width: 0;

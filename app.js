@@ -1929,14 +1929,41 @@ function persistedWishlistStrategy(item) {
   }
 }
 
+function wishlistStrategyTone(strategy) {
+  const recommendation = String(strategy?.recommendation || "").toLowerCase();
+  const signal = String(strategy?.signal || "").toLowerCase();
+  const priceAssessment = String(strategy?.price_assessment || "").toLowerCase();
+  if (
+    recommendation === "buy" ||
+    signal.includes("prezzo ok") ||
+    signal.includes("interessante") ||
+    signal.includes("compra") ||
+    priceAssessment.includes("molto interessante") ||
+    priceAssessment.includes("prezzo interessante")
+  ) {
+    return "positive";
+  }
+  if (
+    recommendation === "avoid" ||
+    signal.includes("evita") ||
+    signal.includes("troppo caro") ||
+    priceAssessment.includes("prezzo caro") ||
+    priceAssessment.includes("sopra la fascia")
+  ) {
+    return "negative";
+  }
+  return "neutral";
+}
+
 function renderWishlistStrategy(item) {
   const strategy = state.wishlistStrategies[item.id] || persistedWishlistStrategy(item);
   if (!strategy) return "";
   if (strategy.loading) return `<div class="wishlist-strategy"><p>${escapeHtml(t("wishlistStrategyLoading"))}</p></div>`;
   const signal = strategy.signal || wishlistStrategyLabel(strategy.recommendation);
   const sources = renderWishlistStrategySources(strategy.sources);
+  const tone = wishlistStrategyTone(strategy);
   return `
-    <div class="wishlist-strategy" data-recommendation="${escapeAttribute(strategy.recommendation || "monitor")}">
+    <div class="wishlist-strategy" data-recommendation="${escapeAttribute(strategy.recommendation || "monitor")}" data-signal-tone="${escapeAttribute(tone)}">
       <span>${escapeHtml(signal)}</span>
       ${strategy.reason ? `<p>${escapeHtml(strategy.reason)}</p>` : ""}
       ${
