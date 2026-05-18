@@ -892,12 +892,15 @@ def clean_wishlist_price_sources(payload: object) -> list[dict]:
         observed_vintage = str(source.get("observed_vintage", "")).strip()
         observed_format = str(source.get("observed_format", "")).strip()
         match_quality = str(source.get("match_quality", "")).strip().lower()
+        source_kind = str(source.get("source_kind", "")).strip().lower()
         if not url.startswith(("http://", "https://")) or url in seen:
             continue
         if observed_currency and observed_currency not in SUPPORTED_CURRENCIES:
             observed_currency = ""
         if match_quality not in {"exact", "related", "unknown"}:
             match_quality = "unknown"
+        if source_kind not in {"merchant", "search", "auction", "flash", "marketplace", "unknown"}:
+            source_kind = "unknown"
         seen.add(url)
         cleaned.append(
             {
@@ -908,6 +911,7 @@ def clean_wishlist_price_sources(payload: object) -> list[dict]:
                 "observed_vintage": observed_vintage[:20],
                 "observed_format": observed_format[:40],
                 "match_quality": match_quality,
+                "source_kind": source_kind,
             }
         )
         if len(cleaned) >= 4:
@@ -967,6 +971,39 @@ def wishlist_search_reference(item: dict) -> str:
     return " ".join(part for part in parts if part)
 
 
+FLASH_DEAL_SOURCE_DOMAINS = {
+    "deindeal.ch",
+}
+
+
+PREFERRED_WINE_MERCHANT_DOMAINS = {
+    "arvi.ch",
+    "millesima.ch",
+    "millesima.com",
+    "hawesko.de",
+    "idealwine.com",
+    "vino.com",
+    "berrybros.com",
+    "farrvintners.com",
+}
+
+
+def wishlist_source_domain(url: str) -> str:
+    return urlparse(url).netloc.lower().removeprefix("www.")
+
+
+def wishlist_source_is_excluded(source: dict) -> bool:
+    domain = wishlist_source_domain(str(source.get("url") or ""))
+    source_kind = str(source.get("source_kind") or "").strip().lower()
+    return domain in FLASH_DEAL_SOURCE_DOMAINS or source_kind == "flash"
+
+
+def wishlist_source_is_preferred(source: dict) -> bool:
+    domain = wishlist_source_domain(str(source.get("url") or ""))
+    source_kind = str(source.get("source_kind") or "").strip().lower()
+    return domain in PREFERRED_WINE_MERCHANT_DOMAINS or source_kind == "merchant"
+
+
 def derive_market_range_from_sources(strategy: dict, item: dict, rates: dict | None = None) -> dict:
     sources = strategy.get("sources", [])
     if not isinstance(sources, list) or not sources:
@@ -976,9 +1013,12 @@ def derive_market_range_from_sources(strategy: dict, item: dict, rates: dict | N
     item_format = str(item.get("format") or "").strip().lower()
     target_currency = str(item.get("currency") or "").strip().upper() or "CHF"
     exact_prices = []
+    preferred_exact_prices = []
 
     for source in sources:
         if not isinstance(source, dict):
+            continue
+        if wishlist_source_is_excluded(source):
             continue
         price = clean_optional_float(source.get("observed_price"))
         currency = str(source.get("observed_currency") or "").strip().upper()
@@ -1002,11 +1042,16 @@ def derive_market_range_from_sources(strategy: dict, item: dict, rates: dict | N
                 if target_rate is None:
                     raise ValueError(f"Unsupported currency: {target_currency}")
                 normalized_price = normalized_price / target_rate
-        exact_prices.append(round(normalized_price, 2))
+        rounded_price = round(normalized_price, 2)
+        exact_prices.append(rounded_price)
+        if wishlist_source_is_preferred(source):
+            preferred_exact_prices.append(rounded_price)
 
-    if exact_prices:
-        strategy["market_price_low"] = min(exact_prices)
-        strategy["market_price_high"] = max(exact_prices)
+    selected_prices = preferred_exact_prices or exact_prices
+
+    if selected_prices:
+        strategy["market_price_low"] = min(selected_prices)
+        strategy["market_price_high"] = max(selected_prices)
         strategy["market_price_currency"] = target_currency
     else:
         strategy["market_price_low"] = None
@@ -1146,6 +1191,10 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
     context = {
         "wishlist_item": item,
         "search_reference": wishlist_search_reference(item),
+        "source_preferences": {
+            "prefer_merchants": ["Arvi", "Millesima", "Hawesko", "iDealwine", "Vino.com", "Berry Bros. & Rudd", "Farr Vintners"],
+            "avoid_sources": ["DeinDeal", "flash deals", "one-day deals", "expired auction lots", "generic marketplaces"],
+        },
         "decision_constraints": {
             "target_price": item.get("target_price"),
             "currency": item.get("currency"),
@@ -1200,7 +1249,9 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "estremamente breve per un vino in wishlist in base allo scopo dell'osservazione. Rispondi "
             "solo con JSON valido, senza Markdown e senza testo prima o dopo. Non presentare "
             "la risposta come consulenza finanziaria certa. Devi usare la ricerca web live per stimare "
-            "il prezzo corrente o recente da fonti verificabili. Preferisci risultati per la stessa "
+            "il prezzo corrente o recente da fonti verificabili. Preferisci commercianti di vino stabili "
+            "e specializzati come Arvi o simili; evita offerte flash, one-day deal, outlet temporanei, "
+            "aste concluse e marketplace generici come fonte principale della fascia. Preferisci risultati per la stessa "
             "etichetta, produttore, annata e formato; usa come riferimento esatto i campi presenti in wishlist. "
             "Se non trovi almeno una fonte con annata uguale, non restituire una fascia numerica inventata: "
             "usa market_price_low null, market_price_high null e spiega brevemente in reason che mancano "
@@ -1243,10 +1294,12 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "\"market_price_currency\":\"CHF|EUR|USD|\","
             "\"sources\":[{\"title\":\"fonte prezzo\",\"url\":\"https://...\",\"observed_price\":numero_o_null,"
             "\"observed_currency\":\"CHF|EUR|USD|\",\"observed_vintage\":\"annata trovata\","
-            "\"observed_format\":\"formato trovato\",\"match_quality\":\"exact|related|unknown\"}],"
+            "\"observed_format\":\"formato trovato\",\"match_quality\":\"exact|related|unknown\","
+            "\"source_kind\":\"merchant|search|auction|flash|marketplace|unknown\"}],"
             "\"alternative\":{\"name\":\"vino alternativo\",\"producer\":\"produttore\"}}. "
             "Per ogni source, compila observed_price e observed_currency se il prezzo e visibile. "
             "Usa match_quality exact solo se etichetta, produttore, annata e formato coincidono davvero. "
+            "Usa source_kind merchant per commercianti stabili di vino, flash per offerte temporanee come DeinDeal. "
             "Se non hai una alternativa credibile, usa alternative null."
         ),
         "tools": [
