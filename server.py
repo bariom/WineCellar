@@ -847,6 +847,11 @@ def clean_wishlist_strategy_payload(payload: dict) -> dict:
     signal = str(payload.get("signal", "") or payload.get("summary", "")).strip()
     reason = str(payload.get("reason", "")).strip()
     price_assessment = str(payload.get("price_assessment", "") or payload.get("priceAssessment", "")).strip()
+    market_price_low = clean_optional_float(payload.get("market_price_low"))
+    market_price_high = clean_optional_float(payload.get("market_price_high"))
+    market_price_currency = str(payload.get("market_price_currency", "")).strip().upper()
+    if market_price_currency not in SUPPORTED_CURRENCIES:
+        market_price_currency = ""
 
     alternative_payload = payload.get("alternative", {})
     alternative = None
@@ -863,6 +868,9 @@ def clean_wishlist_strategy_payload(payload: dict) -> dict:
         "signal": signal[:80],
         "reason": reason[:120],
         "price_assessment": price_assessment[:140],
+        "market_price_low": market_price_low,
+        "market_price_high": market_price_high,
+        "market_price_currency": market_price_currency,
         "alternative": alternative,
     }
 
@@ -940,10 +948,13 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "la risposta come consulenza finanziaria certa o quotazione live. Devi essere sintetico: "
             "signal deve essere una sola parola o pochissime parole, ad esempio 'Compra', 'Evita', "
             "'Monitora', 'Troppo caro', 'Buono da bere'. reason deve essere opzionale e lunga al "
-            "massimo 20 parole. Devi considerare sempre il prezzo target inserito nella wishlist "
-            "e compilare price_assessment con una valutazione sintetica del prezzo target, ad esempio "
-            "'CHF 46 sembra sotto il prezzo normale di circa CHF 60' oppure 'Prezzo alto per il profilo'. "
-            "come vincolo pratico della decisione. Per purpose Invest valuta liquidita, reputazione "
+            "massimo 20 parole. Devi stimare una fascia di mercato indicativa, non live, per la stessa "
+            "etichetta e annata: market_price_low, market_price_high e market_price_currency. Devi poi "
+            "confrontare sempre il prezzo target con quella fascia. Se il prezzo target e almeno 20% "
+            "sotto il limite basso stimato, price_assessment deve indicare che il prezzo e molto "
+            "interessante, salvo rischi specifici spiegati nella reason. Se e dentro la fascia stimata, "
+            "usa una valutazione neutra. Se e sopra la fascia stimata, indica che e caro. Non usare "
+            "prezzi di vini diversi o annate diverse come riferimento principale. Per purpose Invest valuta liquidita, reputazione "
             "del produttore, annata, prezzo target, track record e rischio di immobilizzo; se "
             "il profilo non e convincente, recommendation deve essere avoid o monitor e, se "
             "possibile, proponi una alternativa paritetica per fascia prezzo/stile. Per purpose "
@@ -956,6 +967,8 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "{\"recommendation\":\"buy|monitor|avoid\",\"signal\":\"1-4 parole\","
             "\"reason\":\"massimo 12 parole\","
             "\"price_assessment\":\"valutazione sintetica del prezzo target\","
+            "\"market_price_low\":numero_o_null,\"market_price_high\":numero_o_null,"
+            "\"market_price_currency\":\"CHF|EUR|USD|\","
             "\"alternative\":{\"name\":\"vino alternativo\",\"producer\":\"produttore\"}}. "
             "Se non hai una alternativa credibile, usa alternative null."
         ),
