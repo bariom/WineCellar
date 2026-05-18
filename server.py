@@ -971,6 +971,25 @@ def wishlist_search_reference(item: dict) -> str:
     return " ".join(part for part in parts if part)
 
 
+def normalize_wishlist_format_label(value: str) -> str:
+    normalized = str(value or "").strip().lower()
+    compact = (
+        normalized.replace(" ", "")
+        .replace(".", "")
+        .replace(",", ".")
+        .replace("cl", "00ml")
+        .replace("litre", "l")
+        .replace("litro", "l")
+    )
+    if "1500ml" in compact or "15l" in compact or "1.5l" in compact or "magnum" in normalized:
+        return "1500ml"
+    if "375ml" in compact or "0375l" in compact or "0.375l" in compact or "half" in normalized or "mezza" in normalized:
+        return "375ml"
+    if "750ml" in compact or "075l" in compact or "0.75l" in compact or "bottle" in normalized or "bottiglia" in normalized:
+        return "750ml"
+    return compact
+
+
 FLASH_DEAL_SOURCE_DOMAINS = {
     "deindeal.ch",
 }
@@ -1010,7 +1029,7 @@ def derive_market_range_from_sources(strategy: dict, item: dict, rates: dict | N
         return strategy
 
     item_vintage = str(item.get("vintage") or "").strip().lower()
-    item_format = str(item.get("format") or "").strip().lower()
+    item_format = normalize_wishlist_format_label(str(item.get("format") or ""))
     target_currency = str(item.get("currency") or "").strip().upper() or "CHF"
     exact_prices = []
     preferred_exact_prices = []
@@ -1023,7 +1042,7 @@ def derive_market_range_from_sources(strategy: dict, item: dict, rates: dict | N
         price = clean_optional_float(source.get("observed_price"))
         currency = str(source.get("observed_currency") or "").strip().upper()
         source_vintage = str(source.get("observed_vintage") or "").strip().lower()
-        source_format = str(source.get("observed_format") or "").strip().lower()
+        source_format = normalize_wishlist_format_label(str(source.get("observed_format") or ""))
         match_quality = str(source.get("match_quality") or "").strip().lower()
         if not price or not currency or currency not in SUPPORTED_CURRENCIES:
             continue
@@ -1242,6 +1261,66 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             )
         ][:12],
     }
+    strategy_schema = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "recommendation": {"type": "string", "enum": ["buy", "monitor", "avoid"]},
+            "signal": {"type": "string"},
+            "reason": {"type": "string"},
+            "price_assessment": {"type": "string"},
+            "market_price_low": {"type": ["number", "null"]},
+            "market_price_high": {"type": ["number", "null"]},
+            "market_price_currency": {"type": "string", "enum": ["CHF", "EUR", "USD", ""]},
+            "sources": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "title": {"type": "string"},
+                        "url": {"type": "string"},
+                        "observed_price": {"type": ["number", "null"]},
+                        "observed_currency": {"type": "string", "enum": ["CHF", "EUR", "USD", ""]},
+                        "observed_vintage": {"type": "string"},
+                        "observed_format": {"type": "string"},
+                        "match_quality": {"type": "string", "enum": ["exact", "related", "unknown"]},
+                        "source_kind": {"type": "string", "enum": ["merchant", "search", "auction", "flash", "marketplace", "unknown"]},
+                    },
+                    "required": [
+                        "title",
+                        "url",
+                        "observed_price",
+                        "observed_currency",
+                        "observed_vintage",
+                        "observed_format",
+                        "match_quality",
+                        "source_kind",
+                    ],
+                },
+            },
+            "alternative": {
+                "type": ["object", "null"],
+                "additionalProperties": False,
+                "properties": {
+                    "name": {"type": "string"},
+                    "producer": {"type": "string"},
+                },
+                "required": ["name", "producer"],
+            },
+        },
+        "required": [
+            "recommendation",
+            "signal",
+            "reason",
+            "price_assessment",
+            "market_price_low",
+            "market_price_high",
+            "market_price_currency",
+            "sources",
+            "alternative",
+        ],
+    }
     request_payload = {
         "model": strategy_model,
         "instructions": (
@@ -1302,6 +1381,14 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "Usa source_kind merchant per commercianti stabili di vino, flash per offerte temporanee come DeinDeal. "
             "Se non hai una alternativa credibile, usa alternative null."
         ),
+        "text": {
+            "format": {
+                "type": "json_schema",
+                "name": "wishlist_strategy",
+                "strict": True,
+                "schema": strategy_schema,
+            }
+        },
         "tools": [
             {
                 "type": "web_search",
