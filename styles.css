@@ -2053,6 +2053,26 @@ body[data-theme="dusk"] .wishlist-ai-badge {
   overflow-wrap: anywhere;
 }
 
+.wishlist-strategy-sources {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+.wishlist-strategy-sources b {
+  color: var(--ink);
+}
+
+.wishlist-strategy-sources a {
+  color: var(--wine);
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
 .section-title-row {
   display: flex;
   align-items: center;

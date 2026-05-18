@@ -852,6 +852,7 @@ def clean_wishlist_strategy_payload(payload: dict) -> dict:
     market_price_currency = str(payload.get("market_price_currency", "")).strip().upper()
     if market_price_currency not in SUPPORTED_CURRENCIES:
         market_price_currency = ""
+    sources = clean_wishlist_price_sources(payload.get("sources", []))
 
     alternative_payload = payload.get("alternative", {})
     alternative = None
@@ -871,8 +872,55 @@ def clean_wishlist_strategy_payload(payload: dict) -> dict:
         "market_price_low": market_price_low,
         "market_price_high": market_price_high,
         "market_price_currency": market_price_currency,
+        "sources": sources,
         "alternative": alternative,
     }
+
+
+def clean_wishlist_price_sources(payload: object) -> list[dict]:
+    if not isinstance(payload, list):
+        return []
+    cleaned = []
+    seen = set()
+    for source in payload:
+        if not isinstance(source, dict):
+            continue
+        url = str(source.get("url", "")).strip()
+        title = str(source.get("title", "") or source.get("name", "")).strip()
+        if not url.startswith(("http://", "https://")) or url in seen:
+            continue
+        seen.add(url)
+        cleaned.append({"title": title[:80] or url[:80], "url": url[:500]})
+        if len(cleaned) >= 4:
+            break
+    return cleaned
+
+
+def extract_web_search_sources(payload: dict) -> list[dict]:
+    sources = []
+    for item in payload.get("output", []):
+        if not isinstance(item, dict) or item.get("type") != "web_search_call":
+            continue
+        action = item.get("action", {})
+        if not isinstance(action, dict):
+            continue
+        sources.extend(action.get("sources", []) or [])
+    return clean_wishlist_price_sources(sources)
+
+
+def merge_wishlist_price_sources(*source_groups: list[dict]) -> list[dict]:
+    merged = []
+    seen = set()
+    for group in source_groups:
+        for source in group:
+            url = source.get("url", "")
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            merged.append(source)
+            if len(merged) >= 4:
+                return merged
+    return merged
 
 
 def format_price_short(value: float | None, currency: str) -> str:
@@ -1007,14 +1055,17 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "Sei un consulente privato per collezionismo vino. Devi dare un resoconto operativo "
             "estremamente breve per un vino in wishlist in base allo scopo dell'osservazione. Rispondi "
             "solo con JSON valido, senza Markdown e senza testo prima o dopo. Non presentare "
-            "la risposta come consulenza finanziaria certa o quotazione live. Devi essere sintetico: "
+            "la risposta come consulenza finanziaria certa. Devi usare la ricerca web live per stimare "
+            "il prezzo corrente o recente da fonti verificabili. Preferisci risultati per la stessa "
+            "etichetta, produttore, annata e formato; se mancano, dichiara in reason che la stima e "
+            "meno affidabile. Devi essere sintetico: "
             "signal deve essere una sola parola o pochissime parole, ad esempio 'Compra', 'Evita', "
             "'Monitora', 'Troppo caro', 'Buono da bere'. reason deve essere opzionale e lunga al "
-            "massimo 20 parole. Devi stimare una fascia di mercato indicativa, non live, per la stessa "
+            "massimo 20 parole. Devi stimare una fascia di mercato corrente o recente per la stessa "
             "etichetta e annata: market_price_low, market_price_high e market_price_currency. Stima questa "
             "fascia prima e in modo indipendente dal prezzo target: non usare il prezzo target per dedurre "
             "o comprimere la fascia di mercato. Se non sei certo, usa una fascia prudente ma realistica "
-            "basata su produttore, annata, formato e mercato europeo. Devi poi "
+            "basata su produttore, annata, formato, fonti web trovate e mercato europeo. Devi poi "
             "confrontare sempre il prezzo target con quella fascia. Se il prezzo target e almeno 20% "
             "sotto il limite basso stimato, price_assessment deve indicare che il prezzo e molto "
             "interessante, salvo rischi specifici spiegati nella reason. Se e dentro la fascia stimata, "
@@ -1034,10 +1085,24 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "\"price_assessment\":\"valutazione sintetica del prezzo target\","
             "\"market_price_low\":numero_o_null,\"market_price_high\":numero_o_null,"
             "\"market_price_currency\":\"CHF|EUR|USD|\","
+            "\"sources\":[{\"title\":\"fonte prezzo\",\"url\":\"https://...\"}],"
             "\"alternative\":{\"name\":\"vino alternativo\",\"producer\":\"produttore\"}}. "
             "Se non hai una alternativa credibile, usa alternative null."
         ),
-        "max_output_tokens": 260,
+        "tools": [
+            {
+                "type": "web_search",
+                "external_web_access": True,
+                "user_location": {
+                    "type": "approximate",
+                    "country": "CH",
+                    "timezone": "Europe/Zurich",
+                },
+            }
+        ],
+        "tool_choice": "required",
+        "include": ["web_search_call.action.sources"],
+        "max_output_tokens": 480,
     }
     request = Request(
         OPENAI_RESPONSES_URL,
@@ -1063,6 +1128,10 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
     if not raw_text:
         raise ValueError("OpenAI response did not include text")
     strategy = clean_wishlist_strategy_payload(parse_json_object(raw_text))
+    strategy["sources"] = merge_wishlist_price_sources(
+        strategy.get("sources", []),
+        extract_web_search_sources(response_payload),
+    )
     try:
         strategy = apply_wishlist_price_assessment(strategy, item, get_rates())
     except ValueError:

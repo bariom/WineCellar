@@ -322,6 +322,7 @@ const translations = {
     wishlistStrategyBuy: "Buy",
     wishlistStrategyLoading: "Building strategy...",
     wishlistStrategyMonitor: "Monitor",
+    wishlistStrategySources: "Sources",
     wishlistStrategyUnable: "Unable to generate strategy: {error}",
     wishlistStatusAi: "AI",
     wishlistStatusAiLong: "Set by AI",
@@ -606,6 +607,7 @@ const translations = {
     wishlistStrategyBuy: "Compra",
     wishlistStrategyLoading: "Sto preparando la strategia...",
     wishlistStrategyMonitor: "Monitora",
+    wishlistStrategySources: "Fonti",
     wishlistStrategyUnable: "Impossibile generare la strategia: {error}",
     wishlistStatusAi: "AI",
     wishlistStatusAiLong: "Impostato da AI",
@@ -1915,6 +1917,7 @@ function renderWishlistStrategy(item) {
   if (!strategy) return "";
   if (strategy.loading) return `<div class="wishlist-strategy"><p>${escapeHtml(t("wishlistStrategyLoading"))}</p></div>`;
   const signal = strategy.signal || wishlistStrategyLabel(strategy.recommendation);
+  const sources = renderWishlistStrategySources(strategy.sources);
   return `
     <div class="wishlist-strategy" data-recommendation="${escapeAttribute(strategy.recommendation || "monitor")}">
       <span>${escapeHtml(signal)}</span>
@@ -1924,6 +1927,20 @@ function renderWishlistStrategy(item) {
           ? `<p><b>${escapeHtml(t("wishlistStrategyAlternative"))}:</b> ${escapeHtml([strategy.alternative.name, strategy.alternative.producer].filter(Boolean).join(" - "))}</p>`
           : ""
       }
+      ${sources}
+    </div>
+  `;
+}
+
+function renderWishlistStrategySources(sources = []) {
+  if (!Array.isArray(sources) || !sources.length) return "";
+  return `
+    <div class="wishlist-strategy-sources">
+      <b>${escapeHtml(t("wishlistStrategySources"))}:</b>
+      ${sources
+        .slice(0, 4)
+        .map((source) => `<a href="${escapeAttribute(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.title || source.url)}</a>`)
+        .join("")}
     </div>
   `;
 }
