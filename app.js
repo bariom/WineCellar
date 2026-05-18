@@ -275,6 +275,7 @@ const translations = {
     timeline: "Timeline",
     timelineNav: "Timeline e En Primeur",
     targetPrice: "Target Price",
+    estimatedMarketRange: "AI Estimated Range",
     priceAssessmentAi: "AI Price Assessment",
     topRegions: "Top Regions",
     topConsumedRegions: "Top Drunk Regions",
@@ -558,6 +559,7 @@ const translations = {
     timeline: "Timeline",
     timelineNav: "Timeline e En Primeur",
     targetPrice: "Prezzo obiettivo",
+    estimatedMarketRange: "Fascia stimata AI",
     priceAssessmentAi: "Valutazione prezzo AI",
     topRegions: "Regioni principali",
     topConsumedRegions: "Regioni piu bevute",
@@ -1931,6 +1933,15 @@ function wishlistPriceAssessment(item) {
   return strategy?.price_assessment || "";
 }
 
+function wishlistEstimatedRange(item) {
+  const strategy = state.wishlistStrategies[item.id] || persistedWishlistStrategy(item);
+  const low = Number(strategy?.market_price_low);
+  const high = Number(strategy?.market_price_high);
+  const currency = strategy?.market_price_currency || item.currency || "CHF";
+  if (!Number.isFinite(low) || !Number.isFinite(high) || low <= 0 || high <= 0) return "";
+  return `${formatMoney(Math.min(low, high), currency)} - ${formatMoney(Math.max(low, high), currency)}`;
+}
+
 function renderWishlist() {
   if (!wishlistList) return;
   wishlistList.innerHTML = state.wishlist.length
@@ -1957,6 +1968,7 @@ function renderWishlist() {
                   <div><dt>${escapeHtml(t("status"))}</dt><dd>${renderWishlistStatus(item)}</dd></div>
                   <div><dt>${escapeHtml(t("wishlistPurpose"))}</dt><dd>${escapeHtml(wishlistPurposeLabel(item.purpose))}</dd></div>
                   <div><dt>${escapeHtml(t("targetPrice"))}</dt><dd>${item.target_price ? formatMoney(item.target_price, item.currency) : t("notSpecified")}</dd></div>
+                  <div><dt>${escapeHtml(t("estimatedMarketRange"))}</dt><dd>${escapeHtml(wishlistEstimatedRange(item) || t("notSpecified"))}</dd></div>
                   <div><dt>${escapeHtml(t("priceAssessmentAi"))}</dt><dd>${escapeHtml(wishlistPriceAssessment(item) || t("notSpecified"))}</dd></div>
                   <div><dt>${escapeHtml(t("merchant"))}</dt><dd>${escapeHtml(item.merchant || t("notSpecified"))}</dd></div>
                   <div><dt>${escapeHtml(t("format"))}</dt><dd>${escapeHtml(formatLabel(item.format))}</dd></div>

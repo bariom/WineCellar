@@ -875,6 +875,68 @@ def clean_wishlist_strategy_payload(payload: dict) -> dict:
     }
 
 
+def format_price_short(value: float | None, currency: str) -> str:
+    if value is None:
+        return ""
+    rounded = round(float(value), 2)
+    if rounded.is_integer():
+        rendered = str(int(rounded))
+    else:
+        rendered = f"{rounded:.2f}".rstrip("0").rstrip(".")
+    return f"{currency} {rendered}"
+
+
+def wishlist_market_range_label(low: float, high: float, currency: str) -> str:
+    return f"{format_price_short(low, currency)}-{format_price_short(high, currency).removeprefix(currency + ' ')}"
+
+
+def apply_wishlist_price_assessment(strategy: dict, item: dict, rates: dict | None = None) -> dict:
+    target_price = clean_optional_float(item.get("target_price"))
+    target_currency = str(item.get("currency") or "").upper()
+    market_low = clean_optional_float(strategy.get("market_price_low"))
+    market_high = clean_optional_float(strategy.get("market_price_high"))
+    market_currency = str(strategy.get("market_price_currency") or "").upper()
+
+    if market_currency not in SUPPORTED_CURRENCIES:
+        market_currency = ""
+
+    if not target_price or not target_currency or not market_low or not market_high or not market_currency:
+        strategy["price_assessment"] = (
+            strategy.get("price_assessment")
+            or "Fascia mercato non stimata: valutazione prezzo incerta."
+        )
+        return strategy
+
+    if market_low > market_high:
+        market_low, market_high = market_high, market_low
+        strategy["market_price_low"] = market_low
+        strategy["market_price_high"] = market_high
+
+    if target_currency == market_currency:
+        target_in_market_currency = target_price
+    else:
+        if rates is None:
+            rates = get_rates()
+        target_chf = convert_to_chf(target_price, target_currency, rates)
+        market_rate = rates["rates_to_chf"].get(market_currency)
+        if market_rate is None:
+            raise ValueError(f"Unsupported currency: {market_currency}")
+        target_in_market_currency = target_chf / market_rate
+
+    target_label = format_price_short(target_price, target_currency)
+    range_label = wishlist_market_range_label(market_low, market_high, market_currency)
+    if target_in_market_currency <= market_low * 0.8:
+        assessment = f"{target_label} e molto sotto la fascia stimata {range_label}: prezzo molto interessante."
+    elif target_in_market_currency < market_low:
+        assessment = f"{target_label} e sotto la fascia stimata {range_label}: prezzo interessante."
+    elif target_in_market_currency <= market_high:
+        assessment = f"{target_label} e dentro la fascia stimata {range_label}: prezzo neutro."
+    else:
+        assessment = f"{target_label} e sopra la fascia stimata {range_label}: prezzo caro."
+    strategy["price_assessment"] = assessment
+    return strategy
+
+
 def wishlist_status_from_strategy(recommendation: str) -> str:
     return {
         "buy": "Buy",
@@ -949,7 +1011,10 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "signal deve essere una sola parola o pochissime parole, ad esempio 'Compra', 'Evita', "
             "'Monitora', 'Troppo caro', 'Buono da bere'. reason deve essere opzionale e lunga al "
             "massimo 20 parole. Devi stimare una fascia di mercato indicativa, non live, per la stessa "
-            "etichetta e annata: market_price_low, market_price_high e market_price_currency. Devi poi "
+            "etichetta e annata: market_price_low, market_price_high e market_price_currency. Stima questa "
+            "fascia prima e in modo indipendente dal prezzo target: non usare il prezzo target per dedurre "
+            "o comprimere la fascia di mercato. Se non sei certo, usa una fascia prudente ma realistica "
+            "basata su produttore, annata, formato e mercato europeo. Devi poi "
             "confrontare sempre il prezzo target con quella fascia. Se il prezzo target e almeno 20% "
             "sotto il limite basso stimato, price_assessment deve indicare che il prezzo e molto "
             "interessante, salvo rischi specifici spiegati nella reason. Se e dentro la fascia stimata, "
@@ -998,6 +1063,13 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
     if not raw_text:
         raise ValueError("OpenAI response did not include text")
     strategy = clean_wishlist_strategy_payload(parse_json_object(raw_text))
+    try:
+        strategy = apply_wishlist_price_assessment(strategy, item, get_rates())
+    except ValueError:
+        strategy["price_assessment"] = (
+            strategy.get("price_assessment")
+            or "Cambio valuta non disponibile: valutazione prezzo incerta."
+        )
     status = wishlist_status_from_strategy(strategy["recommendation"])
     strategy_json = json.dumps(strategy, ensure_ascii=False, separators=(",", ":"))
     with connect() as conn:
