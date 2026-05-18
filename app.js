@@ -8,6 +8,7 @@ const THEME_OPTIONS = [
 ];
 const THEME_IDS = new Set(THEME_OPTIONS.map((theme) => theme.id));
 const requestedTheme = normalizeTheme(new URLSearchParams(window.location.search).get("theme"));
+const APP_LOCK_BACKGROUND_GRACE_MS = 20000;
 
 const state = {
   wines: [],
@@ -44,6 +45,7 @@ const state = {
 };
 
 let installPromptEvent = null;
+let appLockTimer = null;
 
 const translations = {
   en: {
@@ -848,10 +850,25 @@ function sendLogoutBeacon() {
 
 function lockApplication() {
   if (!state.authEnabled || !isAuthenticated() || state.appLockSuppressed) return;
+  cancelScheduledApplicationLock();
   sendLogoutBeacon();
   clearAuthenticatedState();
   applyPermissions();
   showScreen("login");
+}
+
+function cancelScheduledApplicationLock() {
+  if (!appLockTimer) return;
+  window.clearTimeout(appLockTimer);
+  appLockTimer = null;
+}
+
+function scheduleApplicationLock() {
+  if (!state.authEnabled || !isAuthenticated() || state.appLockSuppressed || appLockTimer) return;
+  appLockTimer = window.setTimeout(() => {
+    appLockTimer = null;
+    if (document.visibilityState === "hidden") lockApplication();
+  }, APP_LOCK_BACKGROUND_GRACE_MS);
 }
 
 function browserSupportsPasskeys() {
@@ -2826,10 +2843,16 @@ document.querySelector("#logout-button").addEventListener("click", async () => {
 });
 
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") lockApplication();
+  if (document.visibilityState === "hidden") {
+    scheduleApplicationLock();
+    return;
+  }
+  cancelScheduledApplicationLock();
 });
 
-window.addEventListener("pagehide", () => {
+window.addEventListener("pagehide", (event) => {
+  cancelScheduledApplicationLock();
+  if (event.persisted) return;
   lockApplication();
 });
 

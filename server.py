@@ -938,6 +938,16 @@ def wishlist_market_range_label(low: float, high: float, currency: str) -> str:
     return f"{format_price_short(low, currency)}-{format_price_short(high, currency).removeprefix(currency + ' ')}"
 
 
+def wishlist_search_reference(item: dict) -> str:
+    parts = [
+        str(item.get("producer") or "").strip(),
+        str(item.get("name") or "").strip(),
+        str(item.get("vintage") or "").strip(),
+        str(item.get("format") or "").strip(),
+    ]
+    return " ".join(part for part in parts if part)
+
+
 def wishlist_price_position(strategy: dict, item: dict, rates: dict | None = None) -> dict | None:
     target_price = clean_optional_float(item.get("target_price"))
     target_currency = str(item.get("currency") or "").upper()
@@ -1068,6 +1078,7 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
 
     context = {
         "wishlist_item": item,
+        "search_reference": wishlist_search_reference(item),
         "decision_constraints": {
             "target_price": item.get("target_price"),
             "currency": item.get("currency"),
@@ -1123,8 +1134,11 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "solo con JSON valido, senza Markdown e senza testo prima o dopo. Non presentare "
             "la risposta come consulenza finanziaria certa. Devi usare la ricerca web live per stimare "
             "il prezzo corrente o recente da fonti verificabili. Preferisci risultati per la stessa "
-            "etichetta, produttore, annata e formato; se mancano, dichiara in reason che la stima e "
-            "meno affidabile. Il prezzo target in wishlist e il prezzo realisticamente ottenibile: la tua "
+            "etichetta, produttore, annata e formato; usa come riferimento esatto i campi presenti in wishlist. "
+            "Se non trovi almeno una fonte con annata uguale, non restituire una fascia numerica inventata: "
+            "usa market_price_low null, market_price_high null e spiega brevemente in reason che mancano "
+            "fonti precise. Se trovi solo formati diversi, ad esempio magnum o cassa, non usarli come base "
+            "principale per la fascia 750ml. Il prezzo target in wishlist e il prezzo realisticamente ottenibile: la tua "
             "recommendation finale deve dire cosa fare con il vino proprio tenendo conto di quel prezzo. "
             "Se il prezzo target e vuoto, significa che non c'e nessun prezzo disponibile da valutare. "
             "Devi essere sintetico: "
@@ -1134,7 +1148,8 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "etichetta e annata: market_price_low, market_price_high e market_price_currency. Stima questa "
             "fascia prima e in modo indipendente dal prezzo target: non usare il prezzo target per dedurre "
             "o comprimere la fascia di mercato. Se non sei certo, usa una fascia prudente ma realistica "
-            "basata su produttore, annata, formato, fonti web trovate e mercato europeo. Devi poi "
+            "basata solo su produttore, annata, formato, fonti web trovate e mercato europeo. Non usare "
+            "prezzi di annate diverse come riferimento principale. Devi poi "
             "confrontare sempre il prezzo target con quella fascia e fare dipendere la recommendation finale "
             "da questo confronto. Se il prezzo target manca, non fare il confronto prezzo e non usare "
             "price_assessment per suggerire convenienza. Se il prezzo target e almeno 20% "
