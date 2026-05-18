@@ -887,10 +887,29 @@ def clean_wishlist_price_sources(payload: object) -> list[dict]:
             continue
         url = str(source.get("url", "")).strip()
         title = str(source.get("title", "") or source.get("name", "")).strip()
+        observed_price = clean_optional_float(source.get("observed_price"))
+        observed_currency = str(source.get("observed_currency", "")).strip().upper()
+        observed_vintage = str(source.get("observed_vintage", "")).strip()
+        observed_format = str(source.get("observed_format", "")).strip()
+        match_quality = str(source.get("match_quality", "")).strip().lower()
         if not url.startswith(("http://", "https://")) or url in seen:
             continue
+        if observed_currency and observed_currency not in SUPPORTED_CURRENCIES:
+            observed_currency = ""
+        if match_quality not in {"exact", "related", "unknown"}:
+            match_quality = "unknown"
         seen.add(url)
-        cleaned.append({"title": title[:80] or url[:80], "url": url[:500]})
+        cleaned.append(
+            {
+                "title": title[:80] or url[:80],
+                "url": url[:500],
+                "observed_price": observed_price,
+                "observed_currency": observed_currency,
+                "observed_vintage": observed_vintage[:20],
+                "observed_format": observed_format[:40],
+                "match_quality": match_quality,
+            }
+        )
         if len(cleaned) >= 4:
             break
     return cleaned
@@ -946,6 +965,54 @@ def wishlist_search_reference(item: dict) -> str:
         str(item.get("format") or "").strip(),
     ]
     return " ".join(part for part in parts if part)
+
+
+def derive_market_range_from_sources(strategy: dict, item: dict, rates: dict | None = None) -> dict:
+    sources = strategy.get("sources", [])
+    if not isinstance(sources, list) or not sources:
+        return strategy
+
+    item_vintage = str(item.get("vintage") or "").strip().lower()
+    item_format = str(item.get("format") or "").strip().lower()
+    target_currency = str(item.get("currency") or "").strip().upper() or "CHF"
+    exact_prices = []
+
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        price = clean_optional_float(source.get("observed_price"))
+        currency = str(source.get("observed_currency") or "").strip().upper()
+        source_vintage = str(source.get("observed_vintage") or "").strip().lower()
+        source_format = str(source.get("observed_format") or "").strip().lower()
+        match_quality = str(source.get("match_quality") or "").strip().lower()
+        if not price or not currency or currency not in SUPPORTED_CURRENCIES:
+            continue
+        vintage_matches = not item_vintage or source_vintage == item_vintage
+        format_matches = not item_format or not source_format or source_format == item_format
+        if match_quality != "exact" or not vintage_matches or not format_matches:
+            continue
+        if currency == target_currency:
+            normalized_price = price
+        else:
+            if rates is None:
+                rates = get_rates()
+            normalized_price = convert_to_chf(price, currency, rates)
+            if target_currency != "CHF":
+                target_rate = rates["rates_to_chf"].get(target_currency)
+                if target_rate is None:
+                    raise ValueError(f"Unsupported currency: {target_currency}")
+                normalized_price = normalized_price / target_rate
+        exact_prices.append(round(normalized_price, 2))
+
+    if exact_prices:
+        strategy["market_price_low"] = min(exact_prices)
+        strategy["market_price_high"] = max(exact_prices)
+        strategy["market_price_currency"] = target_currency
+    else:
+        strategy["market_price_low"] = None
+        strategy["market_price_high"] = None
+        strategy["market_price_currency"] = ""
+    return strategy
 
 
 def wishlist_price_position(strategy: dict, item: dict, rates: dict | None = None) -> dict | None:
@@ -1174,8 +1241,12 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "\"price_assessment\":\"valutazione sintetica del prezzo target\","
             "\"market_price_low\":numero_o_null,\"market_price_high\":numero_o_null,"
             "\"market_price_currency\":\"CHF|EUR|USD|\","
-            "\"sources\":[{\"title\":\"fonte prezzo\",\"url\":\"https://...\"}],"
+            "\"sources\":[{\"title\":\"fonte prezzo\",\"url\":\"https://...\",\"observed_price\":numero_o_null,"
+            "\"observed_currency\":\"CHF|EUR|USD|\",\"observed_vintage\":\"annata trovata\","
+            "\"observed_format\":\"formato trovato\",\"match_quality\":\"exact|related|unknown\"}],"
             "\"alternative\":{\"name\":\"vino alternativo\",\"producer\":\"produttore\"}}. "
+            "Per ogni source, compila observed_price e observed_currency se il prezzo e visibile. "
+            "Usa match_quality exact solo se etichetta, produttore, annata e formato coincidono davvero. "
             "Se non hai una alternativa credibile, usa alternative null."
         ),
         "tools": [
@@ -1223,6 +1294,7 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
     )
     try:
         rates = get_rates()
+        strategy = derive_market_range_from_sources(strategy, item, rates)
         strategy = apply_wishlist_price_assessment(strategy, item, rates)
         strategy = normalize_wishlist_recommendation(strategy, item, rates)
     except ValueError:
