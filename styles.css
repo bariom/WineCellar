@@ -1053,6 +1053,11 @@ body[data-theme="dusk"] .drink-now-card[data-type="Red"]:hover {
   line-height: 1.4;
 }
 
+.settings-section-heading {
+  display: grid;
+  gap: 4px;
+}
+
 .settings-form,
 .model-options,
 .theme-options {

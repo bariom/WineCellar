@@ -275,6 +275,7 @@ const translations = {
     timeline: "Timeline",
     timelineNav: "Timeline e En Primeur",
     targetPrice: "Target Price",
+    priceAssessmentAi: "AI Price Assessment",
     topRegions: "Top Regions",
     topConsumedRegions: "Top Drunk Regions",
     topColors: "Top Colors",
@@ -557,6 +558,7 @@ const translations = {
     timeline: "Timeline",
     timelineNav: "Timeline e En Primeur",
     targetPrice: "Prezzo obiettivo",
+    priceAssessmentAi: "Valutazione prezzo AI",
     topRegions: "Regioni principali",
     topConsumedRegions: "Regioni piu bevute",
     topColors: "Colori principali",
@@ -1924,6 +1926,11 @@ function renderWishlistStrategy(item) {
   `;
 }
 
+function wishlistPriceAssessment(item) {
+  const strategy = state.wishlistStrategies[item.id] || persistedWishlistStrategy(item);
+  return strategy?.price_assessment || "";
+}
+
 function renderWishlist() {
   if (!wishlistList) return;
   wishlistList.innerHTML = state.wishlist.length
@@ -1950,6 +1957,7 @@ function renderWishlist() {
                   <div><dt>${escapeHtml(t("status"))}</dt><dd>${renderWishlistStatus(item)}</dd></div>
                   <div><dt>${escapeHtml(t("wishlistPurpose"))}</dt><dd>${escapeHtml(wishlistPurposeLabel(item.purpose))}</dd></div>
                   <div><dt>${escapeHtml(t("targetPrice"))}</dt><dd>${item.target_price ? formatMoney(item.target_price, item.currency) : t("notSpecified")}</dd></div>
+                  <div><dt>${escapeHtml(t("priceAssessmentAi"))}</dt><dd>${escapeHtml(wishlistPriceAssessment(item) || t("notSpecified"))}</dd></div>
                   <div><dt>${escapeHtml(t("merchant"))}</dt><dd>${escapeHtml(item.merchant || t("notSpecified"))}</dd></div>
                   <div><dt>${escapeHtml(t("format"))}</dt><dd>${escapeHtml(formatLabel(item.format))}</dd></div>
                   <div><dt>${escapeHtml(t("type"))}</dt><dd>${escapeHtml(typeLabel(item.type))}</dd></div>

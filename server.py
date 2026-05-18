@@ -846,6 +846,7 @@ def clean_wishlist_strategy_payload(payload: dict) -> dict:
         recommendation = "monitor"
     signal = str(payload.get("signal", "") or payload.get("summary", "")).strip()
     reason = str(payload.get("reason", "")).strip()
+    price_assessment = str(payload.get("price_assessment", "") or payload.get("priceAssessment", "")).strip()
 
     alternative_payload = payload.get("alternative", {})
     alternative = None
@@ -861,6 +862,7 @@ def clean_wishlist_strategy_payload(payload: dict) -> dict:
         "recommendation": recommendation,
         "signal": signal[:80],
         "reason": reason[:120],
+        "price_assessment": price_assessment[:140],
         "alternative": alternative,
     }
 
@@ -939,6 +941,8 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "signal deve essere una sola parola o pochissime parole, ad esempio 'Compra', 'Evita', "
             "'Monitora', 'Troppo caro', 'Buono da bere'. reason deve essere opzionale e lunga al "
             "massimo 20 parole. Devi considerare sempre il prezzo target inserito nella wishlist "
+            "e compilare price_assessment con una valutazione sintetica del prezzo target, ad esempio "
+            "'CHF 46 sembra sotto il prezzo normale di circa CHF 60' oppure 'Prezzo alto per il profilo'. "
             "come vincolo pratico della decisione. Per purpose Invest valuta liquidita, reputazione "
             "del produttore, annata, prezzo target, track record e rischio di immobilizzo; se "
             "il profilo non e convincente, recommendation deve essere avoid o monitor e, se "
@@ -951,6 +955,7 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "Restituisci solo questo oggetto JSON: "
             "{\"recommendation\":\"buy|monitor|avoid\",\"signal\":\"1-4 parole\","
             "\"reason\":\"massimo 12 parole\","
+            "\"price_assessment\":\"valutazione sintetica del prezzo target\","
             "\"alternative\":{\"name\":\"vino alternativo\",\"producer\":\"produttore\"}}. "
             "Se non hai una alternativa credibile, usa alternative null."
         ),
