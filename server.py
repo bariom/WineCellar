@@ -938,7 +938,7 @@ def wishlist_market_range_label(low: float, high: float, currency: str) -> str:
     return f"{format_price_short(low, currency)}-{format_price_short(high, currency).removeprefix(currency + ' ')}"
 
 
-def apply_wishlist_price_assessment(strategy: dict, item: dict, rates: dict | None = None) -> dict:
+def wishlist_price_position(strategy: dict, item: dict, rates: dict | None = None) -> dict | None:
     target_price = clean_optional_float(item.get("target_price"))
     target_currency = str(item.get("currency") or "").upper()
     market_low = clean_optional_float(strategy.get("market_price_low"))
@@ -949,11 +949,7 @@ def apply_wishlist_price_assessment(strategy: dict, item: dict, rates: dict | No
         market_currency = ""
 
     if not target_price or not target_currency or not market_low or not market_high or not market_currency:
-        strategy["price_assessment"] = (
-            strategy.get("price_assessment")
-            or "Fascia mercato non stimata: valutazione prezzo incerta."
-        )
-        return strategy
+        return None
 
     if market_low > market_high:
         market_low, market_high = market_high, market_low
@@ -971,17 +967,80 @@ def apply_wishlist_price_assessment(strategy: dict, item: dict, rates: dict | No
             raise ValueError(f"Unsupported currency: {market_currency}")
         target_in_market_currency = target_chf / market_rate
 
+    if target_in_market_currency <= market_low * 0.8:
+        position = "very_below"
+    elif target_in_market_currency < market_low:
+        position = "below"
+    elif target_in_market_currency <= market_high:
+        position = "within"
+    else:
+        position = "above"
+
+    return {
+        "position": position,
+        "target_price": target_price,
+        "target_currency": target_currency,
+        "market_low": market_low,
+        "market_high": market_high,
+        "market_currency": market_currency,
+    }
+
+
+def apply_wishlist_price_assessment(strategy: dict, item: dict, rates: dict | None = None) -> dict:
+    price_position = wishlist_price_position(strategy, item, rates)
+    if not price_position:
+        target_price = clean_optional_float(item.get("target_price"))
+        strategy["price_assessment"] = (
+            strategy.get("price_assessment")
+            or (
+                "Prezzo obiettivo non indicato: nessun confronto prezzo disponibile."
+                if not target_price
+                else "Fascia mercato non stimata: valutazione prezzo incerta."
+            )
+        )
+        return strategy
+
+    target_price = price_position["target_price"]
+    target_currency = price_position["target_currency"]
+    market_low = price_position["market_low"]
+    market_high = price_position["market_high"]
+    market_currency = price_position["market_currency"]
+    position = price_position["position"]
+
     target_label = format_price_short(target_price, target_currency)
     range_label = wishlist_market_range_label(market_low, market_high, market_currency)
-    if target_in_market_currency <= market_low * 0.8:
+    if position == "very_below":
         assessment = f"{target_label} e molto sotto la fascia stimata {range_label}: prezzo molto interessante."
-    elif target_in_market_currency < market_low:
+    elif position == "below":
         assessment = f"{target_label} e sotto la fascia stimata {range_label}: prezzo interessante."
-    elif target_in_market_currency <= market_high:
+    elif position == "within":
         assessment = f"{target_label} e dentro la fascia stimata {range_label}: prezzo neutro."
     else:
         assessment = f"{target_label} e sopra la fascia stimata {range_label}: prezzo caro."
     strategy["price_assessment"] = assessment
+    return strategy
+
+
+def normalize_wishlist_recommendation(strategy: dict, item: dict, rates: dict | None = None) -> dict:
+    price_position = wishlist_price_position(strategy, item, rates)
+    if not price_position:
+        return strategy
+
+    recommendation = str(strategy.get("recommendation", "monitor") or "monitor").lower()
+    purpose = str(item.get("purpose", "") or "")
+    position = price_position["position"]
+
+    if position in {"very_below", "below"}:
+        if purpose in {"Cellar", "Invest"}:
+            strategy["recommendation"] = "buy"
+            strategy["signal"] = "Compra" if position == "very_below" else "Interessante"
+        elif recommendation == "avoid":
+            strategy["recommendation"] = "monitor"
+            strategy["signal"] = "Monitora"
+    elif position == "above" and recommendation == "buy":
+        strategy["recommendation"] = "monitor"
+        strategy["signal"] = "Monitora"
+
     return strategy
 
 
@@ -1013,10 +1072,17 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "target_price": item.get("target_price"),
             "currency": item.get("currency"),
             "merchant": item.get("merchant"),
+            "target_price_meaning": (
+                "Il prezzo target e il prezzo realisticamente ottenibile o negoziabile per questa bottiglia, "
+                "non un prezzo teorico ideale. Se e vuoto, significa che non c'e alcun prezzo da sottoporre."
+            ),
             "price_rule": (
-                "Il prezzo target inserito in wishlist e un vincolo decisionale: se e alto rispetto al profilo "
-                "del vino o al potenziale, la recommendation deve essere monitor o avoid; se e attraente, "
-                "puo sostenere buy. Se manca, segnala maggiore incertezza."
+                "La recommendation finale deve considerare il prezzo target come prezzo davvero ottenibile. "
+                "Confronta il prezzo target con la fascia stimata e usa questo confronto per decidere cosa "
+                "fare: buy se il target e favorevole rispetto al valore stimato e non emergono rischi forti; "
+                "monitor se il target e vicino al valore stimato o il caso e incerto; avoid se il target e "
+                "sfavorevole o il vino ha criticita rilevanti. Se il prezzo target manca, non assumere un prezzo "
+                "favorevole o sfavorevole: valuta il vino senza confronto prezzo e segnala maggiore incertezza."
             ),
         },
         "purpose_meaning": {
@@ -1058,7 +1124,10 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "la risposta come consulenza finanziaria certa. Devi usare la ricerca web live per stimare "
             "il prezzo corrente o recente da fonti verificabili. Preferisci risultati per la stessa "
             "etichetta, produttore, annata e formato; se mancano, dichiara in reason che la stima e "
-            "meno affidabile. Devi essere sintetico: "
+            "meno affidabile. Il prezzo target in wishlist e il prezzo realisticamente ottenibile: la tua "
+            "recommendation finale deve dire cosa fare con il vino proprio tenendo conto di quel prezzo. "
+            "Se il prezzo target e vuoto, significa che non c'e nessun prezzo disponibile da valutare. "
+            "Devi essere sintetico: "
             "signal deve essere una sola parola o pochissime parole, ad esempio 'Compra', 'Evita', "
             "'Monitora', 'Troppo caro', 'Buono da bere'. reason deve essere opzionale e lunga al "
             "massimo 20 parole. Devi stimare una fascia di mercato corrente o recente per la stessa "
@@ -1066,10 +1135,15 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
             "fascia prima e in modo indipendente dal prezzo target: non usare il prezzo target per dedurre "
             "o comprimere la fascia di mercato. Se non sei certo, usa una fascia prudente ma realistica "
             "basata su produttore, annata, formato, fonti web trovate e mercato europeo. Devi poi "
-            "confrontare sempre il prezzo target con quella fascia. Se il prezzo target e almeno 20% "
+            "confrontare sempre il prezzo target con quella fascia e fare dipendere la recommendation finale "
+            "da questo confronto. Se il prezzo target manca, non fare il confronto prezzo e non usare "
+            "price_assessment per suggerire convenienza. Se il prezzo target e almeno 20% "
             "sotto il limite basso stimato, price_assessment deve indicare che il prezzo e molto "
-            "interessante, salvo rischi specifici spiegati nella reason. Se e dentro la fascia stimata, "
-            "usa una valutazione neutra. Se e sopra la fascia stimata, indica che e caro. Non usare "
+            "interessante, salvo rischi specifici spiegati nella reason. Per purpose Cellar o Invest, "
+            "se il prezzo target e sotto la fascia stimata non usare recommendation avoid solo perche "
+            "il vino non e perfetto: un target favorevole deve pesare molto nella decisione finale e "
+            "normalmente deve portare a buy o almeno monitor, non avoid. "
+            "Se e dentro la fascia stimata, usa una valutazione neutra. Se e sopra la fascia stimata, indica che e caro. Non usare "
             "prezzi di vini diversi o annate diverse come riferimento principale. Per purpose Invest valuta liquidita, reputazione "
             "del produttore, annata, prezzo target, track record e rischio di immobilizzo; se "
             "il profilo non e convincente, recommendation deve essere avoid o monitor e, se "
@@ -1133,7 +1207,9 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
         extract_web_search_sources(response_payload),
     )
     try:
-        strategy = apply_wishlist_price_assessment(strategy, item, get_rates())
+        rates = get_rates()
+        strategy = apply_wishlist_price_assessment(strategy, item, rates)
+        strategy = normalize_wishlist_recommendation(strategy, item, rates)
     except ValueError:
         strategy["price_assessment"] = (
             strategy.get("price_assessment")
