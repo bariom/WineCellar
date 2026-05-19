@@ -675,6 +675,49 @@ body[data-theme="dusk"] .drink-now-card[data-type="Red"]:hover {
   flex-wrap: wrap;
 }
 
+.wine-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.wine-rating-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--muted) 72%, var(--line));
+  cursor: pointer;
+}
+
+.wine-rating-star svg {
+  width: 16px;
+  height: 16px;
+  fill: transparent;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.wine-rating-star.filled {
+  color: color-mix(in srgb, var(--gold) 84%, var(--wine));
+}
+
+.wine-rating-star.filled svg {
+  fill: currentColor;
+}
+
+.wine-rating-star:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--gold) 62%, var(--wine));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .wine-missing-grapes-badge {
   display: inline-flex;
   align-items: center;

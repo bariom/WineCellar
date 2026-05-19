@@ -164,6 +164,10 @@ const translations = {
     generateGrapesConfirm: "Replace the current grape composition?",
     generateGrapesUnable: "Unable to generate grapes: {error}",
     grapeFilter: "Grape",
+    ratingLabel: "Rating",
+    ratingSet: "Set rating to {value} of 6",
+    ratingUnset: "Not rated",
+    ratingUnable: "Unable to save rating: {error}",
     import: "Import",
     historyNav: "History",
     installApp: "Install",
@@ -463,6 +467,10 @@ const translations = {
     generateGrapesConfirm: "Sostituire la composizione uve attuale?",
     generateGrapesUnable: "Impossibile generare le uve: {error}",
     grapeFilter: "Vitigno",
+    ratingLabel: "Valutazione",
+    ratingSet: "Imposta valutazione a {value} su 6",
+    ratingUnset: "Non valutato",
+    ratingUnable: "Impossibile salvare la valutazione: {error}",
     import: "Importa",
     historyNav: "Storico",
     installApp: "Installa",
@@ -1528,6 +1536,40 @@ function renderMissingGrapeBadge(wine) {
   `;
 }
 
+function wineRatingValue(wine) {
+  const rating = Number(wine?.rating);
+  if (!Number.isFinite(rating)) return 0;
+  return Math.max(0, Math.min(6, Math.round(rating)));
+}
+
+function renderWineRating(wine) {
+  const currentRating = wineRatingValue(wine);
+  const currentLabel = currentRating > 0 ? `${currentRating}/6` : t("ratingUnset");
+  const stars = Array.from({ length: 6 }, (_, index) => {
+    const value = index + 1;
+    const filled = value <= currentRating;
+    return `
+      <button
+        class="wine-rating-star${filled ? " filled" : ""}"
+        type="button"
+        data-rating-wine="${wine.id}"
+        data-rating-value="${value}"
+        aria-label="${escapeAttribute(t("ratingSet", { value: String(value) }))}"
+        title="${escapeAttribute(t("ratingSet", { value: String(value) }))}"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 3.6l2.57 5.2 5.74.84-4.15 4.04.98 5.71L12 16.7 6.86 19.4l.98-5.71L3.7 9.64l5.74-.84L12 3.6Z"></path>
+        </svg>
+      </button>
+    `;
+  }).join("");
+  return `
+    <div class="wine-rating" role="group" aria-label="${escapeAttribute(`${t("ratingLabel")}: ${currentLabel}`)}">
+      ${stars}
+    </div>
+  `;
+}
+
 function openDetail(wine) {
   if (!wine) return;
   state.selectedWineId = wine.id;
@@ -1770,11 +1812,12 @@ function renderCellar() {
     ? sortedWines
         .map(
           (wine) => `
-            <button class="wine-card" data-id="${wine.id}" data-type="${escapeHtml(cardVisualType(wine))}" type="button">
+            <div class="wine-card" data-id="${wine.id}" data-type="${escapeHtml(cardVisualType(wine))}" role="button" tabindex="0">
               <div class="wine-card-main">
                 <p class="wine-title">
                   <span>${escapeHtml(wine.name)}</span>
                   ${renderMissingGrapeBadge(wine)}
+                  ${renderWineRating(wine)}
                 </p>
                 <p class="wine-meta wine-producer">${escapeHtml(wine.producer)}</p>
                 <div class="wine-card-details">
@@ -1792,7 +1835,7 @@ function renderCellar() {
                   ${renderCardCurrentValue(wine)}
                 </span>
               </div>
-            </button>
+            </div>
           `,
         )
         .join("")
@@ -2644,7 +2687,21 @@ function formToWine() {
     drink_to: existingWine?.drink_to ?? null,
     drink_window_notes: existingWine?.drink_window_notes || "",
     ai_value_notes: existingWine?.ai_value_notes || "",
+    rating: existingWine?.rating ?? 0,
   };
+}
+
+async function updateWineRating(wineId, rating) {
+  const wine = state.wines.find((item) => item.id === wineId);
+  if (!wine) return;
+  const saved = await api(`/api/wines/${encodeURIComponent(wineId)}`, {
+    method: "PUT",
+    body: JSON.stringify({ ...wine, rating }),
+  });
+  const index = state.wines.findIndex((item) => item.id === saved.id);
+  if (index >= 0) state.wines[index] = saved;
+  renderCellar();
+  if (state.selectedWineId === saved.id && currentScreen === "detail") openDetail(saved);
 }
 
 async function handleSubmit(event) {
@@ -3376,8 +3433,29 @@ grapeFilter?.addEventListener("change", () => {
 });
 
 wineList.addEventListener("click", (event) => {
+  const ratingButton = event.target.closest("[data-rating-value]");
+  if (ratingButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    const wine = state.wines.find((item) => item.id === ratingButton.dataset.ratingWine);
+    const nextRating = Number(ratingButton.dataset.ratingValue);
+    const targetRating = wineRatingValue(wine) === nextRating ? 0 : nextRating;
+    updateWineRating(ratingButton.dataset.ratingWine, targetRating).catch((error) => {
+      alert(t("ratingUnable", { error: error.message }));
+    });
+    return;
+  }
   const card = event.target.closest(".wine-card");
   if (!card) return;
+  openDetail(state.wines.find((wine) => wine.id === card.dataset.id));
+});
+
+wineList.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  if (event.target.closest("[data-rating-value]")) return;
+  const card = event.target.closest(".wine-card");
+  if (!card) return;
+  event.preventDefault();
   openDetail(state.wines.find((wine) => wine.id === card.dataset.id));
 });
 

@@ -353,6 +353,7 @@ def init_db() -> None:
                 drink_to INTEGER,
                 drink_window_notes TEXT NOT NULL DEFAULT '',
                 ai_value_notes TEXT NOT NULL DEFAULT '',
+                rating INTEGER NOT NULL DEFAULT 0,
                 grapes_json TEXT NOT NULL DEFAULT '[]',
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -370,6 +371,7 @@ def init_db() -> None:
         ensure_column(conn, "wines", "drink_to", "INTEGER")
         ensure_column(conn, "wines", "drink_window_notes", "TEXT NOT NULL DEFAULT ''")
         ensure_column(conn, "wines", "ai_value_notes", "TEXT NOT NULL DEFAULT ''")
+        ensure_column(conn, "wines", "rating", "INTEGER NOT NULL DEFAULT 0")
         ensure_column(conn, "wines", "grapes_json", "TEXT NOT NULL DEFAULT '[]'")
         conn.execute(
             """
@@ -627,7 +629,7 @@ def list_wines() -> list[dict]:
                    price, current_value, currency, merchant, order_date, expected_delivery, status,
                    owner_share_pct, owners_json, notes, ai_notes,
                    drink_from, drink_peak_from, drink_peak_to, drink_to, drink_window_notes,
-                   ai_value_notes, grapes_json
+                   ai_value_notes, rating, grapes_json
             FROM wines
             ORDER BY expected_delivery DESC, name ASC
             """
@@ -1762,11 +1764,14 @@ def clean_wine(payload: dict, wine_id: str | None = None) -> dict:
     owners = clean_owners(payload.get("owners", []))
     scores = clean_scores(payload.get("scores", []))
     grapes = clean_grapes(payload.get("grapes", []))
+    rating = int(payload.get("rating", 0) or 0)
     total_share = owner_share_pct + sum(float(owner["share_pct"]) for owner in owners)
     if owner_share_pct < 0 or owner_share_pct > 100:
         raise ValueError("Your ownership share must be between 0 and 100")
     if total_share > 100.0001:
         raise ValueError("Ownership shares cannot exceed 100%")
+    if rating < 0 or rating > 6:
+        raise ValueError("Rating must be between 0 and 6")
 
     return {
         "id": wine_id or payload.get("id") or str(uuid.uuid4()),
@@ -1798,6 +1803,7 @@ def clean_wine(payload: dict, wine_id: str | None = None) -> dict:
         "drink_to": clean_optional_int(payload.get("drink_to")),
         "drink_window_notes": str(payload.get("drink_window_notes", "")).strip(),
         "ai_value_notes": str(payload.get("ai_value_notes", "")).strip(),
+        "rating": rating,
     }
 
 
@@ -1975,7 +1981,7 @@ def get_wine(conn: sqlite3.Connection, wine_id: str) -> dict | None:
                price, current_value, currency, merchant, order_date, expected_delivery, status,
                owner_share_pct, owners_json, notes, ai_notes,
                drink_from, drink_peak_from, drink_peak_to, drink_to, drink_window_notes,
-               ai_value_notes, grapes_json
+               ai_value_notes, rating, grapes_json
         FROM wines
         WHERE id = ?
         """,
@@ -2010,14 +2016,14 @@ def insert_wine(conn: sqlite3.Connection, wine: dict) -> dict:
             price, current_value, currency, merchant, order_date, expected_delivery, status,
             owner_share_pct, owners_json, notes, ai_notes,
             drink_from, drink_peak_from, drink_peak_to, drink_to, drink_window_notes,
-            ai_value_notes, grapes_json
+            ai_value_notes, rating, grapes_json
         )
         VALUES (
             :id, :name, :producer, :vintage, :quantity, :format, :type, :region, :appellation,
             :price, :current_value, :currency, :merchant, :order_date, :expected_delivery, :status,
             :owner_share_pct, :owners_json, :notes, :ai_notes,
             :drink_from, :drink_peak_from, :drink_peak_to, :drink_to, :drink_window_notes,
-            :ai_value_notes, :grapes_json
+            :ai_value_notes, :rating, :grapes_json
         )
         """,
         data,
@@ -2054,14 +2060,14 @@ def upsert_wine(payload: dict, wine_id: str | None = None) -> dict:
                 price, current_value, currency, merchant, order_date, expected_delivery, status,
                 owner_share_pct, owners_json, notes, ai_notes,
                 drink_from, drink_peak_from, drink_peak_to, drink_to, drink_window_notes,
-                ai_value_notes, grapes_json
+                ai_value_notes, rating, grapes_json
             )
             VALUES (
                 :id, :name, :producer, :vintage, :quantity, :format, :type, :region, :appellation,
                 :price, :current_value, :currency, :merchant, :order_date, :expected_delivery, :status,
                 :owner_share_pct, :owners_json, :notes, :ai_notes,
                 :drink_from, :drink_peak_from, :drink_peak_to, :drink_to, :drink_window_notes,
-                :ai_value_notes, :grapes_json
+                :ai_value_notes, :rating, :grapes_json
             )
             ON CONFLICT(id) DO UPDATE SET
                 name = excluded.name,
@@ -2089,6 +2095,7 @@ def upsert_wine(payload: dict, wine_id: str | None = None) -> dict:
                 drink_to = excluded.drink_to,
                 drink_window_notes = excluded.drink_window_notes,
                 ai_value_notes = excluded.ai_value_notes,
+                rating = excluded.rating,
                 grapes_json = excluded.grapes_json,
                 updated_at = CURRENT_TIMESTAMP
             """,
