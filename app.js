@@ -767,13 +767,20 @@ function t(key, replacements = {}) {
   }, text);
 }
 
+function currentLocale() {
+  return state.lang === "it" ? "it-CH" : "en-CH";
+}
+
 function applyTranslations() {
-  document.documentElement.lang = state.lang;
+  document.documentElement.lang = currentLocale();
   document.querySelectorAll("[data-i18n]").forEach((element) => {
     element.textContent = t(element.dataset.i18n);
   });
   document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
     element.placeholder = t(element.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll('input[type="date"]').forEach((input) => {
+    input.lang = currentLocale();
   });
   languageButton.textContent = state.lang.toUpperCase();
   document.querySelectorAll(".owner-name").forEach((input) => {
@@ -1203,19 +1210,19 @@ function formatMoney(value, currency = "CHF") {
 
 function formatMonthYear(dateValue) {
   if (!dateValue) return "TBD";
-  return new Intl.DateTimeFormat(state.lang === "it" ? "it-IT" : "en-GB", { month: "short", year: "numeric" }).format(new Date(dateValue));
+  return new Intl.DateTimeFormat(currentLocale(), { month: "short", year: "numeric" }).format(new Date(dateValue));
 }
 
 function formatDate(dateValue) {
   if (!dateValue) return "TBD";
-  return new Intl.DateTimeFormat(state.lang === "it" ? "it-IT" : "en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).format(
+  return new Intl.DateTimeFormat(currentLocale(), { day: "2-digit", month: "2-digit", year: "numeric" }).format(
     new Date(dateValue),
   );
 }
 
 function formatDateTime(dateValue) {
   if (!dateValue) return "TBD";
-  return new Intl.DateTimeFormat(state.lang === "it" ? "it-IT" : "en-GB", {
+  return new Intl.DateTimeFormat(currentLocale(), {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
