@@ -1505,6 +1505,11 @@ body[data-theme="dusk"] .small-vintage {
   content: "";
 }
 
+body[data-theme="midnight"] .region-row::before,
+body[data-theme="dusk"] .region-row::before {
+  background: color-mix(in srgb, var(--wine) 20%, transparent);
+}
+
 .region-row span,
 .region-row strong {
   position: relative;

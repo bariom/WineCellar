@@ -15,6 +15,7 @@ const state = {
   filter: "All",
   ownerFilter: "All",
   quantityFilter: "Available",
+  grapeFilter: "All",
   sort: "delivery-desc",
   insightFilter: null,
   selectedWineId: null,
@@ -159,6 +160,7 @@ const translations = {
     generateGrapes: "Generate",
     generateGrapesConfirm: "Replace the current grape composition?",
     generateGrapesUnable: "Unable to generate grapes: {error}",
+    grapeFilter: "Grape",
     import: "Import",
     historyNav: "History",
     installApp: "Install",
@@ -454,6 +456,7 @@ const translations = {
     generateGrapes: "Genera",
     generateGrapesConfirm: "Sostituire la composizione uve attuale?",
     generateGrapesUnable: "Impossibile generare le uve: {error}",
+    grapeFilter: "Vitigno",
     import: "Importa",
     historyNav: "Storico",
     installApp: "Installa",
@@ -676,6 +679,7 @@ const filterToggle = document.querySelector("#filter-toggle");
 const filterPanel = document.querySelector("#filter-panel");
 const filterCount = document.querySelector("#filter-count");
 const activeInsightFilter = document.querySelector("#active-insight-filter");
+const grapeFilter = document.querySelector("#grape-filter");
 const timelineList = document.querySelector("#timeline-list");
 const drinkNowList = document.querySelector("#drink-now-list");
 const drinkNowListPanel = document.querySelector("#drink-now-list-panel");
@@ -785,6 +789,7 @@ function applyTranslations() {
   document.querySelectorAll(".grape-remove").forEach((button) => {
     button.textContent = t("remove");
   });
+  renderGrapeFilterOptions();
   renderCellar();
   const currentScreen = Object.entries(screens).find(([, screen]) => screen.classList.contains("active"))?.[0];
   if (currentScreen === "timeline") renderTimeline();
@@ -968,6 +973,7 @@ async function loadWines() {
   state.wishlist = wishlist;
   state.movements = movements;
   renderWineSuggestions();
+  renderGrapeFilterOptions();
   renderCellar();
   renderWishlist();
 }
@@ -1115,6 +1121,24 @@ function renderWineSuggestions() {
     .join("");
 }
 
+function renderGrapeFilterOptions() {
+  if (!grapeFilter) return;
+  const selected = state.grapeFilter || "All";
+  const grapes = [...new Set(
+    state.wines
+      .flatMap((wine) => (Array.isArray(wine.grapes) ? wine.grapes : []))
+      .map((grape) => String(grape?.name || "").trim())
+      .filter(Boolean)
+      .sort((a, b) => compareText(a, b)),
+  )];
+  grapeFilter.innerHTML = [
+    `<option value="All">${escapeHtml(t("all"))}</option>`,
+    ...grapes.map((grape) => `<option value="${escapeAttribute(grape)}">${escapeHtml(grape)}</option>`),
+  ].join("");
+  grapeFilter.value = grapes.includes(selected) ? selected : "All";
+  state.grapeFilter = grapeFilter.value;
+}
+
 function matchingWineTemplate(name) {
   const normalized = name.trim().toLowerCase();
   if (!normalized) return null;
@@ -1236,8 +1260,13 @@ function renderCardCurrentValue(wine) {
 
 function insightFilterLabel(filter = state.insightFilter) {
   if (!filter) return "";
-  const value = filter.field === "type" ? typeLabel(filter.value) : filter.value === "Unspecified" ? t("notSpecified") : filter.value;
-  return `${value} - ${t(filter.field === "type" ? "color" : "region")}`;
+  const value =
+    filter.field === "type"
+      ? typeLabel(filter.value)
+      : filter.value === "Unspecified"
+        ? t("notSpecified")
+        : filter.value;
+  return `${value} - ${t(filter.field === "type" ? "color" : filter.field === "grape" ? "grapeFilter" : "region")}`;
 }
 
 function matchesInsightFilter(wine) {
@@ -1247,6 +1276,7 @@ function matchesInsightFilter(wine) {
   if (filter.scope === "mine" && personalQuantity(wine) <= 0) return false;
   if (filter.field === "region") return (wine.region || "Unspecified") === filter.value;
   if (filter.field === "type") return (wine.type || "Unspecified") === filter.value;
+  if (filter.field === "grape") return (wine.grapes || []).some((grape) => String(grape?.name || "").trim() === filter.value);
   return true;
 }
 
@@ -1255,6 +1285,11 @@ function matchesQuantityFilter(wine) {
   if (state.quantityFilter === "All") return true;
   if (state.quantityFilter === "Empty") return quantity <= 0;
   return quantity > 0;
+}
+
+function matchesGrapeFilter(wine) {
+  if (state.grapeFilter === "All") return true;
+  return (wine.grapes || []).some((grape) => String(grape?.name || "").trim().toLowerCase() === state.grapeFilter.toLowerCase());
 }
 
 function compareText(a, b) {
@@ -1275,7 +1310,13 @@ function sortWines(wines) {
 }
 
 function updateFilterCount() {
-  const activeFilters = [state.filter !== "All", state.ownerFilter !== "All", state.quantityFilter !== "Available", Boolean(state.insightFilter)].filter(Boolean).length;
+  const activeFilters = [
+    state.filter !== "All",
+    state.ownerFilter !== "All",
+    state.quantityFilter !== "Available",
+    state.grapeFilter !== "All",
+    Boolean(state.insightFilter),
+  ].filter(Boolean).length;
   filterCount.textContent = activeFilters ? String(activeFilters) : "";
   filterCount.hidden = activeFilters === 0;
   activeInsightFilter.hidden = !state.insightFilter;
@@ -1657,13 +1698,14 @@ function renderCellar() {
       return state.ownerFilter === "Shared" ? shared : !shared;
     })
     .filter(matchesQuantityFilter)
+    .filter(matchesGrapeFilter)
     .filter((wine) => {
       if (!query) return true;
       return [wine.name, wine.producer, wine.region, wine.appellation, wine.vintage]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(query));
     })
-    .filter(matchesInsightFilter)
+    .filter(matchesInsightFilter);
   const sortedWines = sortWines(wines);
 
   updateActiveInsightFilterCount(sortedWines.reduce((sum, wine) => sum + Number(wine.quantity || 0), 0));
@@ -2340,9 +2382,11 @@ function applyInsightListFilter(field, value, scope) {
   state.filter = "All";
   state.ownerFilter = "All";
   state.quantityFilter = "Available";
+  state.grapeFilter = "All";
   state.sort = "delivery-desc";
   cellarSearch.value = "";
   cellarSort.value = state.sort;
+  if (grapeFilter) grapeFilter.value = "All";
   state.search = "";
   document.querySelectorAll("[data-filter]").forEach((item) => item.classList.toggle("active", item.dataset.filter === "All"));
   document.querySelectorAll("[data-owner-filter]").forEach((item) => item.classList.toggle("active", item.dataset.ownerFilter === "All"));
@@ -3254,6 +3298,12 @@ document.querySelectorAll("[data-quantity-filter]").forEach((button) => {
     updateFilterCount();
     renderCellar();
   });
+});
+
+grapeFilter?.addEventListener("change", () => {
+  state.grapeFilter = grapeFilter.value;
+  updateFilterCount();
+  renderCellar();
 });
 
 wineList.addEventListener("click", (event) => {
