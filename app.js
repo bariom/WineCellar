@@ -735,6 +735,10 @@ const wineNameInput = document.querySelector("#name");
 const wineNameSuggestions = document.querySelector("#wine-name-suggestions");
 const themeOptions = document.querySelector("#theme-options");
 const themeColorMeta = document.querySelector("meta[name='theme-color']");
+const orderDateInput = document.querySelector("#order_date");
+const expectedDeliveryInput = document.querySelector("#expected_delivery");
+const orderDateDisplayInput = document.querySelector("#order_date_display");
+const expectedDeliveryDisplayInput = document.querySelector("#expected_delivery_display");
 
 function normalizeTheme(theme) {
   return THEME_IDS.has(theme) ? theme : "";
@@ -771,6 +775,76 @@ function currentLocale() {
   return state.lang === "it" ? "it-CH" : "en-CH";
 }
 
+function swissDatePlaceholder() {
+  return "DD/MM/YYYY";
+}
+
+function isoDateToSwiss(value) {
+  const raw = String(value || "").trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return "";
+  return `${match[3]}/${match[2]}/${match[1]}`;
+}
+
+function swissDateToIso(value) {
+  const raw = String(value || "").trim();
+  const match = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return "";
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const candidate = new Date(Date.UTC(year, month - 1, day));
+  if (
+    candidate.getUTCFullYear() !== year ||
+    candidate.getUTCMonth() !== month - 1 ||
+    candidate.getUTCDate() !== day
+  ) {
+    return "";
+  }
+  return `${match[3]}-${match[2]}-${match[1]}`;
+}
+
+function normalizeDateFieldValue(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const swissIso = swissDateToIso(raw);
+  if (swissIso) return swissIso;
+  const usMatch = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (usMatch) {
+    const month = Number(usMatch[1]);
+    const day = Number(usMatch[2]);
+    const year = Number(usMatch[3]);
+    const candidate = new Date(Date.UTC(year, month - 1, day));
+    if (
+      candidate.getUTCFullYear() === year &&
+      candidate.getUTCMonth() === month - 1 &&
+      candidate.getUTCDate() === day
+    ) {
+      return `${usMatch[3]}-${usMatch[1]}-${usMatch[2]}`;
+    }
+  }
+  return "";
+}
+
+function syncDateDisplay(dateInput, displayInput) {
+  if (!dateInput || !displayInput) return;
+  displayInput.value = isoDateToSwiss(dateInput.value);
+}
+
+function syncHiddenDateFromDisplay(dateInput, displayInput) {
+  if (!dateInput || !displayInput) return;
+  const isoValue = normalizeDateFieldValue(displayInput.value);
+  if (displayInput.value.trim() === "") {
+    dateInput.value = "";
+    return;
+  }
+  if (isoValue) {
+    dateInput.value = isoValue;
+    displayInput.value = isoDateToSwiss(isoValue);
+  }
+}
+
 function applyTranslations() {
   document.documentElement.lang = currentLocale();
   document.querySelectorAll("[data-i18n]").forEach((element) => {
@@ -781,6 +855,9 @@ function applyTranslations() {
   });
   document.querySelectorAll('input[type="date"]').forEach((input) => {
     input.lang = currentLocale();
+  });
+  document.querySelectorAll(".date-display-input").forEach((input) => {
+    input.placeholder = swissDatePlaceholder();
   });
   languageButton.textContent = state.lang.toUpperCase();
   document.querySelectorAll(".owner-name").forEach((input) => {
@@ -2549,8 +2626,15 @@ function openForm(wine) {
       return;
     }
 
+    if (field instanceof HTMLInputElement && field.type === "date") {
+      field.value = normalizeDateFieldValue(value);
+      return;
+    }
     field.value = value ?? "";
   });
+
+  syncDateDisplay(orderDateInput, orderDateDisplayInput);
+  syncDateDisplay(expectedDeliveryInput, expectedDeliveryDisplayInput);
 
   (values.owners || []).forEach((owner) => addOwnerRow(owner));
   (values.scores || []).forEach((score) => addScoreRow(score));
@@ -2663,6 +2747,8 @@ function collectGrapes() {
 }
 
 function formToWine() {
+  syncHiddenDateFromDisplay(orderDateInput, orderDateDisplayInput);
+  syncHiddenDateFromDisplay(expectedDeliveryInput, expectedDeliveryDisplayInput);
   const data = new FormData(form);
   const existingWine = state.wines.find((wine) => wine.id === data.get("id"));
   return {
@@ -3464,6 +3550,23 @@ wineList.addEventListener("keydown", (event) => {
   if (!card) return;
   event.preventDefault();
   openDetail(state.wines.find((wine) => wine.id === card.dataset.id));
+});
+
+document.querySelectorAll("[data-date-picker]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const input = document.querySelector(`#${button.dataset.datePicker}`);
+    if (!input) return;
+    input.showPicker?.();
+    input.focus();
+  });
+});
+
+[
+  [orderDateInput, orderDateDisplayInput],
+  [expectedDeliveryInput, expectedDeliveryDisplayInput],
+].forEach(([dateInput, displayInput]) => {
+  dateInput?.addEventListener("change", () => syncDateDisplay(dateInput, displayInput));
+  displayInput?.addEventListener("blur", () => syncHiddenDateFromDisplay(dateInput, displayInput));
 });
 
 applyTranslations();

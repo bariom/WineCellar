@@ -676,11 +676,19 @@
 
           <label class="form-field">
             <span data-i18n="orderDate">Order Date</span>
-            <input class="form-control" id="order_date" name="order_date" type="date" />
+            <div class="date-field">
+              <input class="form-control date-display-input" id="order_date_display" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" autocomplete="off" />
+              <input id="order_date" name="order_date" type="date" hidden />
+              <button class="date-picker-trigger" type="button" data-date-picker="order_date" aria-label="Open calendar"></button>
+            </div>
           </label>
           <label class="form-field">
             <span data-i18n="expectedDelivery">Expected Delivery</span>
-            <input class="form-control" id="expected_delivery" name="expected_delivery" type="date" />
+            <div class="date-field">
+              <input class="form-control date-display-input" id="expected_delivery_display" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" autocomplete="off" />
+              <input id="expected_delivery" name="expected_delivery" type="date" hidden />
+              <button class="date-picker-trigger" type="button" data-date-picker="expected_delivery" aria-label="Open calendar"></button>
+            </div>
           </label>
 
           <div class="form-actions span-2">
