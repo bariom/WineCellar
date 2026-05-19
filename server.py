@@ -97,6 +97,11 @@ AI_MODEL_SETTINGS = [
         "recommended": "gpt-5.4-mini",
     },
     {
+        "key": "grape_composition_model",
+        "default": OPENAI_MODEL,
+        "recommended": "gpt-5.4-nano",
+    },
+    {
         "key": "wishlist_strategy_model",
         "default": OPENAI_WISHLIST_STRATEGY_MODEL,
         "recommended": "gpt-5.4",
@@ -182,6 +187,7 @@ FIELDS = [
     "drink_to",
     "drink_window_notes",
     "ai_value_notes",
+    "grapes",
 ]
 
 SEED_WINES = [
@@ -347,6 +353,7 @@ def init_db() -> None:
                 drink_to INTEGER,
                 drink_window_notes TEXT NOT NULL DEFAULT '',
                 ai_value_notes TEXT NOT NULL DEFAULT '',
+                grapes_json TEXT NOT NULL DEFAULT '[]',
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
@@ -363,6 +370,7 @@ def init_db() -> None:
         ensure_column(conn, "wines", "drink_to", "INTEGER")
         ensure_column(conn, "wines", "drink_window_notes", "TEXT NOT NULL DEFAULT ''")
         ensure_column(conn, "wines", "ai_value_notes", "TEXT NOT NULL DEFAULT ''")
+        ensure_column(conn, "wines", "grapes_json", "TEXT NOT NULL DEFAULT '[]'")
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS exchange_rates (
@@ -619,7 +627,7 @@ def list_wines() -> list[dict]:
                    price, current_value, currency, merchant, order_date, expected_delivery, status,
                    owner_share_pct, owners_json, notes, ai_notes,
                    drink_from, drink_peak_from, drink_peak_to, drink_to, drink_window_notes,
-                   ai_value_notes
+                   ai_value_notes, grapes_json
             FROM wines
             ORDER BY expected_delivery DESC, name ASC
             """
@@ -1460,11 +1468,17 @@ def suggest_wishlist_strategy(item_id: str) -> dict:
 def wine_from_row(row: sqlite3.Row) -> dict:
     wine = dict(row)
     owners_json = wine.pop("owners_json", "[]")
+    grapes_json = wine.pop("grapes_json", "[]")
     try:
         owners = json.loads(owners_json or "[]")
     except json.JSONDecodeError:
         owners = []
+    try:
+        grapes = json.loads(grapes_json or "[]")
+    except json.JSONDecodeError:
+        grapes = []
     wine["owners"] = owners if isinstance(owners, list) else []
+    wine["grapes"] = grapes if isinstance(grapes, list) else []
     wine.setdefault("scores", [])
     return wine
 
@@ -1472,7 +1486,9 @@ def wine_from_row(row: sqlite3.Row) -> dict:
 def wine_from_data(data: dict) -> dict:
     wine = dict(data)
     owners_json = wine.pop("owners_json", "[]")
+    grapes_json = wine.pop("grapes_json", "[]")
     wine["owners"] = json.loads(owners_json or "[]")
+    wine["grapes"] = json.loads(grapes_json or "[]")
     wine["scores"] = wine.get("scores", [])
     return wine
 
@@ -1745,6 +1761,7 @@ def clean_wine(payload: dict, wine_id: str | None = None) -> dict:
     owner_share_pct = float(payload.get("owner_share_pct", 100) or 0)
     owners = clean_owners(payload.get("owners", []))
     scores = clean_scores(payload.get("scores", []))
+    grapes = clean_grapes(payload.get("grapes", []))
     total_share = owner_share_pct + sum(float(owner["share_pct"]) for owner in owners)
     if owner_share_pct < 0 or owner_share_pct > 100:
         raise ValueError("Your ownership share must be between 0 and 100")
@@ -1771,6 +1788,8 @@ def clean_wine(payload: dict, wine_id: str | None = None) -> dict:
         "owner_share_pct": owner_share_pct,
         "owners_json": json.dumps(owners),
         "scores": scores,
+        "grapes_json": json.dumps(grapes),
+        "grapes": grapes,
         "notes": str(payload.get("notes", "")).strip(),
         "ai_notes": str(payload.get("ai_notes", "")).strip(),
         "drink_from": clean_optional_int(payload.get("drink_from")),
@@ -1861,6 +1880,35 @@ def clean_scores(raw_scores: object) -> list[dict]:
     return scores
 
 
+def clean_grapes(raw_grapes: object) -> list[dict]:
+    if raw_grapes in (None, ""):
+        return []
+    if not isinstance(raw_grapes, list):
+        raise ValueError("Grapes must be a list")
+
+    grapes = []
+    seen = set()
+    for raw_grape in raw_grapes:
+        if not isinstance(raw_grape, dict):
+            raise ValueError("Each grape must be an object")
+        name = str(raw_grape.get("name", "")).strip()
+        if not name:
+            continue
+        percentage = clean_optional_float(raw_grape.get("percentage"))
+        if percentage is not None and (percentage < 0 or percentage > 100):
+            raise ValueError("Grape percentage must be between 0 and 100")
+        normalized_name = name.lower()
+        if normalized_name in seen:
+            continue
+        seen.add(normalized_name)
+        grapes.append({"name": name, "percentage": percentage})
+
+    total_percentage = sum(grape["percentage"] for grape in grapes if grape["percentage"] is not None)
+    if total_percentage > 100.0001:
+        raise ValueError("Grape percentages cannot exceed 100")
+    return grapes
+
+
 def clean_optional_float(value: object) -> float | None:
     if value in (None, ""):
         return None
@@ -1901,7 +1949,7 @@ def get_wine(conn: sqlite3.Connection, wine_id: str) -> dict | None:
                price, current_value, currency, merchant, order_date, expected_delivery, status,
                owner_share_pct, owners_json, notes, ai_notes,
                drink_from, drink_peak_from, drink_peak_to, drink_to, drink_window_notes,
-               ai_value_notes
+               ai_value_notes, grapes_json
         FROM wines
         WHERE id = ?
         """,
@@ -1928,6 +1976,7 @@ def replace_wine_scores(conn: sqlite3.Connection, wine_id: str, scores: list[dic
 def insert_wine(conn: sqlite3.Connection, wine: dict) -> dict:
     data = clean_wine(wine)
     scores = data.pop("scores", [])
+    grapes = data.pop("grapes", [])
     conn.execute(
         """
         INSERT INTO wines (
@@ -1935,20 +1984,21 @@ def insert_wine(conn: sqlite3.Connection, wine: dict) -> dict:
             price, current_value, currency, merchant, order_date, expected_delivery, status,
             owner_share_pct, owners_json, notes, ai_notes,
             drink_from, drink_peak_from, drink_peak_to, drink_to, drink_window_notes,
-            ai_value_notes
+            ai_value_notes, grapes_json
         )
         VALUES (
             :id, :name, :producer, :vintage, :quantity, :format, :type, :region, :appellation,
             :price, :current_value, :currency, :merchant, :order_date, :expected_delivery, :status,
             :owner_share_pct, :owners_json, :notes, :ai_notes,
             :drink_from, :drink_peak_from, :drink_peak_to, :drink_to, :drink_window_notes,
-            :ai_value_notes
+            :ai_value_notes, :grapes_json
         )
         """,
         data,
     )
     replace_wine_scores(conn, data["id"], scores)
     data["scores"] = scores
+    data["grapes"] = grapes
     return data
 
 
@@ -1959,6 +2009,7 @@ def upsert_wine(payload: dict, wine_id: str | None = None) -> dict:
     preserve_drink_window = wine_id is not None and not any(field in payload for field in drink_window_fields)
     data = clean_wine(payload, wine_id)
     scores = data.pop("scores", [])
+    grapes = data.pop("grapes", [])
     with connect() as conn:
         if preserve_ai_notes or preserve_ai_value_notes or preserve_drink_window:
             existing = get_wine(conn, data["id"])
@@ -1977,14 +2028,14 @@ def upsert_wine(payload: dict, wine_id: str | None = None) -> dict:
                 price, current_value, currency, merchant, order_date, expected_delivery, status,
                 owner_share_pct, owners_json, notes, ai_notes,
                 drink_from, drink_peak_from, drink_peak_to, drink_to, drink_window_notes,
-                ai_value_notes
+                ai_value_notes, grapes_json
             )
             VALUES (
                 :id, :name, :producer, :vintage, :quantity, :format, :type, :region, :appellation,
                 :price, :current_value, :currency, :merchant, :order_date, :expected_delivery, :status,
                 :owner_share_pct, :owners_json, :notes, :ai_notes,
                 :drink_from, :drink_peak_from, :drink_peak_to, :drink_to, :drink_window_notes,
-                :ai_value_notes
+                :ai_value_notes, :grapes_json
             )
             ON CONFLICT(id) DO UPDATE SET
                 name = excluded.name,
@@ -2012,11 +2063,13 @@ def upsert_wine(payload: dict, wine_id: str | None = None) -> dict:
                 drink_to = excluded.drink_to,
                 drink_window_notes = excluded.drink_window_notes,
                 ai_value_notes = excluded.ai_value_notes,
+                grapes_json = excluded.grapes_json,
                 updated_at = CURRENT_TIMESTAMP
             """,
             data,
         )
         replace_wine_scores(conn, data["id"], scores)
+        data["grapes"] = grapes
         saved = get_wine(conn, data["id"])
     return saved
 
@@ -2610,6 +2663,110 @@ def suggest_ai_scores(wine_id: str) -> dict:
     if not raw_text:
         raise ValueError("OpenAI response did not include text")
     return {"scores": clean_ai_score_suggestions(parse_json_object(raw_text))}
+
+
+def clean_grape_composition_payload(payload: dict) -> list[dict]:
+    grapes = payload.get("grapes", payload if isinstance(payload, list) else [])
+    return clean_grapes(grapes)
+
+
+def generate_grape_composition(wine_id: str) -> dict:
+    with connect() as conn:
+        wine = get_wine(conn, wine_id)
+        if not wine:
+            raise LookupError("Wine not found")
+        grape_model = get_ai_model_setting(conn, "grape_composition_model", OPENAI_MODEL)
+
+    if not OPENAI_API_KEY:
+        raise ValueError("OPENAI_API_KEY is not configured")
+
+    wine_context = {
+        "name": wine["name"],
+        "producer": wine["producer"],
+        "vintage": wine["vintage"],
+        "region": wine.get("region", ""),
+        "appellation": wine.get("appellation", ""),
+        "type": wine.get("type", ""),
+        "format": wine.get("format", ""),
+        "ai_notes": wine.get("ai_notes", ""),
+    }
+    request_payload = {
+        "model": grape_model,
+        "instructions": (
+            "Sei un assistente esperto di vitigni e composizione dei vini. Devi completare la lista "
+            "delle uve che compongono un vino specifico. Rispondi solo con JSON valido, senza Markdown "
+            "e senza testo prima o dopo. Non inventare percentuali precise se non sei ragionevolmente "
+            "sicuro: in quel caso usa percentage null. Se il blend non e chiaro, restituisci solo i "
+            "vitigni di cui sei abbastanza sicuro. Usa nomi vitigno standard in italiano o internazionale."
+        ),
+        "input": (
+            "Restituisci solo questo oggetto JSON: "
+            "{\"grapes\":[{\"name\":\"nome vitigno\",\"percentage\":numero_o_null}]}. "
+            "Ogni percentage deve essere tra 0 e 100. Se conosci un solo vitigno dominante ma non la quota "
+            "esatta, usa percentage null. Se il vino e monovitigno e sei sicuro, puoi usare 100. "
+            "Contesto:\n"
+            f"{json.dumps(wine_context, ensure_ascii=False)}"
+        ),
+        "text": {
+            "format": {
+                "type": "json_schema",
+                "name": "grape_composition",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "grapes": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": False,
+                                "properties": {
+                                    "name": {"type": "string"},
+                                    "percentage": {"type": ["number", "null"]},
+                                },
+                                "required": ["name", "percentage"],
+                            },
+                        }
+                    },
+                    "required": ["grapes"],
+                },
+            }
+        },
+        "max_output_tokens": 220,
+    }
+    request = Request(
+        OPENAI_RESPONSES_URL,
+        data=json.dumps(request_payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json",
+            "User-Agent": "WineCellar/1.0",
+        },
+        method="POST",
+    )
+
+    try:
+        with urlopen(request, timeout=25) as response:
+            response_payload = json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        error_body = exc.read().decode("utf-8", errors="replace")
+        raise ValueError(f"OpenAI request failed: {error_body or exc.reason}") from exc
+    except (URLError, TimeoutError, OSError) as exc:
+        raise ValueError(f"OpenAI request failed: {exc}") from exc
+
+    raw_text = extract_response_text(response_payload)
+    if not raw_text:
+        raise ValueError("OpenAI response did not include text")
+    grapes = clean_grape_composition_payload(parse_json_object(raw_text))
+
+    with connect() as conn:
+        conn.execute(
+            "UPDATE wines SET grapes_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (json.dumps(grapes, ensure_ascii=False), wine_id),
+        )
+        updated = get_wine(conn, wine_id)
+    return updated
 
 
 def clean_drink_window_payload(payload: dict, vintage: str) -> dict:
@@ -3288,6 +3445,13 @@ class CellarHandler(SimpleHTTPRequestHandler):
                 wine_id = unquote(path.removeprefix("/api/wines/").removesuffix("/ai-notes"))
                 try:
                     self.send_json(generate_ai_notes(wine_id))
+                except LookupError as exc:
+                    self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+                return
+            if path.startswith("/api/wines/") and path.endswith("/grapes"):
+                wine_id = unquote(path.removeprefix("/api/wines/").removesuffix("/grapes"))
+                try:
+                    self.send_json(generate_grape_composition(wine_id))
                 except LookupError as exc:
                     self.send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
                 return

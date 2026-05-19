@@ -42,6 +42,16 @@ const state = {
     unknown: true,
     wait: true,
   },
+  detailSectionsCollapsed: {
+    owners: true,
+    scores: true,
+    grapes: true,
+    notes: true,
+    "ai-notes": true,
+    "drink-window": true,
+    sales: true,
+    movements: true,
+  },
 };
 
 let installPromptEvent = null;
@@ -51,6 +61,7 @@ const translations = {
   en: {
     addOwner: "Add Owner",
     addScore: "Add Score",
+    addGrape: "Add Grape",
     addWine: "+ Add Wine",
     aiNotes: "AI Notes",
     aiModelsHelp: "Choose the OpenAI model for each AI feature. Recommendations help balance quality, speed, and cost.",
@@ -132,6 +143,10 @@ const translations = {
     formatBottle: "Bottle (750ml)",
     formatHalf: "Half (375ml)",
     formatMagnum: "Magnum (1.5L)",
+    grape: "Grape",
+    grapePercentage: "Percentage",
+    grapes: "Grapes",
+    grapesEmpty: "No grapes recorded.",
     generateAiNotes: "Generate",
     generateAiNotesConfirm: "Replace the current AI notes?",
     generateAiNotesUnable: "Unable to generate AI notes: {error}",
@@ -141,6 +156,9 @@ const translations = {
     generateDrinkWindow: "Generate",
     generateDrinkWindowConfirm: "Replace the current drinking window?",
     generateDrinkWindowUnable: "Unable to generate drinking window: {error}",
+    generateGrapes: "Generate",
+    generateGrapesConfirm: "Replace the current grape composition?",
+    generateGrapesUnable: "Unable to generate grapes: {error}",
     import: "Import",
     historyNav: "History",
     installApp: "Install",
@@ -198,6 +216,8 @@ const translations = {
     settingsFunctionAiValueHelp: "Estimates the current bottle value and the short pricing note.",
     settingsFunctionDrinkWindow: "Drinking window",
     settingsFunctionDrinkWindowHelp: "Estimates the drinking window, peak years, and supporting note.",
+    settingsFunctionGrapeComposition: "Grape composition",
+    settingsFunctionGrapeCompositionHelp: "Completes the list of grapes and optional percentages for the wine.",
     settingsFunctionPairing: "Pairing",
     settingsFunctionPairingHelp: "Suggests cellar and market bottles for a dish.",
     settingsFunctionWishlistStrategy: "Wishlist strategy",
@@ -336,6 +356,7 @@ const translations = {
   it: {
     addOwner: "Aggiungi proprietario",
     addScore: "Aggiungi punteggio",
+    addGrape: "Aggiungi uva",
     addWine: "+ Aggiungi vino",
     aiNotes: "Note AI",
     aiModelsHelp: "Scegli il modello OpenAI per ciascuna funzione AI. Le raccomandazioni aiutano a bilanciare qualita, velocita e costo.",
@@ -417,6 +438,10 @@ const translations = {
     formatBottle: "Bottiglia (750ml)",
     formatHalf: "Mezza (375ml)",
     formatMagnum: "Magnum (1.5L)",
+    grape: "Uva",
+    grapePercentage: "Percentuale",
+    grapes: "Uve",
+    grapesEmpty: "Nessuna uva registrata.",
     generateAiNotes: "Genera",
     generateAiNotesConfirm: "Sostituire le Note AI attuali?",
     generateAiNotesUnable: "Impossibile generare le Note AI: {error}",
@@ -426,6 +451,9 @@ const translations = {
     generateDrinkWindow: "Genera",
     generateDrinkWindowConfirm: "Sostituire la finestra di degustazione attuale?",
     generateDrinkWindowUnable: "Impossibile generare la finestra di degustazione: {error}",
+    generateGrapes: "Genera",
+    generateGrapesConfirm: "Sostituire la composizione uve attuale?",
+    generateGrapesUnable: "Impossibile generare le uve: {error}",
     import: "Importa",
     historyNav: "Storico",
     installApp: "Installa",
@@ -483,6 +511,8 @@ const translations = {
     settingsFunctionAiValueHelp: "Stima il valore attuale della bottiglia e la nota sintetica di valutazione.",
     settingsFunctionDrinkWindow: "Finestra degustazione",
     settingsFunctionDrinkWindowHelp: "Stima finestra di bevuta, anni ideali e nota di supporto.",
+    settingsFunctionGrapeComposition: "Composizione uve",
+    settingsFunctionGrapeCompositionHelp: "Completa la lista delle uve e le percentuali opzionali del vino.",
     settingsFunctionPairing: "Abbinamento",
     settingsFunctionPairingHelp: "Suggerisce bottiglie dalla cantina e dal mercato per un piatto.",
     settingsFunctionWishlistStrategy: "Strategia wishlist",
@@ -668,9 +698,11 @@ const drinkButton = document.querySelector("#drink-bottle-button");
 const generateAiNotesButton = document.querySelector("#generate-ai-notes-button");
 const generateDrinkWindowButton = document.querySelector("#generate-drink-window-button");
 const generateAiValueButton = document.querySelector("#generate-ai-value-button");
+const generateGrapesButton = document.querySelector("#generate-grapes-button");
 const suggestAiScoresButton = document.querySelector("#suggest-ai-scores-button");
 const ownersFormList = document.querySelector("#owners-form-list");
 const scoresFormList = document.querySelector("#scores-form-list");
+const grapesFormList = document.querySelector("#grapes-form-list");
 const bottomNav = document.querySelector(".bottom-nav");
 const installAppButton = document.querySelector("#install-app-button");
 const languageButton = document.querySelector("#language-button");
@@ -738,10 +770,19 @@ function applyTranslations() {
   document.querySelectorAll(".score-note").forEach((input) => {
     input.placeholder = t("scoreNote");
   });
+  document.querySelectorAll(".grape-name").forEach((input) => {
+    input.placeholder = t("grape");
+  });
+  document.querySelectorAll(".grape-percentage").forEach((input) => {
+    input.placeholder = t("grapePercentage");
+  });
   document.querySelectorAll(".owner-remove").forEach((button) => {
     button.textContent = t("remove");
   });
   document.querySelectorAll(".score-remove").forEach((button) => {
+    button.textContent = t("remove");
+  });
+  document.querySelectorAll(".grape-remove").forEach((button) => {
     button.textContent = t("remove");
   });
   renderCellar();
@@ -949,6 +990,7 @@ function aiSettingTitle(key) {
       ai_notes_model: "settingsFunctionAiNotes",
       drink_window_model: "settingsFunctionDrinkWindow",
       ai_value_model: "settingsFunctionAiValue",
+      grape_composition_model: "settingsFunctionGrapeComposition",
       wishlist_strategy_model: "settingsFunctionWishlistStrategy",
     }[key] || "pairingModelTitle",
   );
@@ -961,6 +1003,7 @@ function aiSettingHelp(key) {
       ai_notes_model: "settingsFunctionAiNotesHelp",
       drink_window_model: "settingsFunctionDrinkWindowHelp",
       ai_value_model: "settingsFunctionAiValueHelp",
+      grape_composition_model: "settingsFunctionGrapeCompositionHelp",
       wishlist_strategy_model: "settingsFunctionWishlistStrategyHelp",
     }[key] || "pairingModelHelp",
   );
@@ -1361,6 +1404,32 @@ function renderMiniDrinkWindow(wine) {
   `;
 }
 
+function applyDetailSectionState() {
+  document.querySelectorAll("[data-detail-toggle]").forEach((button) => {
+    const section = button.dataset.detailToggle;
+    const collapsed = state.detailSectionsCollapsed[section] !== false;
+    button.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    const content = document.querySelector(`#detail-section-${section}`);
+    if (content) content.hidden = collapsed;
+  });
+}
+
+function renderGrapes(wine) {
+  const grapes = Array.isArray(wine?.grapes) ? wine.grapes : [];
+  if (!grapes.length) return `<p class="empty-state compact">${t("grapesEmpty")}</p>`;
+  return grapes
+    .map((grape) => {
+      const percentage = Number.isFinite(Number(grape.percentage)) ? `${formatNumber(grape.percentage)}%` : "";
+      return `
+        <div class="grape-row">
+          <span>${escapeHtml(grape.name || t("notSpecified"))}</span>
+          <strong>${escapeHtml(percentage || t("notSpecified"))}</strong>
+        </div>
+      `;
+    })
+    .join("");
+}
+
 function openDetail(wine) {
   if (!wine) return;
   state.selectedWineId = wine.id;
@@ -1404,8 +1473,10 @@ function openDetail(wine) {
   document.querySelector("#detail-appellation").textContent = wine.appellation || t("notSpecified");
   document.querySelector("#detail-order-date").textContent = formatDate(wine.order_date);
   document.querySelector("#detail-expected-delivery").textContent = formatDate(wine.expected_delivery);
+  document.querySelector("#detail-grape-list").innerHTML = renderGrapes(wine);
   document.querySelector("#detail-notes").textContent = wine.notes || t("notSpecified");
   document.querySelector("#detail-ai-notes").textContent = wine.ai_notes || t("notSpecified");
+  applyDetailSectionState();
   renderDrinkWindow(wine);
   drinkButton.disabled = Number(wine.quantity) <= 0 || wine.status !== "Delivered";
   drinkButton.title = wine.status === "Delivered" ? "" : t("onlyDelivered");
@@ -2292,6 +2363,7 @@ function openForm(wine) {
   form.reset();
   ownersFormList.innerHTML = "";
   scoresFormList.innerHTML = "";
+  grapesFormList.innerHTML = "";
   document.querySelector("#form-title").textContent = wine ? t("edit") : t("newOrder");
   document.querySelector("#wine-id").value = wine?.id || "";
   deleteButton.hidden = !wine;
@@ -2308,6 +2380,7 @@ function openForm(wine) {
     owner_share_pct: 100,
     owners: [],
     scores: [],
+    grapes: [],
     notes: "",
   };
 
@@ -2327,6 +2400,7 @@ function openForm(wine) {
 
   (values.owners || []).forEach((owner) => addOwnerRow(owner));
   (values.scores || []).forEach((score) => addScoreRow(score));
+  (values.grapes || []).forEach((grape) => addGrapeRow(grape));
 
   showScreen("form");
 }
@@ -2363,6 +2437,18 @@ function addScoreRow(score = { critic: "", score: "", note: "" }) {
   `;
   row.querySelector(".score-remove").addEventListener("click", () => row.remove());
   scoresFormList.appendChild(row);
+}
+
+function addGrapeRow(grape = { name: "", percentage: "" }) {
+  const row = document.createElement("div");
+  row.className = "grape-form-row";
+  row.innerHTML = `
+    <input class="form-control grape-name" placeholder="${escapeAttribute(t("grape"))}" value="${escapeAttribute(grape.name || "")}" />
+    <input class="form-control grape-percentage" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="${escapeAttribute(t("grapePercentage"))}" value="${escapeAttribute(grape.percentage ?? "")}" />
+    <button class="btn btn-soft grape-remove" type="button">${escapeHtml(t("remove"))}</button>
+  `;
+  row.querySelector(".grape-remove").addEventListener("click", () => row.remove());
+  grapesFormList.appendChild(row);
 }
 
 async function suggestWishlistStrategy(id) {
@@ -2404,6 +2490,15 @@ function collectScores() {
     .filter((score) => score.critic || score.score || score.note);
 }
 
+function collectGrapes() {
+  return [...grapesFormList.querySelectorAll(".grape-form-row")]
+    .map((row) => ({
+      name: row.querySelector(".grape-name").value.trim(),
+      percentage: row.querySelector(".grape-percentage").value === "" ? null : Number(row.querySelector(".grape-percentage").value),
+    }))
+    .filter((grape) => grape.name);
+}
+
 function formToWine() {
   const data = new FormData(form);
   const existingWine = state.wines.find((wine) => wine.id === data.get("id"));
@@ -2427,6 +2522,7 @@ function formToWine() {
     owner_share_pct: Number(data.get("owner_share_pct") || 100),
     owners: collectOwners(),
     scores: collectScores(),
+    grapes: collectGrapes(),
     notes: data.get("notes").trim(),
     ai_notes: existingWine?.ai_notes || "",
     drink_from: existingWine?.drink_from ?? null,
@@ -2554,6 +2650,25 @@ async function generateAiNotes() {
   } finally {
     generateAiNotesButton.disabled = false;
     generateAiNotesButton.textContent = previousText;
+  }
+}
+
+async function generateGrapes() {
+  const wine = state.wines.find((item) => item.id === state.selectedWineId);
+  if (!wine) return;
+  if ((wine.grapes || []).length && !confirm(t("generateGrapesConfirm"))) return;
+
+  generateGrapesButton.disabled = true;
+  const previousText = generateGrapesButton.textContent;
+  generateGrapesButton.textContent = "...";
+  try {
+    const saved = await api(`/api/wines/${encodeURIComponent(wine.id)}/grapes`, { method: "POST" });
+    const index = state.wines.findIndex((item) => item.id === saved.id);
+    if (index >= 0) state.wines[index] = saved;
+    openDetail(saved);
+  } finally {
+    generateGrapesButton.disabled = false;
+    generateGrapesButton.textContent = previousText;
   }
 }
 
@@ -2843,6 +2958,7 @@ wishlistNameInput.addEventListener("change", () => {
 });
 document.querySelector("#add-owner-button").addEventListener("click", () => addOwnerRow());
 document.querySelector("#add-score-button").addEventListener("click", () => addScoreRow());
+document.querySelector("#add-grape-button").addEventListener("click", () => addGrapeRow());
 filterToggle.addEventListener("click", () => {
   const expanded = filterToggle.getAttribute("aria-expanded") === "true";
   filterToggle.setAttribute("aria-expanded", String(!expanded));
@@ -2952,6 +3068,12 @@ generateAiNotesButton.addEventListener("click", () => {
   generateAiNotes().catch((error) => {
     generateAiNotesButton.disabled = false;
     alert(t("generateAiNotesUnable", { error: error.message }));
+  });
+});
+generateGrapesButton.addEventListener("click", () => {
+  generateGrapes().catch((error) => {
+    generateGrapesButton.disabled = false;
+    alert(t("generateGrapesUnable", { error: error.message }));
   });
 });
 suggestAiScoresButton.addEventListener("click", () => {
@@ -3097,6 +3219,14 @@ historyList?.addEventListener("click", handleMovementListClick);
 
 document.querySelectorAll(".nav-item").forEach((button) => {
   button.addEventListener("click", () => showScreen(button.dataset.screen));
+});
+
+document.querySelectorAll("[data-detail-toggle]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const section = button.dataset.detailToggle;
+    state.detailSectionsCollapsed[section] = !state.detailSectionsCollapsed[section];
+    applyDetailSectionState();
+  });
 });
 
 document.querySelectorAll("[data-filter]").forEach((button) => {

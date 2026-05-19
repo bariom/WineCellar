@@ -1679,6 +1679,7 @@ body[data-theme="dusk"] .small-vintage {
 
 .owners-panel,
 .scores-panel,
+.grapes-panel,
 .notes-panel,
 .ai-notes-panel,
 .drink-window-panel,
@@ -1688,15 +1689,57 @@ body[data-theme="dusk"] .small-vintage {
   gap: 10px;
 }
 
-.owners-panel h2,
-.scores-panel h2,
-.notes-panel h2,
-.ai-notes-panel h2,
-.drink-window-panel h2,
-.sales-panel h2,
-.movements-panel h2 {
-  margin: 0;
-  font-size: 1.15rem;
+.detail-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  font: inherit;
+  font-size: 1.02rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.detail-section-toggle::after {
+  width: 9px;
+  height: 9px;
+  margin-left: auto;
+  border-right: 2px solid var(--wine);
+  border-bottom: 2px solid var(--wine);
+  content: "";
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.18s ease;
+}
+
+.detail-section-toggle[aria-expanded="false"]::after {
+  transform: rotate(-45deg);
+}
+
+.detail-section-toggle:hover,
+.detail-section-toggle:focus-visible {
+  border-color: color-mix(in srgb, var(--wine) 34%, var(--line));
+  background: var(--panel);
+}
+
+.detail-section-content {
+  display: grid;
+  gap: 10px;
+}
+
+.detail-section-content[hidden] {
+  display: none;
+}
+
+.section-title-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .notes-box {
@@ -2211,6 +2254,36 @@ body[data-theme="dusk"] .wishlist-ai-badge {
   background: var(--surface-soft);
 }
 
+.grape-list {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.grape-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border-bottom: 1px solid rgba(223, 210, 192, 0.75);
+}
+
+.grape-row:last-child {
+  border-bottom: 0;
+}
+
+.grape-row span {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.grape-row strong {
+  color: var(--wine);
+  font-size: 0.9rem;
+}
+
 .score-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
@@ -2400,6 +2473,16 @@ body[data-theme="dusk"] .wishlist-ai-badge {
 }
 
 .owner-form-row .btn {
+  min-height: 48px;
+}
+
+.grape-form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px auto;
+  gap: 8px;
+}
+
+.grape-form-row .btn {
   min-height: 48px;
 }
 
@@ -2598,6 +2681,14 @@ body[data-theme="dusk"] .wishlist-ai-badge {
   }
 
   .owner-form-row .owner-remove {
+    grid-column: 1 / -1;
+  }
+
+  .grape-form-row {
+    grid-template-columns: 1fr 96px;
+  }
+
+  .grape-form-row .grape-remove {
     grid-column: 1 / -1;
   }
 

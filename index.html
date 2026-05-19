@@ -406,92 +406,145 @@
             </div>
           </div>
           <section class="owners-panel">
-            <h2 data-i18n="ownership">Ownership</h2>
-            <div class="owner-list" id="detail-owner-list"></div>
+            <div class="section-title-row">
+              <button class="detail-section-toggle" data-detail-toggle="owners" type="button" aria-expanded="false" aria-controls="detail-section-owners">
+                <span data-i18n="ownership">Ownership</span>
+              </button>
+            </div>
+            <div class="detail-section-content" id="detail-section-owners" hidden>
+              <div class="owner-list" id="detail-owner-list"></div>
+            </div>
           </section>
           <section class="scores-panel">
             <div class="section-title-row">
-              <h2 data-i18n="scores">Scores</h2>
-              <button class="btn btn-soft admin-only" id="suggest-ai-scores-button" type="button" data-i18n="suggestScores">Suggerisci</button>
+              <button class="detail-section-toggle" data-detail-toggle="scores" type="button" aria-expanded="false" aria-controls="detail-section-scores">
+                <span data-i18n="scores">Scores</span>
+              </button>
+              <div class="section-title-actions">
+                <button class="btn btn-soft admin-only" id="suggest-ai-scores-button" type="button" data-i18n="suggestScores">Suggerisci</button>
+              </div>
             </div>
-            <div class="score-list" id="detail-score-list"></div>
+            <div class="detail-section-content" id="detail-section-scores" hidden>
+              <div class="score-list" id="detail-score-list"></div>
+            </div>
+          </section>
+          <section class="grapes-panel">
+            <div class="section-title-row">
+              <button class="detail-section-toggle" data-detail-toggle="grapes" type="button" aria-expanded="false" aria-controls="detail-section-grapes">
+                <span data-i18n="grapes">Uve</span>
+              </button>
+              <div class="section-title-actions">
+                <button class="btn btn-soft admin-only" id="generate-grapes-button" type="button" data-i18n="generateGrapes">Genera</button>
+              </div>
+            </div>
+            <div class="detail-section-content" id="detail-section-grapes" hidden>
+              <div class="grape-list" id="detail-grape-list"></div>
+            </div>
           </section>
           <section class="notes-panel">
-            <h2 data-i18n="notes">Notes</h2>
-            <p class="notes-box" id="detail-notes"></p>
+            <div class="section-title-row">
+              <button class="detail-section-toggle" data-detail-toggle="notes" type="button" aria-expanded="false" aria-controls="detail-section-notes">
+                <span data-i18n="notes">Notes</span>
+              </button>
+            </div>
+            <div class="detail-section-content" id="detail-section-notes" hidden>
+              <p class="notes-box" id="detail-notes"></p>
+            </div>
           </section>
           <section class="ai-notes-panel">
             <div class="section-title-row">
-              <h2 data-i18n="aiNotes">Note AI</h2>
-              <button class="btn btn-soft admin-only" id="generate-ai-notes-button" type="button" data-i18n="generateAiNotes">Genera</button>
+              <button class="detail-section-toggle" data-detail-toggle="ai-notes" type="button" aria-expanded="false" aria-controls="detail-section-ai-notes">
+                <span data-i18n="aiNotes">Note AI</span>
+              </button>
+              <div class="section-title-actions">
+                <button class="btn btn-soft admin-only" id="generate-ai-notes-button" type="button" data-i18n="generateAiNotes">Genera</button>
+              </div>
             </div>
-            <p class="notes-box" id="detail-ai-notes"></p>
+            <div class="detail-section-content" id="detail-section-ai-notes" hidden>
+              <p class="notes-box" id="detail-ai-notes"></p>
+            </div>
           </section>
           <section class="drink-window-panel">
             <div class="section-title-row">
-              <h2 data-i18n="drinkWindow">Finestra degustazione</h2>
-              <button class="btn btn-soft admin-only" id="generate-drink-window-button" type="button" data-i18n="generateDrinkWindow">Genera</button>
-            </div>
-            <div class="drink-window-chart" id="drink-window-chart" hidden>
-              <div class="drink-window-years">
-                <span id="drink-window-start-year"></span>
-                <span id="drink-window-peak-years"></span>
-                <span id="drink-window-end-year"></span>
-              </div>
-              <div class="drink-window-bar" aria-hidden="true">
-                <span class="drink-segment drink-young" id="drink-segment-young"></span>
-                <span class="drink-segment drink-peak" id="drink-segment-peak"></span>
-                <span class="drink-segment drink-decline" id="drink-segment-decline"></span>
-                <span class="drink-arrival-marker" id="drink-arrival-marker"></span>
-                <span class="drink-current-marker" id="drink-current-marker"></span>
-              </div>
-              <div class="drink-window-legend">
-                <span data-i18n="drinkYoung">Giovane</span>
-                <span data-i18n="drinkPeak">Ideale</span>
-                <span data-i18n="drinkDecline">Oltre apice</span>
+              <button class="detail-section-toggle" data-detail-toggle="drink-window" type="button" aria-expanded="false" aria-controls="detail-section-drink-window">
+                <span data-i18n="drinkWindow">Finestra degustazione</span>
+              </button>
+              <div class="section-title-actions">
+                <button class="btn btn-soft admin-only" id="generate-drink-window-button" type="button" data-i18n="generateDrinkWindow">Genera</button>
               </div>
             </div>
-            <p class="notes-box" id="drink-window-empty"></p>
-            <p class="notes-box" id="drink-window-notes"></p>
+            <div class="detail-section-content" id="detail-section-drink-window" hidden>
+              <div class="drink-window-chart" id="drink-window-chart" hidden>
+                <div class="drink-window-years">
+                  <span id="drink-window-start-year"></span>
+                  <span id="drink-window-peak-years"></span>
+                  <span id="drink-window-end-year"></span>
+                </div>
+                <div class="drink-window-bar" aria-hidden="true">
+                  <span class="drink-segment drink-young" id="drink-segment-young"></span>
+                  <span class="drink-segment drink-peak" id="drink-segment-peak"></span>
+                  <span class="drink-segment drink-decline" id="drink-segment-decline"></span>
+                  <span class="drink-arrival-marker" id="drink-arrival-marker"></span>
+                  <span class="drink-current-marker" id="drink-current-marker"></span>
+                </div>
+                <div class="drink-window-legend">
+                  <span data-i18n="drinkYoung">Giovane</span>
+                  <span data-i18n="drinkPeak">Ideale</span>
+                  <span data-i18n="drinkDecline">Oltre apice</span>
+                </div>
+              </div>
+              <p class="notes-box" id="drink-window-empty"></p>
+              <p class="notes-box" id="drink-window-notes"></p>
+            </div>
           </section>
           <section class="sales-panel">
             <div class="section-title-row">
-              <h2 data-i18n="sales">Sales</h2>
-              <button class="btn btn-soft admin-only" id="show-sale-form-button" type="button" data-i18n="addSale">Add Sale</button>
-            </div>
-            <form class="sale-form" id="sale-form" hidden>
-              <label class="form-field">
-                <span data-i18n="quantity">Quantity</span>
-                <input class="form-control" id="sale-quantity" name="quantity" type="number" min="1" inputmode="numeric" required />
-              </label>
-              <label class="form-field">
-                <span data-i18n="salePrice">Sale Price</span>
-                <input class="form-control" id="sale-price" name="sale_price" type="number" min="0" step="0.01" inputmode="decimal" required />
-              </label>
-              <label class="form-field">
-                <span data-i18n="currency">Currency</span>
-                <select class="form-select" id="sale-currency" name="currency">
-                  <option>CHF</option>
-                  <option>EUR</option>
-                  <option>USD</option>
-                </select>
-              </label>
-              <label class="form-field sale-buyer">
-                <span data-i18n="buyer">Buyer</span>
-                <input class="form-control" id="sale-buyer" name="buyer" required />
-              </label>
-              <div class="sale-actions">
-                <button class="btn btn-soft" id="cancel-sale-button" type="button" data-i18n="cancel">Cancel</button>
-                <button class="btn btn-wine" type="submit" data-i18n="saveSale">Save Sale</button>
+              <button class="detail-section-toggle" data-detail-toggle="sales" type="button" aria-expanded="false" aria-controls="detail-section-sales">
+                <span data-i18n="sales">Sales</span>
+              </button>
+              <div class="section-title-actions">
+                <button class="btn btn-soft admin-only" id="show-sale-form-button" type="button" data-i18n="addSale">Add Sale</button>
               </div>
-            </form>
-            <div class="sale-list" id="sale-list"></div>
+            </div>
+            <div class="detail-section-content" id="detail-section-sales" hidden>
+              <form class="sale-form" id="sale-form" hidden>
+                <label class="form-field">
+                  <span data-i18n="quantity">Quantity</span>
+                  <input class="form-control" id="sale-quantity" name="quantity" type="number" min="1" inputmode="numeric" required />
+                </label>
+                <label class="form-field">
+                  <span data-i18n="salePrice">Sale Price</span>
+                  <input class="form-control" id="sale-price" name="sale_price" type="number" min="0" step="0.01" inputmode="decimal" required />
+                </label>
+                <label class="form-field">
+                  <span data-i18n="currency">Currency</span>
+                  <select class="form-select" id="sale-currency" name="currency">
+                    <option>CHF</option>
+                    <option>EUR</option>
+                    <option>USD</option>
+                  </select>
+                </label>
+                <label class="form-field sale-buyer">
+                  <span data-i18n="buyer">Buyer</span>
+                  <input class="form-control" id="sale-buyer" name="buyer" required />
+                </label>
+                <div class="sale-actions">
+                  <button class="btn btn-soft" id="cancel-sale-button" type="button" data-i18n="cancel">Cancel</button>
+                  <button class="btn btn-wine" type="submit" data-i18n="saveSale">Save Sale</button>
+                </div>
+              </form>
+              <div class="sale-list" id="sale-list"></div>
+            </div>
           </section>
           <section class="movements-panel">
             <div class="section-title-row">
-              <h2 data-i18n="movementHistory">Bottle Movements</h2>
+              <button class="detail-section-toggle" data-detail-toggle="movements" type="button" aria-expanded="false" aria-controls="detail-section-movements">
+                <span data-i18n="movementHistory">Bottle Movements</span>
+              </button>
             </div>
-            <div class="movement-list" id="movement-list"></div>
+            <div class="detail-section-content" id="detail-section-movements" hidden>
+              <div class="movement-list" id="movement-list"></div>
+            </div>
           </section>
         </article>
       </section>
@@ -597,6 +650,12 @@
             <legend data-i18n="scores">Scores</legend>
             <div id="scores-form-list"></div>
             <button class="btn btn-soft" id="add-score-button" type="button" data-i18n="addScore">Add Score</button>
+          </fieldset>
+
+          <fieldset class="grapes-editor span-2">
+            <legend data-i18n="grapes">Uve</legend>
+            <div id="grapes-form-list"></div>
+            <button class="btn btn-soft" id="add-grape-button" type="button" data-i18n="addGrape">Add Grape</button>
           </fieldset>
 
           <label class="form-field span-2">
