@@ -1895,6 +1895,8 @@ def clean_grapes(raw_grapes: object) -> list[dict]:
         if not name:
             continue
         percentage = clean_optional_float(raw_grape.get("percentage"))
+        if percentage is not None and percentage <= 0:
+            percentage = None
         if percentage is not None and (percentage < 0 or percentage > 100):
             raise ValueError("Grape percentage must be between 0 and 100")
         normalized_name = name.lower()
@@ -1906,6 +1908,8 @@ def clean_grapes(raw_grapes: object) -> list[dict]:
     total_percentage = sum(grape["percentage"] for grape in grapes if grape["percentage"] is not None)
     if total_percentage > 100.0001:
         raise ValueError("Grape percentages cannot exceed 100")
+    if len(grapes) == 1 and grapes[0]["percentage"] is None:
+        grapes[0]["percentage"] = 100.0
     return grapes
 
 
@@ -2670,6 +2674,16 @@ def clean_grape_composition_payload(payload: dict) -> list[dict]:
     return clean_grapes(grapes)
 
 
+def infer_known_grape_composition(wine: dict) -> list[dict] | None:
+    descriptor = " ".join(
+        str(wine.get(field) or "").strip().lower()
+        for field in ("name", "producer", "region", "appellation", "ai_notes")
+    )
+    if "blanc de blancs" in descriptor:
+        return [{"name": "Chardonnay", "percentage": 100.0}]
+    return None
+
+
 def generate_grape_composition(wine_id: str) -> dict:
     with connect() as conn:
         wine = get_wine(conn, wine_id)
@@ -2679,6 +2693,16 @@ def generate_grape_composition(wine_id: str) -> dict:
 
     if not OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY is not configured")
+
+    inferred_grapes = infer_known_grape_composition(wine)
+    if inferred_grapes is not None:
+        with connect() as conn:
+            conn.execute(
+                "UPDATE wines SET grapes_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (json.dumps(inferred_grapes, ensure_ascii=False), wine_id),
+            )
+            updated = get_wine(conn, wine_id)
+        return updated
 
     wine_context = {
         "name": wine["name"],
@@ -2696,14 +2720,18 @@ def generate_grape_composition(wine_id: str) -> dict:
             "Sei un assistente esperto di vitigni e composizione dei vini. Devi completare la lista "
             "delle uve che compongono un vino specifico. Rispondi solo con JSON valido, senza Markdown "
             "e senza testo prima o dopo. Non inventare percentuali precise se non sei ragionevolmente "
-            "sicuro: in quel caso usa percentage null. Se il blend non e chiaro, restituisci solo i "
-            "vitigni di cui sei abbastanza sicuro. Usa nomi vitigno standard in italiano o internazionale."
+            "sicuro: in quel caso usa percentage null, mai 0. Se il blend non e chiaro, restituisci solo i "
+            "vitigni di cui sei abbastanza sicuro e non aggiungere vitigni speculativi. Se il nome o lo stile "
+            "implicano chiaramente un monovitigno, usa quel vitigno al 100. Per esempio, in Champagne un "
+            "Blanc de Blancs va trattato come Chardonnay 100% salvo indicazioni contrarie esplicite. "
+            "Usa nomi vitigno standard in italiano o internazionale."
         ),
         "input": (
             "Restituisci solo questo oggetto JSON: "
             "{\"grapes\":[{\"name\":\"nome vitigno\",\"percentage\":numero_o_null}]}. "
             "Ogni percentage deve essere tra 0 e 100. Se conosci un solo vitigno dominante ma non la quota "
-            "esatta, usa percentage null. Se il vino e monovitigno e sei sicuro, puoi usare 100. "
+            "esatta, usa percentage null e non 0. Se il vino e monovitigno e sei sicuro, usa 100. "
+            "Se non sei sicuro delle percentuali di un blend, lascia percentage null invece di stimare 0. "
             "Contesto:\n"
             f"{json.dumps(wine_context, ensure_ascii=False)}"
         ),
