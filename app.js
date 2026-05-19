@@ -148,6 +148,7 @@ const translations = {
     grapePercentageFrom: "Min %",
     grapePercentageTo: "Max %",
     grapePercentageUnknown: "Percentage unavailable",
+    grapesMissingBadge: "Grape composition missing",
     grapes: "Grapes",
     grapesEmpty: "No grapes recorded.",
     generateAiNotes: "Generate",
@@ -446,6 +447,7 @@ const translations = {
     grapePercentageFrom: "Min %",
     grapePercentageTo: "Max %",
     grapePercentageUnknown: "Percentuale non disponibile",
+    grapesMissingBadge: "Composizione uve mancante",
     grapes: "Uve",
     grapesEmpty: "Nessuna uva registrata.",
     generateAiNotes: "Genera",
@@ -1499,6 +1501,33 @@ function formatGrapePercentage(grape) {
   return "";
 }
 
+function hasGrapeCompositionData(wine) {
+  const grapes = Array.isArray(wine?.grapes) ? wine.grapes : [];
+  return grapes.some((grape) => {
+    const { min, max } = grapePercentageRange(grape);
+    return Number.isFinite(min) || Number.isFinite(max);
+  });
+}
+
+function renderMissingGrapeBadge(wine) {
+  if (hasGrapeCompositionData(wine)) return "";
+  const label = t("grapesMissingBadge");
+  return `
+    <span class="wine-missing-grapes-badge" title="${escapeAttribute(label)}" aria-label="${escapeAttribute(label)}">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="8.5" cy="10" r="2.2"></circle>
+        <circle cx="13.8" cy="9" r="2.2"></circle>
+        <circle cx="6.2" cy="14.8" r="2.2"></circle>
+        <circle cx="11.6" cy="14.2" r="2.2"></circle>
+        <circle cx="9" cy="19" r="2.2"></circle>
+        <path d="M13.6 4.7c1.6-1.7 3.8-2.5 6-2.2"></path>
+        <path d="M13.2 5.3c-.8 1.8-2.3 3.2-4.2 3.8"></path>
+        <path d="M4 4 20 20"></path>
+      </svg>
+    </span>
+  `;
+}
+
 function openDetail(wine) {
   if (!wine) return;
   state.selectedWineId = wine.id;
@@ -1743,7 +1772,10 @@ function renderCellar() {
           (wine) => `
             <button class="wine-card" data-id="${wine.id}" data-type="${escapeHtml(cardVisualType(wine))}" type="button">
               <div class="wine-card-main">
-                <p class="wine-title">${escapeHtml(wine.name)}</p>
+                <p class="wine-title">
+                  <span>${escapeHtml(wine.name)}</span>
+                  ${renderMissingGrapeBadge(wine)}
+                </p>
                 <p class="wine-meta wine-producer">${escapeHtml(wine.producer)}</p>
                 <div class="wine-card-details">
                   <span>${wine.quantity}x ${escapeHtml(formatLabel(wine.format))}</span>

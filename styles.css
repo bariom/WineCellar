@@ -669,6 +669,33 @@ body[data-theme="dusk"] .drink-now-card[data-type="Red"]:hover {
   font-size: 1.48rem;
   line-height: 1.05;
   letter-spacing: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wine-missing-grapes-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--wine) 24%, var(--line));
+  background: color-mix(in srgb, var(--wine) 8%, transparent);
+  color: color-mix(in srgb, var(--wine) 82%, var(--ink));
+}
+
+.wine-missing-grapes-badge svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .wine-meta,
