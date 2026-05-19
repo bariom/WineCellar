@@ -1895,21 +1895,43 @@ def clean_grapes(raw_grapes: object) -> list[dict]:
         if not name:
             continue
         percentage = clean_optional_float(raw_grape.get("percentage"))
-        if percentage is not None and percentage <= 0:
-            percentage = None
-        if percentage is not None and (percentage < 0 or percentage > 100):
+        percentage_from = clean_optional_float(raw_grape.get("percentage_from"))
+        percentage_to = clean_optional_float(raw_grape.get("percentage_to"))
+        if percentage is not None:
+            percentage_from = percentage if percentage_from is None else percentage_from
+            percentage_to = percentage if percentage_to is None else percentage_to
+        if percentage_from is not None and percentage_from <= 0:
+            percentage_from = None
+        if percentage_to is not None and percentage_to <= 0:
+            percentage_to = None
+        if percentage_from is None and percentage_to is not None:
+            percentage_from = percentage_to
+        elif percentage_to is None and percentage_from is not None:
+            percentage_to = percentage_from
+        if percentage_from is not None and (percentage_from < 0 or percentage_from > 100):
             raise ValueError("Grape percentage must be between 0 and 100")
+        if percentage_to is not None and (percentage_to < 0 or percentage_to > 100):
+            raise ValueError("Grape percentage must be between 0 and 100")
+        if percentage_from is not None and percentage_to is not None and percentage_from > percentage_to:
+            percentage_from, percentage_to = percentage_to, percentage_from
         normalized_name = name.lower()
         if normalized_name in seen:
             continue
         seen.add(normalized_name)
-        grapes.append({"name": name, "percentage": percentage})
+        grapes.append(
+            {
+                "name": name,
+                "percentage_from": percentage_from,
+                "percentage_to": percentage_to,
+            }
+        )
 
-    total_percentage = sum(grape["percentage"] for grape in grapes if grape["percentage"] is not None)
-    if total_percentage > 100.0001:
+    total_min_percentage = sum(grape["percentage_from"] for grape in grapes if grape["percentage_from"] is not None)
+    if total_min_percentage > 100.0001:
         raise ValueError("Grape percentages cannot exceed 100")
-    if len(grapes) == 1 and grapes[0]["percentage"] is None:
-        grapes[0]["percentage"] = 100.0
+    if len(grapes) == 1 and grapes[0]["percentage_from"] is None and grapes[0]["percentage_to"] is None:
+        grapes[0]["percentage_from"] = 100.0
+        grapes[0]["percentage_to"] = 100.0
     return grapes
 
 
@@ -2680,7 +2702,7 @@ def infer_known_grape_composition(wine: dict) -> list[dict] | None:
         for field in ("name", "producer", "region", "appellation", "ai_notes")
     )
     if "blanc de blancs" in descriptor:
-        return [{"name": "Chardonnay", "percentage": 100.0}]
+        return [{"name": "Chardonnay", "percentage_from": 100.0, "percentage_to": 100.0}]
     return None
 
 
@@ -2719,19 +2741,22 @@ def generate_grape_composition(wine_id: str) -> dict:
         "instructions": (
             "Sei un assistente esperto di vitigni e composizione dei vini. Devi completare la lista "
             "delle uve che compongono un vino specifico. Rispondi solo con JSON valido, senza Markdown "
-            "e senza testo prima o dopo. Non inventare percentuali precise se non sei ragionevolmente "
-            "sicuro: in quel caso usa percentage null, mai 0. Se il blend non e chiaro, restituisci solo i "
-            "vitigni di cui sei abbastanza sicuro e non aggiungere vitigni speculativi. Se il nome o lo stile "
-            "implicano chiaramente un monovitigno, usa quel vitigno al 100. Per esempio, in Champagne un "
-            "Blanc de Blancs va trattato come Chardonnay 100% salvo indicazioni contrarie esplicite. "
-            "Usa nomi vitigno standard in italiano o internazionale."
+            "e senza testo prima o dopo. Le percentuali possono essere un valore esatto oppure un range "
+            "minimo/massimo. Non usare mai 0 per indicare incertezza: usa null. Se hai una percentuale "
+            "esatta, imposta percentage_from e percentage_to allo stesso valore. Se conosci solo un range, "
+            "usa i due estremi. Se il blend non e chiaro, restituisci solo i vitigni di cui sei abbastanza "
+            "sicuro e non aggiungere vitigni speculativi. Se il nome o lo stile implicano chiaramente un "
+            "monovitigno, usa quel vitigno al 100. Per esempio, in Champagne un Blanc de Blancs va trattato "
+            "come Chardonnay 100% salvo indicazioni contrarie esplicite. Usa nomi vitigno standard in "
+            "italiano o internazionale."
         ),
         "input": (
             "Restituisci solo questo oggetto JSON: "
-            "{\"grapes\":[{\"name\":\"nome vitigno\",\"percentage\":numero_o_null}]}. "
-            "Ogni percentage deve essere tra 0 e 100. Se conosci un solo vitigno dominante ma non la quota "
-            "esatta, usa percentage null e non 0. Se il vino e monovitigno e sei sicuro, usa 100. "
-            "Se non sei sicuro delle percentuali di un blend, lascia percentage null invece di stimare 0. "
+            "{\"grapes\":[{\"name\":\"nome vitigno\",\"percentage_from\":numero_o_null,\"percentage_to\":numero_o_null}]}. "
+            "Ogni percentage_from e percentage_to deve essere tra 0 e 100, oppure null. Se la quota e "
+            "esatta, imposta gli stessi due valori. Se conosci un solo vitigno dominante ma non la quota "
+            "esatta, usa entrambi null e non 0. Se il vino e monovitigno e sei sicuro, usa 100 e 100. "
+            "Se non sei sicuro delle percentuali di un blend, lascia null invece di stimare 0. "
             "Contesto:\n"
             f"{json.dumps(wine_context, ensure_ascii=False)}"
         ),
@@ -2751,9 +2776,10 @@ def generate_grape_composition(wine_id: str) -> dict:
                                 "additionalProperties": False,
                                 "properties": {
                                     "name": {"type": "string"},
-                                    "percentage": {"type": ["number", "null"]},
+                                    "percentage_from": {"type": ["number", "null"]},
+                                    "percentage_to": {"type": ["number", "null"]},
                                 },
-                                "required": ["name", "percentage"],
+                                "required": ["name", "percentage_from", "percentage_to"],
                             },
                         }
                     },

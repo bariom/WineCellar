@@ -2483,7 +2483,7 @@ body[data-theme="dusk"] .wishlist-ai-badge {
 
 .grape-form-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 110px auto;
+  grid-template-columns: minmax(0, 1fr) 96px 96px auto;
   gap: 8px;
 }
 
@@ -2690,11 +2690,17 @@ body[data-theme="dusk"] .wishlist-ai-badge {
   }
 
   .grape-form-row {
-    grid-template-columns: 1fr 96px;
+    grid-template-columns: 1fr 1fr;
   }
 
+  .grape-form-row .grape-name,
   .grape-form-row .grape-remove {
     grid-column: 1 / -1;
+  }
+
+  .grape-form-row .grape-percentage-from,
+  .grape-form-row .grape-percentage-to {
+    grid-column: auto;
   }
 
   .score-form-row {

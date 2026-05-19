@@ -145,7 +145,8 @@ const translations = {
     formatHalf: "Half (375ml)",
     formatMagnum: "Magnum (1.5L)",
     grape: "Grape",
-    grapePercentage: "Percentage",
+    grapePercentageFrom: "Min %",
+    grapePercentageTo: "Max %",
     grapes: "Grapes",
     grapesEmpty: "No grapes recorded.",
     generateAiNotes: "Generate",
@@ -441,7 +442,8 @@ const translations = {
     formatHalf: "Mezza (375ml)",
     formatMagnum: "Magnum (1.5L)",
     grape: "Uva",
-    grapePercentage: "Percentuale",
+    grapePercentageFrom: "Min %",
+    grapePercentageTo: "Max %",
     grapes: "Uve",
     grapesEmpty: "Nessuna uva registrata.",
     generateAiNotes: "Genera",
@@ -777,8 +779,11 @@ function applyTranslations() {
   document.querySelectorAll(".grape-name").forEach((input) => {
     input.placeholder = t("grape");
   });
-  document.querySelectorAll(".grape-percentage").forEach((input) => {
-    input.placeholder = t("grapePercentage");
+  document.querySelectorAll(".grape-percentage-from").forEach((input) => {
+    input.placeholder = t("grapePercentageFrom");
+  });
+  document.querySelectorAll(".grape-percentage-to").forEach((input) => {
+    input.placeholder = t("grapePercentageTo");
   });
   document.querySelectorAll(".owner-remove").forEach((button) => {
     button.textContent = t("remove");
@@ -1460,7 +1465,7 @@ function renderGrapes(wine) {
   if (!grapes.length) return `<p class="empty-state compact">${t("grapesEmpty")}</p>`;
   return grapes
     .map((grape) => {
-      const percentage = Number.isFinite(Number(grape.percentage)) ? `${formatNumber(grape.percentage)}%` : "";
+      const percentage = formatGrapePercentage(grape);
       return `
         <div class="grape-row">
           <span>${escapeHtml(grape.name || t("notSpecified"))}</span>
@@ -1469,6 +1474,24 @@ function renderGrapes(wine) {
       `;
     })
     .join("");
+}
+
+function grapePercentageRange(grape) {
+  const legacy = Number.isFinite(Number(grape?.percentage)) ? Number(grape.percentage) : null;
+  const min = Number.isFinite(Number(grape?.percentage_from)) ? Number(grape.percentage_from) : legacy;
+  const max = Number.isFinite(Number(grape?.percentage_to)) ? Number(grape.percentage_to) : legacy;
+  return { min, max };
+}
+
+function formatGrapePercentage(grape) {
+  const { min, max } = grapePercentageRange(grape);
+  if (Number.isFinite(min) && Number.isFinite(max)) {
+    if (Math.abs(min - max) < 0.0001) return `${formatNumber(min)}%`;
+    return `${formatNumber(min)}-${formatNumber(max)}%`;
+  }
+  if (Number.isFinite(min)) return `${formatNumber(min)}%`;
+  if (Number.isFinite(max)) return `${formatNumber(max)}%`;
+  return "";
 }
 
 function openDetail(wine) {
@@ -2483,12 +2506,14 @@ function addScoreRow(score = { critic: "", score: "", note: "" }) {
   scoresFormList.appendChild(row);
 }
 
-function addGrapeRow(grape = { name: "", percentage: "" }) {
+function addGrapeRow(grape = { name: "", percentage_from: "", percentage_to: "" }) {
+  const { min, max } = grapePercentageRange(grape);
   const row = document.createElement("div");
   row.className = "grape-form-row";
   row.innerHTML = `
     <input class="form-control grape-name" placeholder="${escapeAttribute(t("grape"))}" value="${escapeAttribute(grape.name || "")}" />
-    <input class="form-control grape-percentage" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="${escapeAttribute(t("grapePercentage"))}" value="${escapeAttribute(grape.percentage ?? "")}" />
+    <input class="form-control grape-percentage-from" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="${escapeAttribute(t("grapePercentageFrom"))}" value="${escapeAttribute(min ?? "")}" />
+    <input class="form-control grape-percentage-to" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="${escapeAttribute(t("grapePercentageTo"))}" value="${escapeAttribute(max ?? "")}" />
     <button class="btn btn-soft grape-remove" type="button">${escapeHtml(t("remove"))}</button>
   `;
   row.querySelector(".grape-remove").addEventListener("click", () => row.remove());
@@ -2538,7 +2563,14 @@ function collectGrapes() {
   return [...grapesFormList.querySelectorAll(".grape-form-row")]
     .map((row) => ({
       name: row.querySelector(".grape-name").value.trim(),
-      percentage: row.querySelector(".grape-percentage").value === "" ? null : Number(row.querySelector(".grape-percentage").value),
+      percentage_from:
+        row.querySelector(".grape-percentage-from").value === ""
+          ? null
+          : Number(row.querySelector(".grape-percentage-from").value),
+      percentage_to:
+        row.querySelector(".grape-percentage-to").value === ""
+          ? null
+          : Number(row.querySelector(".grape-percentage-to").value),
     }))
     .filter((grape) => grape.name);
 }
