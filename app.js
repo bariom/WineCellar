@@ -147,6 +147,7 @@ const translations = {
     grape: "Grape",
     grapePercentageFrom: "Min %",
     grapePercentageTo: "Max %",
+    grapePercentageUnknown: "Percentage unavailable",
     grapes: "Grapes",
     grapesEmpty: "No grapes recorded.",
     generateAiNotes: "Generate",
@@ -444,6 +445,7 @@ const translations = {
     grape: "Uva",
     grapePercentageFrom: "Min %",
     grapePercentageTo: "Max %",
+    grapePercentageUnknown: "Percentuale non disponibile",
     grapes: "Uve",
     grapesEmpty: "Nessuna uva registrata.",
     generateAiNotes: "Genera",
@@ -1469,7 +1471,7 @@ function renderGrapes(wine) {
       return `
         <div class="grape-row">
           <span>${escapeHtml(grape.name || t("notSpecified"))}</span>
-          <strong>${escapeHtml(percentage || t("notSpecified"))}</strong>
+          <strong>${escapeHtml(percentage || t("grapePercentageUnknown"))}</strong>
         </div>
       `;
     })

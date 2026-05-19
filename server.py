@@ -2703,6 +2703,12 @@ def infer_known_grape_composition(wine: dict) -> list[dict] | None:
     )
     if "blanc de blancs" in descriptor:
         return [{"name": "Chardonnay", "percentage_from": 100.0, "percentage_to": 100.0}]
+    if "tignanello" in descriptor:
+        return [
+            {"name": "Sangiovese", "percentage_from": 80.0, "percentage_to": 85.0},
+            {"name": "Cabernet Sauvignon", "percentage_from": 10.0, "percentage_to": 15.0},
+            {"name": "Cabernet Franc", "percentage_from": 5.0, "percentage_to": 5.0},
+        ]
     return None
 
 
@@ -2744,19 +2750,22 @@ def generate_grape_composition(wine_id: str) -> dict:
             "e senza testo prima o dopo. Le percentuali possono essere un valore esatto oppure un range "
             "minimo/massimo. Non usare mai 0 per indicare incertezza: usa null. Se hai una percentuale "
             "esatta, imposta percentage_from e percentage_to allo stesso valore. Se conosci solo un range, "
-            "usa i due estremi. Se il blend non e chiaro, restituisci solo i vitigni di cui sei abbastanza "
-            "sicuro e non aggiungere vitigni speculativi. Se il nome o lo stile implicano chiaramente un "
-            "monovitigno, usa quel vitigno al 100. Per esempio, in Champagne un Blanc de Blancs va trattato "
-            "come Chardonnay 100% salvo indicazioni contrarie esplicite. Usa nomi vitigno standard in "
-            "italiano o internazionale."
+            "usa i due estremi. Per vini molto noti o blend pubblicamente documentati, devi fornire il "
+            "range comunemente riportato anche se non e una percentuale esatta al singolo punto. Usa null "
+            "solo quando non esiste una stima affidabile neanche approssimativa. Se il blend non e chiaro, "
+            "restituisci solo i vitigni di cui sei abbastanza sicuro e non aggiungere vitigni speculativi. "
+            "Se il nome o lo stile implicano chiaramente un monovitigno, usa quel vitigno al 100. Per "
+            "esempio, in Champagne un Blanc de Blancs va trattato come Chardonnay 100% salvo indicazioni "
+            "contrarie esplicite. Usa nomi vitigno standard in italiano o internazionale."
         ),
         "input": (
             "Restituisci solo questo oggetto JSON: "
             "{\"grapes\":[{\"name\":\"nome vitigno\",\"percentage_from\":numero_o_null,\"percentage_to\":numero_o_null}]}. "
             "Ogni percentage_from e percentage_to deve essere tra 0 e 100, oppure null. Se la quota e "
-            "esatta, imposta gli stessi due valori. Se conosci un solo vitigno dominante ma non la quota "
-            "esatta, usa entrambi null e non 0. Se il vino e monovitigno e sei sicuro, usa 100 e 100. "
-            "Se non sei sicuro delle percentuali di un blend, lascia null invece di stimare 0. "
+            "esatta, imposta gli stessi due valori. Se la composizione e nota come intervallo, usa il "
+            "range minimo/massimo comunemente riportato. Se conosci il vitigno dominante e una quota "
+            "approssimativa affidabile, restituisci un range invece di null. Se il vino e monovitigno e sei "
+            "sicuro, usa 100 e 100. Usa null solo quando non hai una stima affidabile. "
             "Contesto:\n"
             f"{json.dumps(wine_context, ensure_ascii=False)}"
         ),
