@@ -1477,9 +1477,12 @@ function renderGrapes(wine) {
 }
 
 function grapePercentageRange(grape) {
-  const legacy = Number.isFinite(Number(grape?.percentage)) ? Number(grape.percentage) : null;
-  const min = Number.isFinite(Number(grape?.percentage_from)) ? Number(grape.percentage_from) : legacy;
-  const max = Number.isFinite(Number(grape?.percentage_to)) ? Number(grape.percentage_to) : legacy;
+  const legacyValue = Number(grape?.percentage);
+  const legacy = Number.isFinite(legacyValue) && legacyValue > 0 ? legacyValue : null;
+  const minValue = Number(grape?.percentage_from);
+  const maxValue = Number(grape?.percentage_to);
+  const min = Number.isFinite(minValue) && minValue > 0 ? minValue : legacy;
+  const max = Number.isFinite(maxValue) && maxValue > 0 ? maxValue : legacy;
   return { min, max };
 }
 

@@ -1478,7 +1478,7 @@ def wine_from_row(row: sqlite3.Row) -> dict:
     except json.JSONDecodeError:
         grapes = []
     wine["owners"] = owners if isinstance(owners, list) else []
-    wine["grapes"] = grapes if isinstance(grapes, list) else []
+    wine["grapes"] = clean_grapes(grapes if isinstance(grapes, list) else [])
     wine.setdefault("scores", [])
     return wine
 
@@ -1488,7 +1488,7 @@ def wine_from_data(data: dict) -> dict:
     owners_json = wine.pop("owners_json", "[]")
     grapes_json = wine.pop("grapes_json", "[]")
     wine["owners"] = json.loads(owners_json or "[]")
-    wine["grapes"] = json.loads(grapes_json or "[]")
+    wine["grapes"] = clean_grapes(json.loads(grapes_json or "[]"))
     wine["scores"] = wine.get("scores", [])
     return wine
 
