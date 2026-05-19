@@ -2709,6 +2709,8 @@ def infer_known_grape_composition(wine: dict) -> list[dict] | None:
             {"name": "Cabernet Sauvignon", "percentage_from": 10.0, "percentage_to": 15.0},
             {"name": "Cabernet Franc", "percentage_from": 5.0, "percentage_to": 5.0},
         ]
+    if "cont'ugo" in descriptor or "cont ugo" in descriptor:
+        return [{"name": "Merlot", "percentage_from": 100.0, "percentage_to": 100.0}]
     return None
 
 
@@ -2742,6 +2744,17 @@ def generate_grape_composition(wine_id: str) -> dict:
         "format": wine.get("format", ""),
         "ai_notes": wine.get("ai_notes", ""),
     }
+    search_reference = " ".join(
+        part
+        for part in (
+            str(wine.get("producer") or "").strip(),
+            str(wine.get("name") or "").strip(),
+            str(wine.get("vintage") or "").strip(),
+            str(wine.get("appellation") or "").strip(),
+            str(wine.get("format") or "").strip(),
+        )
+        if part
+    )
     request_payload = {
         "model": grape_model,
         "instructions": (
@@ -2756,7 +2769,10 @@ def generate_grape_composition(wine_id: str) -> dict:
             "restituisci solo i vitigni di cui sei abbastanza sicuro e non aggiungere vitigni speculativi. "
             "Se il nome o lo stile implicano chiaramente un monovitigno, usa quel vitigno al 100. Per "
             "esempio, in Champagne un Blanc de Blancs va trattato come Chardonnay 100% salvo indicazioni "
-            "contrarie esplicite. Usa nomi vitigno standard in italiano o internazionale."
+            "contrarie esplicite. Devi verificare il vino esatto con ricerca web: non inferire il blend "
+            "dalla tenuta, dalla denominazione o da un'altra etichetta simile. Se una fonte dice che il "
+            "vino e un Merlot in purezza, restituisci solo Merlot 100/100. Usa nomi vitigno standard in "
+            "italiano o internazionale."
         ),
         "input": (
             "Restituisci solo questo oggetto JSON: "
@@ -2765,7 +2781,10 @@ def generate_grape_composition(wine_id: str) -> dict:
             "esatta, imposta gli stessi due valori. Se la composizione e nota come intervallo, usa il "
             "range minimo/massimo comunemente riportato. Se conosci il vitigno dominante e una quota "
             "approssimativa affidabile, restituisci un range invece di null. Se il vino e monovitigno e sei "
-            "sicuro, usa 100 e 100. Usa null solo quando non hai una stima affidabile. "
+            "sicuro, usa 100 e 100. Usa null solo quando non hai una stima affidabile. Prima verifica il "
+            "vino specifico cercando questa referenza esatta, senza confonderlo con altri vini del "
+            "produttore: "
+            f"{search_reference}\n\n"
             "Contesto:\n"
             f"{json.dumps(wine_context, ensure_ascii=False)}"
         ),
@@ -2796,7 +2815,20 @@ def generate_grape_composition(wine_id: str) -> dict:
                 },
             }
         },
-        "max_output_tokens": 220,
+        "tools": [
+            {
+                "type": "web_search",
+                "external_web_access": True,
+                "user_location": {
+                    "type": "approximate",
+                    "country": "CH",
+                    "timezone": "Europe/Zurich",
+                },
+            }
+        ],
+        "tool_choice": "required",
+        "include": ["web_search_call.action.sources"],
+        "max_output_tokens": 260,
     }
     request = Request(
         OPENAI_RESPONSES_URL,
@@ -2810,7 +2842,7 @@ def generate_grape_composition(wine_id: str) -> dict:
     )
 
     try:
-        with urlopen(request, timeout=25) as response:
+        with urlopen(request, timeout=40) as response:
             response_payload = json.loads(response.read().decode("utf-8"))
     except HTTPError as exc:
         error_body = exc.read().decode("utf-8", errors="replace")
